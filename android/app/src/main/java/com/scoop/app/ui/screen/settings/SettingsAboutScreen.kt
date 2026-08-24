@@ -55,9 +55,6 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
                     },
                 )
             }
-            item {
-                SettingRow(title = stringResource(R.string.about_attribution_title), subtitle = stringResource(R.string.about_attribution_body))
-            }
         }
     }
 }

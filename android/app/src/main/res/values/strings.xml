@@ -73,8 +73,6 @@
     <string name="about_version_format">Version %1$s</string>
     <string name="about_source">Source code</string>
     <string name="about_source_subtitle">View Scoop on GitHub</string>
-    <string name="about_attribution_title">Built on</string>
-    <string name="about_attribution_body">yt-dlp, FFmpeg, and aria2c, bundled via youtubedl-android. UX and architecture informed by Seal (JunkFood02/Seal), an open-source reference project — no Seal code or branding is used.</string>
 
     <string name="notification_channel_downloads">Downloads</string>
 </resources>
