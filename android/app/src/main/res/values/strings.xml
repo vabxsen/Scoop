@@ -65,7 +65,7 @@
     <string name="theme_dark">Dark</string>
 
     <string name="settings_accent_palette">Accent color</string>
-    <string name="accent_palette_monochrome">Monochrome</string>
+    <string name="accent_palette_monochrome">Default</string>
     <string name="accent_palette_ocean">Ocean</string>
     <string name="accent_palette_forest">Forest</string>
     <string name="accent_palette_sunset">Sunset</string>
