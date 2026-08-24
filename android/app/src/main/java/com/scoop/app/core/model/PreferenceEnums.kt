@@ -30,3 +30,19 @@ enum class DefaultAudioFormat(val label: String, val container: String) {
     M4A("M4A", "m4a"),
     OPUS("Opus", "opus"),
 }
+
+/** The container video downloads get merged/remuxed into. [ytDlpValue] feeds yt-dlp's
+ * --merge-output-format flag directly. */
+enum class DefaultVideoContainer(val label: String, val ytDlpValue: String) {
+    MP4("MP4", "mp4"),
+    MKV("MKV", "mkv"),
+    WEBM("WebM", "webm"),
+}
+
+/** Audio encode quality for extracted audio. [ytDlpValue] feeds yt-dlp's --audio-quality flag
+ * (0 = best VBR, 9 = smallest/lowest). */
+enum class AudioQuality(val label: String, val ytDlpValue: String) {
+    BEST("Best", "0"),
+    STANDARD("Standard", "5"),
+    SMALL("Smallest file", "9"),
+}

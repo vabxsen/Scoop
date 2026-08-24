@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
@@ -53,6 +54,16 @@ fun SettingsAboutScreen(onBack: () -> Unit, onOpenCredits: () -> Unit) {
                     leadingIcon = Icons.Outlined.Code,
                     onClick = {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/vabxsen/Scoop")))
+                    },
+                )
+            }
+            item {
+                SettingRow(
+                    title = stringResource(R.string.about_report_issue),
+                    subtitle = stringResource(R.string.about_report_issue_subtitle),
+                    leadingIcon = Icons.Outlined.BugReport,
+                    onClick = {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/vabxsen/Scoop/issues/new")))
                     },
                 )
             }

@@ -6,8 +6,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AudioFile
 import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.HighQuality
+import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,7 +26,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.scoop.app.R
+import com.scoop.app.core.model.AudioQuality
 import com.scoop.app.core.model.DefaultAudioFormat
+import com.scoop.app.core.model.DefaultVideoContainer
 import com.scoop.app.core.model.DefaultVideoQuality
 import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.downloader.DownloadPaths
@@ -32,7 +37,7 @@ import com.scoop.app.ui.common.SettingRow
 import com.scoop.app.ui.common.SettingSectionLabel
 import org.koin.androidx.compose.koinViewModel
 
-private enum class ActiveSheet { NONE, QUALITY, AUDIO_FORMAT, CONCURRENCY }
+private enum class ActiveSheet { NONE, QUALITY, VIDEO_CONTAINER, AUDIO_FORMAT, AUDIO_QUALITY, CONCURRENCY }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,12 +57,21 @@ fun SettingsDownloadsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = k
         }
     ) { innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding)) {
+            item { SettingSectionLabel(stringResource(R.string.settings_video_audio_section)) }
             item {
                 SettingRow(
                     title = stringResource(R.string.settings_default_video_quality),
                     subtitle = viewModel.defaultVideoQuality.label,
                     leadingIcon = Icons.Outlined.HighQuality,
                     onClick = { activeSheet = ActiveSheet.QUALITY },
+                )
+            }
+            item {
+                SettingRow(
+                    title = stringResource(R.string.settings_default_video_container),
+                    subtitle = viewModel.defaultVideoContainer.label,
+                    leadingIcon = Icons.Outlined.Movie,
+                    onClick = { activeSheet = ActiveSheet.VIDEO_CONTAINER },
                 )
             }
             item {
@@ -70,6 +84,14 @@ fun SettingsDownloadsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = k
             }
             item {
                 SettingRow(
+                    title = stringResource(R.string.settings_audio_quality),
+                    subtitle = viewModel.audioQuality.label,
+                    leadingIcon = Icons.Outlined.GraphicEq,
+                    onClick = { activeSheet = ActiveSheet.AUDIO_QUALITY },
+                )
+            }
+            item {
+                SettingRow(
                     title = stringResource(R.string.settings_concurrent_downloads),
                     subtitle = viewModel.maxConcurrentDownloads.toString(),
                     leadingIcon = Icons.Outlined.Speed,
@@ -78,6 +100,14 @@ fun SettingsDownloadsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = k
             }
 
             item { SettingSectionLabel(stringResource(R.string.settings_save_location_section)) }
+            item {
+                SettingRow(
+                    title = stringResource(R.string.settings_storage_used),
+                    subtitle = viewModel.storageUsedLabel ?: stringResource(R.string.settings_storage_used_empty),
+                    leadingIcon = Icons.Outlined.Storage,
+                    enabled = false,
+                )
+            }
             item {
                 SettingRow(
                     title = stringResource(R.string.settings_video_location),
@@ -107,6 +137,15 @@ fun SettingsDownloadsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = k
                 onSelect = viewModel::updateDefaultVideoQuality,
                 onDismiss = { activeSheet = ActiveSheet.NONE },
             )
+        ActiveSheet.VIDEO_CONTAINER ->
+            SettingRadioSheet(
+                title = stringResource(R.string.settings_default_video_container),
+                options = DefaultVideoContainer.entries,
+                selected = viewModel.defaultVideoContainer,
+                optionLabel = { it.label },
+                onSelect = viewModel::updateDefaultVideoContainer,
+                onDismiss = { activeSheet = ActiveSheet.NONE },
+            )
         ActiveSheet.AUDIO_FORMAT ->
             SettingRadioSheet(
                 title = stringResource(R.string.settings_default_audio_format),
@@ -114,6 +153,15 @@ fun SettingsDownloadsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = k
                 selected = viewModel.defaultAudioFormat,
                 optionLabel = { it.label },
                 onSelect = viewModel::updateDefaultAudioFormat,
+                onDismiss = { activeSheet = ActiveSheet.NONE },
+            )
+        ActiveSheet.AUDIO_QUALITY ->
+            SettingRadioSheet(
+                title = stringResource(R.string.settings_audio_quality),
+                options = AudioQuality.entries,
+                selected = viewModel.audioQuality,
+                optionLabel = { it.label },
+                onSelect = viewModel::updateAudioQuality,
                 onDismiss = { activeSheet = ActiveSheet.NONE },
             )
         ActiveSheet.CONCURRENCY ->

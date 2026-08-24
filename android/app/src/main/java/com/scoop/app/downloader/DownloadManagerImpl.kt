@@ -6,6 +6,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import com.scoop.app.core.database.DownloadHistoryDao
 import com.scoop.app.core.database.objects.DownloadedItem
+import com.scoop.app.core.model.AudioQuality
+import com.scoop.app.core.model.DefaultVideoContainer
 import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.DownloadRequest
 import com.scoop.app.core.model.DownloadStatus
@@ -152,12 +154,17 @@ class DownloadManagerImpl(
                         when (task.request.kind) {
                             DownloadKind.VIDEO -> {
                                 addOption("-f", task.request.formatId ?: "bestvideo*+bestaudio/best")
-                                addOption("--merge-output-format", "mp4")
+                                val container = PreferenceUtil.getString(PrefKeys.DEFAULT_VIDEO_CONTAINER, DefaultVideoContainer.MP4.name)
+                                val containerValue = DefaultVideoContainer.entries.firstOrNull { it.name == container }?.ytDlpValue ?: "mp4"
+                                addOption("--merge-output-format", containerValue)
                             }
                             DownloadKind.AUDIO_ONLY -> {
                                 addOption("-f", task.request.formatId ?: "bestaudio/best")
                                 addOption("-x")
                                 addOption("--audio-format", task.request.audioContainer ?: "mp3")
+                                val quality = PreferenceUtil.getString(PrefKeys.AUDIO_QUALITY, AudioQuality.BEST.name)
+                                val qualityValue = AudioQuality.entries.firstOrNull { it.name == quality }?.ytDlpValue ?: "0"
+                                addOption("--audio-quality", qualityValue)
                             }
                         }
                     }
