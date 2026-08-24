@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Scoop</string>
+
+    <string name="home_title">Download media</string>
+    <string name="url_input_placeholder">Paste a link…</string>
+    <string name="action_paste">Paste</string>
+    <string name="action_analyze">Analyze</string>
+    <string name="analyzing">Analyzing…</string>
+    <string name="analyze_error_title">Couldn\'t analyze this link</string>
+    <string name="analyze_error_body">The link may be invalid, the platform may have changed its format, or the content may require authentication.</string>
+    <string name="action_retry">Retry</string>
+    <string name="recent_empty">No downloads yet</string>
+
+    <string name="nav_home">Home</string>
+    <string name="nav_downloads">Downloads</string>
+    <string name="nav_settings">Settings</string>
+
+    <string name="downloads_empty">No downloads yet</string>
+    <string name="settings_placeholder">Settings will appear here in a future update.</string>
+
+    <string name="notification_channel_downloads">Downloads</string>
+</resources>
