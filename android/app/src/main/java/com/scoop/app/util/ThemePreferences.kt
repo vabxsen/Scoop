@@ -18,7 +18,7 @@ class ThemePreferences {
         )
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
-    private val _dynamicColorEnabled = MutableStateFlow(PreferenceUtil.getBoolean(PrefKeys.DYNAMIC_COLOR, default = true))
+    private val _dynamicColorEnabled = MutableStateFlow(PreferenceUtil.getBoolean(PrefKeys.DYNAMIC_COLOR, default = false))
     val dynamicColorEnabled: StateFlow<Boolean> = _dynamicColorEnabled.asStateFlow()
 
     fun setThemeMode(mode: ThemeMode) {
