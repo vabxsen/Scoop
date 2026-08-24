@@ -79,13 +79,6 @@ class DownloadManagerImpl(
         }
     }
 
-    override fun remove(taskId: String): Boolean {
-        val task = tasks.keys.find { it.id == taskId } ?: return false
-        cancel(taskId)
-        tasks.remove(task)
-        return true
-    }
-
     override suspend fun deleteTaskAndFile(taskId: String) {
         val task = tasks.keys.find { it.id == taskId }
         val status = task?.let { tasks[it] }

@@ -12,19 +12,6 @@ fun Long.toHumanReadableSize(): String {
     return if (digitGroup == 0) "$this B" else "%.1f %s".format(value, units[digitGroup])
 }
 
-/** Human-readable duration, e.g. 75 -> "1:15", 3661 -> "1:01:01". */
-fun Int.toDurationLabel(): String {
-    if (this <= 0) return "--:--"
-    val hours = this / 3600
-    val minutes = (this % 3600) / 60
-    val seconds = this % 60
-    return if (hours > 0) {
-        "%d:%02d:%02d".format(hours, minutes, seconds)
-    } else {
-        "%d:%02d".format(minutes, seconds)
-    }
-}
-
 /** Compact ETA label, e.g. 95 -> "1m 35s left". */
 fun Int.toEtaLabel(): String {
     if (this <= 0) return ""
