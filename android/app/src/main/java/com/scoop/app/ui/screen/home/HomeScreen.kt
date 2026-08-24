@@ -1,7 +1,5 @@
 package com.scoop.app.ui.screen.home
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,15 +23,11 @@ import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import com.scoop.app.R
-import com.scoop.app.ui.theme.Motion
 import com.scoop.app.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
@@ -88,13 +82,7 @@ fun HomeScreen(
                     Icon(Icons.Outlined.ContentPaste, contentDescription = stringResource(R.string.action_paste))
                 }
                 Spacer(modifier = Modifier.height(Spacing.sm))
-                val canDownload = viewModel.url.isNotBlank()
-                val downloadFabScale by animateFloatAsState(if (canDownload) 1f else 0.9f, tween(Motion.STANDARD_MS), label = "downloadFabScale")
-                val downloadFabAlpha by animateFloatAsState(if (canDownload) 1f else 0.5f, tween(Motion.STANDARD_MS), label = "downloadFabAlpha")
-                FloatingActionButton(
-                    onClick = { if (canDownload) viewModel.startDownloadFlow() },
-                    modifier = Modifier.scale(downloadFabScale).alpha(downloadFabAlpha),
-                ) {
+                FloatingActionButton(onClick = viewModel::startDownloadFlow) {
                     Icon(Icons.Outlined.Download, contentDescription = stringResource(R.string.action_download))
                 }
             }
