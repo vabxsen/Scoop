@@ -192,8 +192,11 @@ fun AccentPalette.colors(): AccentColors =
         AccentPalette.LAVENDER -> LavenderAccent
     }
 
-/** The two swatch colors shown for this palette in the picker (top half, bottom half). */
+/** The two swatch colors shown for this palette in the picker (top half, bottom half). Monochrome
+ * shows the actual ink/cream anchor pair rather than primary+tertiary, since that pairing *is*
+ * the dual-tone look, not just an accent choice. */
 fun AccentPalette.swatchColors(): Pair<Color, Color> {
+    if (this == AccentPalette.MONOCHROME) return Ink to Cream
     val accent = colors()
     return accent.primaryLight to accent.tertiaryLight
 }

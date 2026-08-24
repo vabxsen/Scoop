@@ -66,8 +66,11 @@ private fun PaletteSwatch(topColor: Color, bottomColor: Color, isSelected: Boole
             drawRect(color = bottomColor, topLeft = androidx.compose.ui.geometry.Offset(0f, size.height / 2f), size = Size(size.width, size.height / 2f))
         }
         if (isSelected) {
-            Box(modifier = Modifier.size(56.dp).background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.45f)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+            Box(
+                modifier = Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp))
             }
         }
     }
