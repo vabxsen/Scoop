@@ -16,6 +16,7 @@ import com.scoop.app.ui.screen.downloaddetails.DownloadDetailsScreen
 import com.scoop.app.ui.screen.downloads.DownloadsScreen
 import com.scoop.app.ui.screen.home.HomeScreen
 import com.scoop.app.ui.screen.settings.SettingsAboutScreen
+import com.scoop.app.ui.screen.settings.SettingsCreditsScreen
 import com.scoop.app.ui.screen.settings.SettingsDownloadsScreen
 import com.scoop.app.ui.screen.settings.SettingsGeneralScreen
 import com.scoop.app.ui.screen.settings.SettingsHubScreen
@@ -80,7 +81,13 @@ fun ScoopNavHost(startUrl: String? = null) {
             SettingsDownloadsScreen(onBack = { navController.popBackStack() })
         }
         composable(Route.SETTINGS_ABOUT, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
-            SettingsAboutScreen(onBack = { navController.popBackStack() })
+            SettingsAboutScreen(
+                onBack = { navController.popBackStack() },
+                onOpenCredits = { navController.navigate(Route.SETTINGS_CREDITS) },
+            )
+        }
+        composable(Route.SETTINGS_CREDITS, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
+            SettingsCreditsScreen(onBack = { navController.popBackStack() })
         }
 
         composable(

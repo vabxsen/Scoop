@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -24,7 +25,7 @@ import com.scoop.app.ui.common.SettingRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsAboutScreen(onBack: () -> Unit) {
+fun SettingsAboutScreen(onBack: () -> Unit, onOpenCredits: () -> Unit) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val context = LocalContext.current
     val versionName =
@@ -53,6 +54,14 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
                     onClick = {
                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/vabxsen/Scoop")))
                     },
+                )
+            }
+            item {
+                SettingRow(
+                    title = stringResource(R.string.about_credits_title),
+                    subtitle = stringResource(R.string.about_credits_subtitle),
+                    leadingIcon = Icons.Outlined.FavoriteBorder,
+                    onClick = onOpenCredits,
                 )
             }
         }

@@ -73,6 +73,16 @@
     <string name="about_version_format">Version %1$s</string>
     <string name="about_source">Source code</string>
     <string name="about_source_subtitle">View Scoop on GitHub</string>
+    <string name="about_credits_title">Credits</string>
+    <string name="about_credits_subtitle">Designer, open source, license</string>
+
+    <string name="credits_title">Credits</string>
+    <string name="credits_developed_by_prefix">Designed &amp; developed by </string>
+    <string name="credits_developer_name">Vaibhav Sen</string>
+    <string name="credits_made_with_love">Made with ❤️ in India 🇮🇳</string>
+    <string name="credits_open_source_label">Open Source</string>
+    <string name="credits_open_source_body">Scoop uses open-source software and libraries.</string>
+    <string name="credits_copyright">© 2026 Scoop. All rights reserved.</string>
 
     <string name="notification_channel_downloads">Downloads</string>
 </resources>

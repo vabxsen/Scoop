@@ -8,6 +8,7 @@ object Route {
     const val SETTINGS_GENERAL = "settings/general"
     const val SETTINGS_DOWNLOADS = "settings/downloads"
     const val SETTINGS_ABOUT = "settings/about"
+    const val SETTINGS_CREDITS = "settings/credits"
 
     const val DOWNLOAD_DETAILS_ARG = "taskId"
     const val DOWNLOAD_DETAILS = "downloadDetails/{$DOWNLOAD_DETAILS_ARG}"
