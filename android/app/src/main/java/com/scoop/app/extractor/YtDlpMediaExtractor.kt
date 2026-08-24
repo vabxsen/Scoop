@@ -4,6 +4,7 @@ import com.scoop.app.core.model.MediaFormat
 import com.scoop.app.core.model.MediaInfo
 import com.scoop.app.core.model.PlaylistEntryInfo
 import com.scoop.app.core.model.PlaylistInfo
+import com.scoop.app.util.CookieRepository
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlin.math.roundToInt
@@ -12,7 +13,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
 /** Extracts media metadata by shelling out to the bundled yt-dlp runtime and parsing its JSON. */
-class YtDlpMediaExtractor : MediaExtractor {
+class YtDlpMediaExtractor(private val cookieRepository: CookieRepository) : MediaExtractor {
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -26,6 +27,7 @@ class YtDlpMediaExtractor : MediaExtractor {
                         addOption("--no-warnings")
                         addOption("-R", "1")
                         addOption("--socket-timeout", "10")
+                        withCookies()
                     }
                 val response = YoutubeDL.getInstance().execute(request, "analyze:$url", null)
                 json.decodeFromString<YtDlpVideoJson>(response.out).toMediaInfo(url)
@@ -41,11 +43,17 @@ class YtDlpMediaExtractor : MediaExtractor {
                         addOption("--flat-playlist")
                         addOption("--yes-playlist")
                         addOption("--no-warnings")
+                        withCookies()
                     }
                 val response = YoutubeDL.getInstance().execute(request, "playlist:$url", null)
                 json.decodeFromString<YtDlpPlaylistJson>(response.out).toPlaylistInfo(url)
             }
         }
+
+    private fun YoutubeDLRequest.withCookies() {
+        val file = cookieRepository.cookiesFile
+        if (file.exists()) addOption("--cookies", file.absolutePath)
+    }
 }
 
 private fun YtDlpVideoJson.toMediaInfo(sourceUrl: String): MediaInfo {

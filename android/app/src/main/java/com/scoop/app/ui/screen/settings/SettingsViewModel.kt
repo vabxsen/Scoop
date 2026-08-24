@@ -12,7 +12,9 @@ import com.scoop.app.core.model.AudioQuality
 import com.scoop.app.core.model.DefaultAudioFormat
 import com.scoop.app.core.model.DefaultVideoContainer
 import com.scoop.app.core.model.DefaultVideoQuality
+import com.scoop.app.core.model.CookieSite
 import com.scoop.app.core.model.ThemeMode
+import com.scoop.app.util.CookieRepository
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
 import com.scoop.app.util.ThemePreferences
@@ -24,11 +26,16 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
 
-class SettingsViewModel(private val themePreferences: ThemePreferences, private val downloadHistoryDao: DownloadHistoryDao) : ViewModel() {
+class SettingsViewModel(
+    private val themePreferences: ThemePreferences,
+    private val downloadHistoryDao: DownloadHistoryDao,
+    private val cookieRepository: CookieRepository,
+) : ViewModel() {
 
     val themeMode get() = themePreferences.themeMode
     val accentPalette get() = themePreferences.accentPalette
     val dynamicColorEnabled get() = themePreferences.dynamicColorEnabled
+    val signedInSites get() = cookieRepository.signedInSites
 
     var defaultVideoQuality by
         mutableStateOf(
@@ -121,4 +128,6 @@ class SettingsViewModel(private val themePreferences: ThemePreferences, private 
         maxConcurrentDownloads = count
         PreferenceUtil.putInt(PrefKeys.MAX_CONCURRENT_DOWNLOADS, count)
     }
+
+    fun signOut(site: CookieSite) = cookieRepository.signOut(site)
 }

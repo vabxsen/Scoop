@@ -13,6 +13,7 @@ import com.scoop.app.core.model.DownloadRequest
 import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.DownloadTask
 import com.scoop.app.extractor.MediaExtractor
+import com.scoop.app.util.CookieRepository
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
 import com.yausername.youtubedl_android.YoutubeDL
@@ -34,6 +35,7 @@ class DownloadManagerImpl(
     private val extractor: MediaExtractor,
     private val appContext: Context,
     private val downloadHistoryDao: DownloadHistoryDao,
+    private val cookieRepository: CookieRepository,
 ) : DownloadManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -151,6 +153,7 @@ class DownloadManagerImpl(
                         addOption("--no-playlist")
                         addOption("-o", File(tempDir, "%(title)s.%(ext)s").absolutePath)
                         addOption("--print", "after_move:filepath")
+                        if (cookieRepository.cookiesFile.exists()) addOption("--cookies", cookieRepository.cookiesFile.absolutePath)
                         when (task.request.kind) {
                             DownloadKind.VIDEO -> {
                                 addOption("-f", task.request.formatId ?: "bestvideo*+bestaudio/best")

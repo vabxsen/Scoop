@@ -91,6 +91,15 @@
     <string name="settings_video_location">Video downloads</string>
     <string name="settings_audio_location">Audio downloads</string>
 
+    <string name="settings_sign_in_section">Sign in</string>
+    <string name="settings_sign_in_subtitle">For private or restricted content</string>
+    <string name="sign_in_status_on">Signed in</string>
+    <string name="sign_in_status_off">Not signed in</string>
+    <string name="action_sign_out">Sign out</string>
+    <string name="cookies_sign_in_title">Sign in to %1$s</string>
+    <string name="cookies_save_action">Save sign-in</string>
+    <string name="cookies_save_failed">Couldn\'t find a session yet — finish logging in above, then try again.</string>
+
     <string name="about_version_format">Version %1$s</string>
     <string name="about_source">Source code</string>
     <string name="about_source_subtitle">View Scoop on GitHub</string>
