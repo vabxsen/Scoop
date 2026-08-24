@@ -1,5 +1,6 @@
 package com.scoop.app.ui.screen.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,7 +26,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.scoop.app.R
 import com.scoop.app.ui.theme.Spacing
@@ -46,6 +49,14 @@ fun HomeScreen(
 
     Scaffold { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            Image(
+                painter = painterResource(R.drawable.home_background_dotted),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                alignment = Alignment.Center,
+                alpha = 0.08f,
+                modifier = Modifier.fillMaxSize(),
+            )
             Column(modifier = Modifier.fillMaxSize().padding(Spacing.md)) {
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onOpenSettings) {
