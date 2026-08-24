@@ -80,7 +80,7 @@ fun HomeScreen(
                 ) {
                     Icon(Icons.Outlined.ContentPaste, contentDescription = stringResource(R.string.action_paste))
                 }
-                Spacer(modifier = Modifier.height(Spacing.sm))
+                Spacer(modifier = Modifier.height(Spacing.md))
                 FloatingActionButton(onClick = viewModel::startDownloadFlow) {
                     Icon(Icons.Outlined.Download, contentDescription = stringResource(R.string.action_download))
                 }
