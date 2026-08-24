@@ -84,8 +84,8 @@ fun SettingHubRow(
         Icon(
             leadingIcon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp).size(22.dp),
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(top = 4.dp).size(24.dp),
         )
         Column {
             Text(title, style = MaterialTheme.typography.titleLarge)

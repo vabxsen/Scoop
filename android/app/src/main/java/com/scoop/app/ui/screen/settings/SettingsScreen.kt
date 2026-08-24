@@ -4,9 +4,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,7 +41,7 @@ fun SettingsHubScreen(onBack: () -> Unit, onOpenGeneral: () -> Unit, onOpenDownl
                 SettingHubRow(
                     title = stringResource(R.string.settings_general_title),
                     subtitle = stringResource(R.string.settings_general_subtitle),
-                    leadingIcon = Icons.Outlined.Palette,
+                    leadingIcon = Icons.Filled.Palette,
                     onClick = onOpenGeneral,
                 )
             }
@@ -49,7 +49,7 @@ fun SettingsHubScreen(onBack: () -> Unit, onOpenGeneral: () -> Unit, onOpenDownl
                 SettingHubRow(
                     title = stringResource(R.string.settings_downloads_title),
                     subtitle = stringResource(R.string.settings_downloads_subtitle),
-                    leadingIcon = Icons.Outlined.Download,
+                    leadingIcon = Icons.Filled.Download,
                     onClick = onOpenDownloads,
                 )
             }
@@ -57,7 +57,7 @@ fun SettingsHubScreen(onBack: () -> Unit, onOpenGeneral: () -> Unit, onOpenDownl
                 SettingHubRow(
                     title = stringResource(R.string.settings_about_title),
                     subtitle = stringResource(R.string.settings_about_subtitle),
-                    leadingIcon = Icons.Outlined.Info,
+                    leadingIcon = Icons.Filled.Info,
                     onClick = onOpenAbout,
                 )
             }
