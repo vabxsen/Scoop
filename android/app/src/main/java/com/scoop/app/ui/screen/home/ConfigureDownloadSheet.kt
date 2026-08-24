@@ -15,13 +15,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.DoneAll
+import androidx.compose.material.icons.outlined.HighQuality
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -43,7 +49,6 @@ import com.scoop.app.ui.common.ErrorState
 import com.scoop.app.ui.common.FormatSelectionSheet
 import com.scoop.app.ui.common.LoadingState
 import com.scoop.app.ui.common.SettingSectionLabel
-import com.scoop.app.ui.common.SettingRow
 import com.scoop.app.ui.theme.Motion
 import com.scoop.app.ui.theme.Spacing
 
@@ -57,7 +62,7 @@ fun ConfigureDownloadSheet(viewModel: HomeViewModel, onDismiss: () -> Unit) {
             modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.sm),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Outlined.DoneAll, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Text(
                 stringResource(R.string.configure_title),
                 style = MaterialTheme.typography.headlineSmall,
@@ -117,11 +122,23 @@ private fun ConfigureForm(viewModel: HomeViewModel, info: MediaInfo, onDismiss: 
                 selected = viewModel.formatMode == FormatMode.AUTO,
                 onClick = { viewModel.selectFormatMode(FormatMode.AUTO) },
                 label = { Text(stringResource(R.string.option_auto)) },
+                leadingIcon =
+                    if (viewModel.formatMode == FormatMode.AUTO) {
+                        { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
+                    } else {
+                        null
+                    },
             )
             FilterChip(
                 selected = viewModel.formatMode == FormatMode.CUSTOM,
                 onClick = { viewModel.selectFormatMode(FormatMode.CUSTOM) },
                 label = { Text(stringResource(R.string.option_custom)) },
+                leadingIcon =
+                    if (viewModel.formatMode == FormatMode.CUSTOM) {
+                        { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
+                    } else {
+                        null
+                    },
             )
         }
 
@@ -132,13 +149,16 @@ private fun ConfigureForm(viewModel: HomeViewModel, info: MediaInfo, onDismiss: 
         ) {
             Column {
                 SettingSectionLabel(stringResource(R.string.configure_format_preference), modifier = Modifier.padding(top = Spacing.md))
-                SettingRow(
-                    title =
-                        if (viewModel.selectedKind == DownloadKind.VIDEO) stringResource(R.string.quality_chip_label)
-                        else stringResource(R.string.audio_format_chip_label),
-                    subtitle = viewModel.selectedFormat?.resolutionLabel ?: viewModel.selectedFormat?.container?.uppercase(),
-                    trailingContent = { Icon(Icons.Outlined.ChevronRight, contentDescription = null) },
+                val formatValueLabel =
+                    viewModel.selectedFormat?.resolutionLabel
+                        ?: viewModel.selectedFormat?.container?.uppercase()
+                        ?: if (viewModel.selectedKind == DownloadKind.VIDEO) stringResource(R.string.quality_chip_label)
+                        else stringResource(R.string.audio_format_chip_label)
+                AssistChip(
                     onClick = viewModel::openFormatPicker,
+                    label = { Text(formatValueLabel) },
+                    leadingIcon = { Icon(Icons.Outlined.HighQuality, contentDescription = null, modifier = Modifier.size(AssistChipDefaults.IconSize)) },
+                    shape = RoundedCornerShape(50),
                 )
             }
         }
@@ -147,13 +167,14 @@ private fun ConfigureForm(viewModel: HomeViewModel, info: MediaInfo, onDismiss: 
             modifier = Modifier.fillMaxWidth().padding(top = Spacing.lg),
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), shape = RoundedCornerShape(50)) {
                 Icon(Icons.Outlined.Cancel, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text(stringResource(R.string.action_cancel), modifier = Modifier.padding(start = Spacing.xs))
             }
             Button(
                 onClick = { if (viewModel.confirmDownload()) onDismiss() },
                 modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(50),
             ) {
                 Icon(Icons.Outlined.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text(stringResource(R.string.action_download), modifier = Modifier.padding(start = Spacing.xs))

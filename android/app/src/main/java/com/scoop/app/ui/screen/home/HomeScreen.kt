@@ -19,7 +19,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,7 +75,7 @@ fun HomeScreen(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(Spacing.lg),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                SmallFloatingActionButton(
+                FloatingActionButton(
                     onClick = { clipboardManager.getText()?.text?.let { viewModel.onUrlChange(it) } }
                 ) {
                     Icon(Icons.Outlined.ContentPaste, contentDescription = stringResource(R.string.action_paste))
