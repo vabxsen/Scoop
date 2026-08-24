@@ -2,6 +2,7 @@ package com.scoop.app.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -9,22 +10,23 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import com.scoop.app.core.model.AccentPalette
 import com.scoop.app.core.model.ThemeMode
 
-private val LightColors =
+private fun lightSchemeFor(accent: AccentColors) =
     lightColorScheme(
-        primary = PrimaryLight,
-        onPrimary = OnPrimaryLight,
-        primaryContainer = PrimaryContainerLight,
-        onPrimaryContainer = OnPrimaryContainerLight,
-        secondary = SecondaryLight,
-        onSecondary = OnSecondaryLight,
-        secondaryContainer = SecondaryContainerLight,
-        onSecondaryContainer = OnSecondaryContainerLight,
-        tertiary = TertiaryLight,
-        onTertiary = OnTertiaryLight,
-        tertiaryContainer = TertiaryContainerLight,
-        onTertiaryContainer = OnTertiaryContainerLight,
+        primary = accent.primaryLight,
+        onPrimary = accent.onPrimaryLight,
+        primaryContainer = accent.primaryContainerLight,
+        onPrimaryContainer = accent.onPrimaryContainerLight,
+        secondary = accent.secondaryLight,
+        onSecondary = accent.onSecondaryLight,
+        secondaryContainer = accent.secondaryContainerLight,
+        onSecondaryContainer = accent.onSecondaryContainerLight,
+        tertiary = accent.tertiaryLight,
+        onTertiary = accent.onTertiaryLight,
+        tertiaryContainer = accent.tertiaryContainerLight,
+        onTertiaryContainer = accent.onTertiaryContainerLight,
         error = ErrorLight,
         onError = OnErrorLight,
         errorContainer = ErrorContainerLight,
@@ -42,20 +44,20 @@ private val LightColors =
         outlineVariant = OutlineVariantLight,
     )
 
-private val DarkColors =
+private fun darkSchemeFor(accent: AccentColors) =
     darkColorScheme(
-        primary = PrimaryDark,
-        onPrimary = OnPrimaryDark,
-        primaryContainer = PrimaryContainerDark,
-        onPrimaryContainer = OnPrimaryContainerDark,
-        secondary = SecondaryDark,
-        onSecondary = OnSecondaryDark,
-        secondaryContainer = SecondaryContainerDark,
-        onSecondaryContainer = OnSecondaryContainerDark,
-        tertiary = TertiaryDark,
-        onTertiary = OnTertiaryDark,
-        tertiaryContainer = TertiaryContainerDark,
-        onTertiaryContainer = OnTertiaryContainerDark,
+        primary = accent.primaryDark,
+        onPrimary = accent.onPrimaryDark,
+        primaryContainer = accent.primaryContainerDark,
+        onPrimaryContainer = accent.onPrimaryContainerDark,
+        secondary = accent.secondaryDark,
+        onSecondary = accent.onSecondaryDark,
+        secondaryContainer = accent.secondaryContainerDark,
+        onSecondaryContainer = accent.onSecondaryContainerDark,
+        tertiary = accent.tertiaryDark,
+        onTertiary = accent.onTertiaryDark,
+        tertiaryContainer = accent.tertiaryContainerDark,
+        onTertiaryContainer = accent.onTertiaryContainerDark,
         error = ErrorDark,
         onError = OnErrorDark,
         errorContainer = ErrorContainerDark,
@@ -76,7 +78,8 @@ private val DarkColors =
 @Composable
 fun ScoopTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
-    useDynamicColor: Boolean = true,
+    accentPalette: AccentPalette = AccentPalette.MONOCHROME,
+    useDynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val systemDark = isSystemInDarkTheme()
@@ -88,12 +91,12 @@ fun ScoopTheme(
         }
 
     val context = LocalContext.current
-    val colorScheme =
+    val colorScheme: ColorScheme =
         when {
             useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
                 if (useDarkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-            useDarkTheme -> DarkColors
-            else -> LightColors
+            useDarkTheme -> darkSchemeFor(accentPalette.colors())
+            else -> lightSchemeFor(accentPalette.colors())
         }
 
     MaterialTheme(colorScheme = colorScheme, typography = ScoopTypography, shapes = ScoopShapes, content = content)

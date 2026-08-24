@@ -27,9 +27,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themePreferences = koinInject<ThemePreferences>()
             val themeMode by themePreferences.themeMode.collectAsState()
+            val accentPalette by themePreferences.accentPalette.collectAsState()
             val dynamicColorEnabled by themePreferences.dynamicColorEnabled.collectAsState()
 
-            ScoopTheme(themeMode = themeMode, useDynamicColor = dynamicColorEnabled) {
+            ScoopTheme(themeMode = themeMode, accentPalette = accentPalette, useDynamicColor = dynamicColorEnabled) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     ScoopNavHost(startUrl = startUrl)
                 }

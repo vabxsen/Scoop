@@ -1,5 +1,6 @@
 package com.scoop.app.util
 
+import com.scoop.app.core.model.AccentPalette
 import com.scoop.app.core.model.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,12 +19,24 @@ class ThemePreferences {
         )
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
+    private val _accentPalette =
+        MutableStateFlow(
+            AccentPalette.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.ACCENT_PALETTE, AccentPalette.MONOCHROME.name) }
+                ?: AccentPalette.MONOCHROME
+        )
+    val accentPalette: StateFlow<AccentPalette> = _accentPalette.asStateFlow()
+
     private val _dynamicColorEnabled = MutableStateFlow(PreferenceUtil.getBoolean(PrefKeys.DYNAMIC_COLOR, default = false))
     val dynamicColorEnabled: StateFlow<Boolean> = _dynamicColorEnabled.asStateFlow()
 
     fun setThemeMode(mode: ThemeMode) {
         PreferenceUtil.putString(PrefKeys.THEME_MODE, mode.name)
         _themeMode.value = mode
+    }
+
+    fun setAccentPalette(palette: AccentPalette) {
+        PreferenceUtil.putString(PrefKeys.ACCENT_PALETTE, palette.name)
+        _accentPalette.value = palette
     }
 
     fun setDynamicColorEnabled(enabled: Boolean) {

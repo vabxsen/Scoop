@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.scoop.app.core.model.AccentPalette
 import com.scoop.app.core.model.DefaultAudioFormat
 import com.scoop.app.core.model.DefaultVideoQuality
 import com.scoop.app.core.model.ThemeMode
@@ -15,6 +16,7 @@ import com.scoop.app.util.ThemePreferences
 class SettingsViewModel(private val themePreferences: ThemePreferences) : ViewModel() {
 
     val themeMode get() = themePreferences.themeMode
+    val accentPalette get() = themePreferences.accentPalette
     val dynamicColorEnabled get() = themePreferences.dynamicColorEnabled
 
     var defaultVideoQuality by
@@ -37,6 +39,8 @@ class SettingsViewModel(private val themePreferences: ThemePreferences) : ViewMo
         private set
 
     fun setThemeMode(mode: ThemeMode) = themePreferences.setThemeMode(mode)
+
+    fun setAccentPalette(palette: AccentPalette) = themePreferences.setAccentPalette(palette)
 
     fun setDynamicColorEnabled(enabled: Boolean) = themePreferences.setDynamicColorEnabled(enabled)
 

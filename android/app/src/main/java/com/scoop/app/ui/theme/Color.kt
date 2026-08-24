@@ -1,49 +1,204 @@
 package com.scoop.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import com.scoop.app.core.model.AccentPalette
 
-// Scoop is a strict two-tone UI: every color below (except error) is a tint or shade blended
-// between these two anchors — no third hue is introduced anywhere in the app.
+// Scoop's foundation is a fixed two-tone base: every background/surface/outline role below is a
+// tint or shade blended between these two anchors, regardless of which accent palette is active.
 private val Ink = Color(0xFF1F1E20)
 private val Cream = Color(0xFFFDF8F4)
 
-// Primary — in light mode, ink-on-cream (dark button on a light field); in dark mode, the
-// inverse (cream-on-ink). This is the only "accent"; it's just the other anchor tone.
-val PrimaryLight = Ink
-val OnPrimaryLight = Cream
-val PrimaryContainerLight = Color(0xFFD1CCCA)
-val OnPrimaryContainerLight = Ink
+/** One accent palette's primary/secondary/tertiary roles, light and dark. Background, surface,
+ * and error roles are shared across every palette — only these three role families change. */
+data class AccentColors(
+    val primaryLight: Color,
+    val onPrimaryLight: Color,
+    val primaryContainerLight: Color,
+    val onPrimaryContainerLight: Color,
+    val primaryDark: Color,
+    val onPrimaryDark: Color,
+    val primaryContainerDark: Color,
+    val onPrimaryContainerDark: Color,
+    val secondaryLight: Color,
+    val onSecondaryLight: Color,
+    val secondaryContainerLight: Color,
+    val onSecondaryContainerLight: Color,
+    val secondaryDark: Color,
+    val onSecondaryDark: Color,
+    val secondaryContainerDark: Color,
+    val onSecondaryContainerDark: Color,
+    val tertiaryLight: Color,
+    val onTertiaryLight: Color,
+    val tertiaryContainerLight: Color,
+    val onTertiaryContainerLight: Color,
+    val tertiaryDark: Color,
+    val onTertiaryDark: Color,
+    val tertiaryContainerDark: Color,
+    val onTertiaryContainerDark: Color,
+)
 
-val PrimaryDark = Cream
-val OnPrimaryDark = Ink
-val PrimaryContainerDark = Color(0xFF504E4F)
-val OnPrimaryContainerDark = Cream
+// Monochrome — the original strict dual-tone accent: ink-on-cream in light mode, the inverse in
+// dark. This is the default palette, so a fresh install looks identical to before this feature.
+private val MonochromeAccent =
+    AccentColors(
+        primaryLight = Ink,
+        onPrimaryLight = Cream,
+        primaryContainerLight = Color(0xFFD1CCCA),
+        onPrimaryContainerLight = Ink,
+        primaryDark = Cream,
+        onPrimaryDark = Ink,
+        primaryContainerDark = Color(0xFF504E4F),
+        onPrimaryContainerDark = Cream,
+        secondaryLight = Color(0xFF787575),
+        onSecondaryLight = Cream,
+        secondaryContainerLight = Color(0xFFDCD7D4),
+        onSecondaryContainerLight = Ink,
+        secondaryDark = Color(0xFFA4A19F),
+        onSecondaryDark = Ink,
+        secondaryContainerDark = Color(0xFF403F40),
+        onSecondaryContainerDark = Cream,
+        tertiaryLight = Color(0xFF8E8B8A),
+        onTertiaryLight = Cream,
+        tertiaryContainerLight = Color(0xFFCCC8C5),
+        onTertiaryContainerLight = Ink,
+        tertiaryDark = Color(0xFF8E8B8A),
+        onTertiaryDark = Ink,
+        tertiaryContainerDark = Color(0xFF595757),
+        onTertiaryContainerDark = Cream,
+    )
 
-// Secondary — a mid gray step between the two anchors, for chips and outlined buttons.
-val SecondaryLight = Color(0xFF787575)
-val OnSecondaryLight = Cream
-val SecondaryContainerLight = Color(0xFFDCD7D4)
-val OnSecondaryContainerLight = Ink
+// Ocean — teal/blue-green, Scoop's original pre-dual-tone accent.
+private val OceanAccent =
+    AccentColors(
+        primaryLight = Color(0xFF146C6B),
+        onPrimaryLight = Color(0xFFFFFFFF),
+        primaryContainerLight = Color(0xFFAAF0EA),
+        onPrimaryContainerLight = Color(0xFF00201F),
+        primaryDark = Color(0xFF82D5D1),
+        onPrimaryDark = Color(0xFF003736),
+        primaryContainerDark = Color(0xFF00504E),
+        onPrimaryContainerDark = Color(0xFFAAF0EA),
+        secondaryLight = Color(0xFF4A6360),
+        onSecondaryLight = Color(0xFFFFFFFF),
+        secondaryContainerLight = Color(0xFFCCE8E3),
+        onSecondaryContainerLight = Color(0xFF06201D),
+        secondaryDark = Color(0xFFB0CCC7),
+        onSecondaryDark = Color(0xFF1B3532),
+        secondaryContainerDark = Color(0xFF334B48),
+        onSecondaryContainerDark = Color(0xFFCCE8E3),
+        tertiaryLight = Color(0xFF6B5B2E),
+        onTertiaryLight = Color(0xFFFFFFFF),
+        tertiaryContainerLight = Color(0xFFF4DFA6),
+        onTertiaryContainerLight = Color(0xFF231A00),
+        tertiaryDark = Color(0xFFD7C38C),
+        onTertiaryDark = Color(0xFF3A2E04),
+        tertiaryContainerDark = Color(0xFF524319),
+        onTertiaryContainerDark = Color(0xFFF4DFA6),
+    )
 
-val SecondaryDark = Color(0xFFA4A19F)
-val OnSecondaryDark = Ink
-val SecondaryContainerDark = Color(0xFF403F40)
-val OnSecondaryContainerDark = Cream
+// Forest — muted green with an olive/gold tertiary.
+private val ForestAccent =
+    AccentColors(
+        primaryLight = Color(0xFF2E6B4F),
+        onPrimaryLight = Color(0xFFFFFFFF),
+        primaryContainerLight = Color(0xFFB2F1C9),
+        onPrimaryContainerLight = Color(0xFF00210F),
+        primaryDark = Color(0xFF97D4B1),
+        onPrimaryDark = Color(0xFF00391E),
+        primaryContainerDark = Color(0xFF0F5132),
+        onPrimaryContainerDark = Color(0xFFB2F1C9),
+        secondaryLight = Color(0xFF4E6355),
+        onSecondaryLight = Color(0xFFFFFFFF),
+        secondaryContainerLight = Color(0xFFD0E8D6),
+        onSecondaryContainerLight = Color(0xFF0B1F13),
+        secondaryDark = Color(0xFFB4CCBB),
+        onSecondaryDark = Color(0xFF213528),
+        secondaryContainerDark = Color(0xFF374B3D),
+        onSecondaryContainerDark = Color(0xFFD0E8D6),
+        tertiaryLight = Color(0xFF6E5D2E),
+        onTertiaryLight = Color(0xFFFFFFFF),
+        tertiaryContainerLight = Color(0xFFF7E1A6),
+        onTertiaryContainerLight = Color(0xFF241A00),
+        tertiaryDark = Color(0xFFDAC58D),
+        onTertiaryDark = Color(0xFF3C2F04),
+        tertiaryContainerDark = Color(0xFF554419),
+        onTertiaryContainerDark = Color(0xFFF7E1A6),
+    )
 
-// Tertiary — a slightly lighter gray step than secondary, for audio-format badges and
-// non-error highlights. Distinguished from secondary by weight, not hue.
-val TertiaryLight = Color(0xFF8E8B8A)
-val OnTertiaryLight = Cream
-val TertiaryContainerLight = Color(0xFFCCC8C5)
-val OnTertiaryContainerLight = Ink
+// Sunset — burnt orange with an olive-gold tertiary.
+private val SunsetAccent =
+    AccentColors(
+        primaryLight = Color(0xFF9A4B1E),
+        onPrimaryLight = Color(0xFFFFFFFF),
+        primaryContainerLight = Color(0xFFFFDBC7),
+        onPrimaryContainerLight = Color(0xFF351100),
+        primaryDark = Color(0xFFFFB68F),
+        onPrimaryDark = Color(0xFF582200),
+        primaryContainerDark = Color(0xFF793300),
+        onPrimaryContainerDark = Color(0xFFFFDBC7),
+        secondaryLight = Color(0xFF77574B),
+        onSecondaryLight = Color(0xFFFFFFFF),
+        secondaryContainerLight = Color(0xFFFFDBCB),
+        onSecondaryContainerLight = Color(0xFF2C160C),
+        secondaryDark = Color(0xFFE7BDAF),
+        onSecondaryDark = Color(0xFF44291F),
+        secondaryContainerDark = Color(0xFF5D3F34),
+        onSecondaryContainerDark = Color(0xFFFFDBCB),
+        tertiaryLight = Color(0xFF63601A),
+        onTertiaryLight = Color(0xFFFFFFFF),
+        tertiaryContainerLight = Color(0xFFEBE68E),
+        onTertiaryContainerLight = Color(0xFF1D1D00),
+        tertiaryDark = Color(0xFFCECA79),
+        onTertiaryDark = Color(0xFF333200),
+        tertiaryContainerDark = Color(0xFF4A4900),
+        onTertiaryContainerDark = Color(0xFFEBE68E),
+    )
 
-val TertiaryDark = Color(0xFF8E8B8A)
-val OnTertiaryDark = Ink
-val TertiaryContainerDark = Color(0xFF595757)
-val OnTertiaryContainerDark = Cream
+// Lavender — soft purple with a mauve/pink tertiary.
+private val LavenderAccent =
+    AccentColors(
+        primaryLight = Color(0xFF6E5296),
+        onPrimaryLight = Color(0xFFFFFFFF),
+        primaryContainerLight = Color(0xFFEADDFF),
+        onPrimaryContainerLight = Color(0xFF25005A),
+        primaryDark = Color(0xFFD4BBFF),
+        onPrimaryDark = Color(0xFF3D1F72),
+        primaryContainerDark = Color(0xFF553A89),
+        onPrimaryContainerDark = Color(0xFFEADDFF),
+        secondaryLight = Color(0xFF635A6F),
+        onSecondaryLight = Color(0xFFFFFFFF),
+        secondaryContainerLight = Color(0xFFE9DEF8),
+        onSecondaryContainerLight = Color(0xFF1F182A),
+        secondaryDark = Color(0xFFCCC1DC),
+        onSecondaryDark = Color(0xFF342C40),
+        secondaryContainerDark = Color(0xFF4B4358),
+        onSecondaryContainerDark = Color(0xFFE9DEF8),
+        tertiaryLight = Color(0xFF7D5261),
+        onTertiaryLight = Color(0xFFFFFFFF),
+        tertiaryContainerLight = Color(0xFFFFD9E3),
+        onTertiaryContainerLight = Color(0xFF31101C),
+        tertiaryDark = Color(0xFFEFB8C8),
+        onTertiaryDark = Color(0xFF4A2530),
+        tertiaryContainerDark = Color(0xFF633B47),
+        onTertiaryContainerDark = Color(0xFFFFD9E3),
+    )
 
-// Error — the one deliberate exception: failed/error states keep a true red so they stay
-// spottable at a glance in a list, everything else in the app is built from Ink/Cream alone.
+fun AccentPalette.colors(): AccentColors =
+    when (this) {
+        AccentPalette.MONOCHROME -> MonochromeAccent
+        AccentPalette.OCEAN -> OceanAccent
+        AccentPalette.FOREST -> ForestAccent
+        AccentPalette.SUNSET -> SunsetAccent
+        AccentPalette.LAVENDER -> LavenderAccent
+    }
+
+/** The two swatch colors shown for this palette in the picker (top half, bottom half). */
+fun AccentPalette.swatchColors(): Pair<Color, Color> {
+    val accent = colors()
+    return accent.primaryLight to accent.tertiaryLight
+}
+
+// Error — always red, regardless of accent palette, so failed/error states stay spottable.
 val ErrorLight = Color(0xFFBA1A1A)
 val OnErrorLight = Color(0xFFFFFFFF)
 val ErrorContainerLight = Color(0xFFFFDAD6)
@@ -54,8 +209,8 @@ val OnErrorDark = Color(0xFF690005)
 val ErrorContainerDark = Color(0xFF93000A)
 val OnErrorContainerDark = Color(0xFFFFDAD6)
 
-// Neutrals — background/surface are the two anchors directly; every container/outline step is
-// a blend between them.
+// Neutrals — background/surface are the two anchors directly; every container/outline step is a
+// blend between them. Shared across every accent palette.
 val BackgroundLight = Cream
 val OnBackgroundLight = Ink
 val SurfaceLight = Cream

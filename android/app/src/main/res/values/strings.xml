@@ -50,18 +50,33 @@
     <string name="format_section_audio">Audio</string>
 
     <string name="settings_general_title">Look &amp; feel</string>
-    <string name="settings_general_subtitle">Dark theme, dynamic color</string>
+    <string name="settings_general_subtitle">Dark theme, accent color, dynamic color</string>
     <string name="settings_downloads_title">Downloads</string>
     <string name="settings_downloads_subtitle">Video quality, audio format, concurrency</string>
     <string name="settings_about_title">About</string>
     <string name="settings_about_subtitle">Version, source code, attribution</string>
 
     <string name="settings_theme">Theme</string>
+    <string name="settings_dark_theme">Dark theme</string>
     <string name="settings_dynamic_color">Dynamic color</string>
     <string name="settings_dynamic_color_subtitle">Use colors from your wallpaper on Android 12+</string>
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
+
+    <string name="settings_accent_palette">Accent color</string>
+    <string name="accent_palette_monochrome">Monochrome</string>
+    <string name="accent_palette_ocean">Ocean</string>
+    <string name="accent_palette_forest">Forest</string>
+    <string name="accent_palette_sunset">Sunset</string>
+    <string name="accent_palette_lavender">Lavender</string>
+
+    <string name="theme_preview_title">Sample video title</string>
+    <string name="theme_preview_subtitle">Sample uploader name</string>
+    <string name="theme_preview_badge">42.0 MB · 03:14</string>
+
+    <string name="settings_display_language">Display language</string>
+    <string name="display_language_english">English</string>
 
     <string name="settings_default_video_quality">Default video quality</string>
     <string name="settings_default_audio_format">Default audio format</string>

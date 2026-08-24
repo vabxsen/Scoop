@@ -6,6 +6,16 @@ enum class ThemeMode {
     DARK,
 }
 
+/** A selectable accent palette. Background/surface always stay the ink/cream base; this only
+ * swaps the primary/secondary/tertiary roles used for buttons, selection, and chips. */
+enum class AccentPalette {
+    MONOCHROME,
+    OCEAN,
+    FOREST,
+    SUNSET,
+    LAVENDER,
+}
+
 /** A default video quality preference. [heightPx] is null for BEST (no target height to match against). */
 enum class DefaultVideoQuality(val label: String, val heightPx: Int?) {
     BEST("Best available", null),
