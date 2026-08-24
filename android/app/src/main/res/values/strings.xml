@@ -4,6 +4,7 @@
 
     <string name="url_input_placeholder">Video link</string>
     <string name="action_paste">Paste</string>
+    <string name="action_clear">Clear</string>
     <string name="analyzing">Analyzing…</string>
     <string name="analyze_error_title">Couldn\'t analyze this link</string>
     <string name="analyze_error_body">The link may be invalid, the platform may have changed its format, or the content may require authentication.</string>

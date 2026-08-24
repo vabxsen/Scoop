@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Settings
@@ -68,6 +69,13 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth().padding(top = Spacing.lg),
                     placeholder = { Text(stringResource(R.string.url_input_placeholder)) },
                     singleLine = true,
+                    trailingIcon = {
+                        if (viewModel.url.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.onUrlChange("") }) {
+                                Icon(Icons.Outlined.Clear, contentDescription = stringResource(R.string.action_clear))
+                            }
+                        }
+                    },
                 )
             }
 
