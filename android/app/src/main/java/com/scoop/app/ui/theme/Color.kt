@@ -37,34 +37,35 @@ data class AccentColors(
     val onTertiaryContainerDark: Color,
 )
 
-// Monochrome — the original strict dual-tone accent: ink-on-cream in light mode, the inverse in
-// dark. This is the default palette, so a fresh install looks identical to before this feature.
+// Monochrome — strictly ink and cream, full stop. Primary, secondary, and tertiary all reuse the
+// same two anchors (no third gray tone anywhere) so every accent-colored element — FABs, chips,
+// selected states — renders as pure black-on-cream in light mode, cream-on-black in dark.
 private val MonochromeAccent =
     AccentColors(
         primaryLight = Ink,
         onPrimaryLight = Cream,
-        primaryContainerLight = Color(0xFFD1CCCA),
-        onPrimaryContainerLight = Ink,
+        primaryContainerLight = Ink,
+        onPrimaryContainerLight = Cream,
         primaryDark = Cream,
         onPrimaryDark = Ink,
-        primaryContainerDark = Color(0xFF504E4F),
-        onPrimaryContainerDark = Cream,
-        secondaryLight = Color(0xFF787575),
+        primaryContainerDark = Cream,
+        onPrimaryContainerDark = Ink,
+        secondaryLight = Ink,
         onSecondaryLight = Cream,
-        secondaryContainerLight = Color(0xFFDCD7D4),
-        onSecondaryContainerLight = Ink,
-        secondaryDark = Color(0xFFA4A19F),
+        secondaryContainerLight = Ink,
+        onSecondaryContainerLight = Cream,
+        secondaryDark = Cream,
         onSecondaryDark = Ink,
-        secondaryContainerDark = Color(0xFF403F40),
-        onSecondaryContainerDark = Cream,
-        tertiaryLight = Color(0xFF8E8B8A),
+        secondaryContainerDark = Cream,
+        onSecondaryContainerDark = Ink,
+        tertiaryLight = Ink,
         onTertiaryLight = Cream,
-        tertiaryContainerLight = Color(0xFFCCC8C5),
-        onTertiaryContainerLight = Ink,
-        tertiaryDark = Color(0xFF8E8B8A),
+        tertiaryContainerLight = Ink,
+        onTertiaryContainerLight = Cream,
+        tertiaryDark = Cream,
         onTertiaryDark = Ink,
-        tertiaryContainerDark = Color(0xFF595757),
-        onTertiaryContainerDark = Cream,
+        tertiaryContainerDark = Cream,
+        onTertiaryContainerDark = Ink,
     )
 
 // Ocean — teal/blue-green, Scoop's original pre-dual-tone accent.
