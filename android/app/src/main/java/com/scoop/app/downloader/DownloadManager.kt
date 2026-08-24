@@ -15,5 +15,9 @@ interface DownloadManager {
 
     fun retry(taskId: String)
 
+    /** Removes [taskId] from the queue/list only; never touches a completed download's file. */
     fun remove(taskId: String): Boolean
+
+    /** Explicit user action: deletes the completed file on disk (if any) and removes the task. */
+    suspend fun deleteTaskAndFile(taskId: String)
 }

@@ -2,22 +2,79 @@
 <resources>
     <string name="app_name">Scoop</string>
 
-    <string name="home_title">Download media</string>
-    <string name="url_input_placeholder">Paste a link…</string>
+    <string name="url_input_placeholder">Video link</string>
     <string name="action_paste">Paste</string>
-    <string name="action_analyze">Analyze</string>
     <string name="analyzing">Analyzing…</string>
     <string name="analyze_error_title">Couldn\'t analyze this link</string>
     <string name="analyze_error_body">The link may be invalid, the platform may have changed its format, or the content may require authentication.</string>
     <string name="action_retry">Retry</string>
-    <string name="recent_empty">No downloads yet</string>
+    <string name="action_back">Back</string>
+    <string name="action_open">Open</string>
+    <string name="action_share">Share</string>
+    <string name="action_copy_url">Copy URL</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_download">Download</string>
+    <string name="action_cancel">Cancel</string>
 
-    <string name="nav_home">Home</string>
     <string name="nav_downloads">Downloads</string>
     <string name="nav_settings">Settings</string>
 
-    <string name="downloads_empty">No downloads yet</string>
-    <string name="settings_placeholder">Settings will appear here in a future update.</string>
+    <string name="downloads_empty_title">No downloaded media</string>
+    <string name="downloads_empty_subtitle">Paste a link on Home and tap download to get started</string>
+    <string name="filter_all">All</string>
+    <string name="filter_downloading">Downloading</string>
+    <string name="filter_completed">Completed</string>
+    <string name="filter_failed">Failed</string>
+
+    <string name="download_details_title">Download</string>
+
+    <string name="quality_best_available">Best available</string>
+    <string name="quality_best_available_subtitle">Let Scoop pick the best quality automatically</string>
+    <string name="kind_video">Video</string>
+    <string name="kind_audio">Audio</string>
+
+    <string name="configure_title">Configure before download</string>
+    <string name="configure_subtitle">Adjust this download</string>
+    <string name="configure_download_type">Download type</string>
+    <string name="configure_format_selection">Format selection</string>
+    <string name="configure_format_preference">Format preference</string>
+    <string name="option_auto">Auto</string>
+    <string name="option_custom">Custom</string>
+    <string name="quality_chip_label">Quality</string>
+    <string name="audio_format_chip_label">Audio format</string>
+
+    <string name="format_sheet_title_video">Select video quality</string>
+    <string name="format_sheet_title_audio">Select audio format</string>
+    <string name="format_section_suggested">Suggested</string>
+    <string name="format_section_video_only">Video only</string>
+    <string name="format_section_audio">Audio</string>
+
+    <string name="settings_general_title">Look &amp; feel</string>
+    <string name="settings_general_subtitle">Dark theme, dynamic color</string>
+    <string name="settings_downloads_title">Downloads</string>
+    <string name="settings_downloads_subtitle">Video quality, audio format, concurrency</string>
+    <string name="settings_about_title">About</string>
+    <string name="settings_about_subtitle">Version, source code, attribution</string>
+
+    <string name="settings_theme">Theme</string>
+    <string name="settings_dynamic_color">Dynamic color</string>
+    <string name="settings_dynamic_color_subtitle">Use colors from your wallpaper on Android 12+</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+
+    <string name="settings_default_video_quality">Default video quality</string>
+    <string name="settings_default_audio_format">Default audio format</string>
+    <string name="settings_concurrent_downloads">Concurrent downloads</string>
+    <string name="settings_save_location_section">Save location</string>
+    <string name="settings_video_location">Video downloads</string>
+    <string name="settings_audio_location">Audio downloads</string>
+
+    <string name="about_version_format">Version %1$s</string>
+    <string name="about_source">Source code</string>
+    <string name="about_source_subtitle">View Scoop on GitHub</string>
+    <string name="about_attribution_title">Built on</string>
+    <string name="about_attribution_body">yt-dlp, FFmpeg, and aria2c, bundled via youtubedl-android. UX and architecture informed by Seal (JunkFood02/Seal), an open-source reference project — no Seal code or branding is used.</string>
 
     <string name="notification_channel_downloads">Downloads</string>
 </resources>

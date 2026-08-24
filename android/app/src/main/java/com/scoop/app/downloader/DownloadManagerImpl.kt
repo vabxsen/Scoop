@@ -1,15 +1,18 @@
 package com.scoop.app.downloader
 
 import android.content.Context
-import android.os.Environment
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateMap
+import com.scoop.app.core.database.DownloadHistoryDao
+import com.scoop.app.core.database.objects.DownloadedItem
 import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.DownloadRequest
 import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.DownloadTask
 import com.scoop.app.extractor.MediaExtractor
+import com.scoop.app.util.PrefKeys
+import com.scoop.app.util.PreferenceUtil
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import java.io.File
@@ -23,11 +26,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private const val MAX_CONCURRENCY = 3
+private const val DEFAULT_MAX_CONCURRENCY = 3
 
 class DownloadManagerImpl(
     private val extractor: MediaExtractor,
     private val appContext: Context,
+    private val downloadHistoryDao: DownloadHistoryDao,
 ) : DownloadManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -36,6 +40,8 @@ class DownloadManagerImpl(
     override val tasks: SnapshotStateMap<DownloadTask, DownloadStatus> = mutableStateMapOf()
 
     init {
+        DownloadPaths.sweepStaleTempWorkspaces(appContext)
+
         val stateFlow = snapshotFlow { tasks.toMap() }
         // Runs on every state change so a freshly queued task is picked up even when the
         // concurrently-running count itself hasn't moved (e.g. going from 0 running to 0 running
@@ -80,9 +86,24 @@ class DownloadManagerImpl(
         return true
     }
 
+    override suspend fun deleteTaskAndFile(taskId: String) {
+        val task = tasks.keys.find { it.id == taskId }
+        val status = task?.let { tasks[it] }
+        val filePath = (status as? DownloadStatus.Completed)?.filePath
+        withContext(Dispatchers.IO) {
+            if (filePath != null) File(filePath).delete()
+            downloadHistoryDao.deleteById(taskId)
+        }
+        if (task != null) {
+            cancel(taskId)
+            tasks.remove(task)
+        }
+    }
+
     private fun dispatchNext() {
+        val maxConcurrency = PreferenceUtil.getInt(PrefKeys.MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENCY)
         val runningCount = tasks.values.count { it is DownloadStatus.Analyzing || it is DownloadStatus.Downloading }
-        if (runningCount >= MAX_CONCURRENCY) return
+        if (runningCount >= maxConcurrency) return
         val (task, _) = tasks.entries.firstOrNull { it.value is DownloadStatus.Queued } ?: return
         runTask(task)
     }
@@ -96,7 +117,27 @@ class DownloadManagerImpl(
                     .onSuccess { info ->
                         tasks[task] = DownloadStatus.Downloading()
                         executeDownload(task)
-                            .onSuccess { filePath -> tasks[task] = DownloadStatus.Completed(filePath) }
+                            .onSuccess { filePath ->
+                                tasks[task] = DownloadStatus.Completed(filePath)
+                                if (filePath != null) {
+                                    downloadHistoryDao.upsert(
+                                        DownloadedItem(
+                                            id = task.id,
+                                            sourceUrl = task.request.url,
+                                            title = task.title,
+                                            filePath = filePath,
+                                            thumbnailUrl = task.thumbnailUrl,
+                                            kind = task.request.kind.name,
+                                            createdAt = task.createdAt,
+                                        )
+                                    )
+                                } else {
+                                    // A yt-dlp run that "succeeds" without a resolvable output path
+                                    // isn't a usable completed download - surface it as a failure
+                                    // rather than a broken/blank Completed state.
+                                    tasks[task] = DownloadStatus.Failed("Download finished but the output file could not be located")
+                                }
+                            }
                             .onFailure { error -> tasks[task] = DownloadStatus.Failed(error.message ?: "Download failed", error) }
                     }
                     .onFailure { error -> tasks[task] = DownloadStatus.Failed(error.message ?: "Analysis failed", error) }
@@ -107,35 +148,55 @@ class DownloadManagerImpl(
     private suspend fun executeDownload(task: DownloadTask): Result<String?> =
         withContext(Dispatchers.IO) {
             runCatching {
-                val outputDir =
-                    (when (task.request.kind) {
-                        DownloadKind.VIDEO -> appContext.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-                        DownloadKind.AUDIO_ONLY -> appContext.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
-                    } ?: appContext.filesDir).apply { mkdirs() }
+                val tempDir = DownloadPaths.tempWorkspace(appContext, task.id)
 
                 val request =
                     YoutubeDLRequest(task.request.url).apply {
                         addOption("--no-mtime")
                         addOption("--no-playlist")
-                        addOption("-o", File(outputDir, "%(title)s.%(ext)s").absolutePath)
+                        addOption("-o", File(tempDir, "%(title)s.%(ext)s").absolutePath)
+                        addOption("--print", "after_move:filepath")
                         when (task.request.kind) {
                             DownloadKind.VIDEO -> {
                                 addOption("-f", task.request.formatId ?: "bestvideo*+bestaudio/best")
                                 addOption("--merge-output-format", "mp4")
                             }
                             DownloadKind.AUDIO_ONLY -> {
+                                addOption("-f", task.request.formatId ?: "bestaudio/best")
                                 addOption("-x")
                                 addOption("--audio-format", task.request.audioContainer ?: "mp3")
                             }
                         }
                     }
 
-                YoutubeDL.getInstance().execute(request, task.id) { progress, _, _ ->
-                    val current = tasks[task] as? DownloadStatus.Downloading ?: DownloadStatus.Downloading()
-                    tasks[task] = current.copy(progress = progress / 100f)
-                }
+                val response =
+                    YoutubeDL.getInstance().execute(request, task.id) { progress, eta, _ ->
+                        val current = tasks[task] as? DownloadStatus.Downloading ?: DownloadStatus.Downloading()
+                        tasks[task] = current.copy(progress = progress / 100f, etaSeconds = eta.toInt())
+                    }
 
-                null
+                // `--print after_move:filepath` writes the final resolved path as its own stdout
+                // line, independent of the progress-line regex the callback above matches against
+                // - response.out captures full stdout regardless, so read it directly rather than
+                // relying on that line reaching the callback.
+                val printedPath =
+                    response.out
+                        .lineSequence()
+                        .map { it.trim() }
+                        .lastOrNull { it.isNotEmpty() && File(it).exists() }
+
+                val movedFile =
+                    printedPath?.let { path ->
+                        val sourceFile = File(path)
+                        DownloadPaths.moveWithDedup(
+                            source = sourceFile,
+                            targetDir = DownloadPaths.outputDir(appContext, task.request.kind),
+                            desiredName = sourceFile.name,
+                        )
+                    }
+                DownloadPaths.clearTempWorkspace(appContext, task.id)
+
+                movedFile?.absolutePath
             }
         }
 }
