@@ -4,11 +4,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.AudioFile
-import androidx.compose.material.icons.outlined.GraphicEq
-import androidx.compose.material.icons.outlined.HighQuality
-import androidx.compose.material.icons.outlined.Movie
-import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.HighQuality
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,8 +28,8 @@ import com.scoop.app.core.model.AudioQuality
 import com.scoop.app.core.model.DefaultAudioFormat
 import com.scoop.app.core.model.DefaultVideoContainer
 import com.scoop.app.core.model.DefaultVideoQuality
+import com.scoop.app.ui.common.SettingHubRow
 import com.scoop.app.ui.common.SettingRadioSheet
-import com.scoop.app.ui.common.SettingRow
 import org.koin.androidx.compose.koinViewModel
 
 private enum class ActiveSheet { NONE, QUALITY, VIDEO_CONTAINER, AUDIO_FORMAT, AUDIO_QUALITY, CONCURRENCY }
@@ -53,42 +53,42 @@ fun SettingsVideoAudioScreen(onBack: () -> Unit, viewModel: SettingsViewModel = 
     ) { innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding)) {
             item {
-                SettingRow(
+                SettingHubRow(
                     title = stringResource(R.string.settings_default_video_quality),
                     subtitle = viewModel.defaultVideoQuality.label,
-                    leadingIcon = Icons.Outlined.HighQuality,
+                    leadingIcon = Icons.Filled.HighQuality,
                     onClick = { activeSheet = ActiveSheet.QUALITY },
                 )
             }
             item {
-                SettingRow(
+                SettingHubRow(
                     title = stringResource(R.string.settings_default_video_container),
                     subtitle = viewModel.defaultVideoContainer.label,
-                    leadingIcon = Icons.Outlined.Movie,
+                    leadingIcon = Icons.Filled.Movie,
                     onClick = { activeSheet = ActiveSheet.VIDEO_CONTAINER },
                 )
             }
             item {
-                SettingRow(
+                SettingHubRow(
                     title = stringResource(R.string.settings_default_audio_format),
                     subtitle = viewModel.defaultAudioFormat.label,
-                    leadingIcon = Icons.Outlined.AudioFile,
+                    leadingIcon = Icons.Filled.AudioFile,
                     onClick = { activeSheet = ActiveSheet.AUDIO_FORMAT },
                 )
             }
             item {
-                SettingRow(
+                SettingHubRow(
                     title = stringResource(R.string.settings_audio_quality),
                     subtitle = viewModel.audioQuality.label,
-                    leadingIcon = Icons.Outlined.GraphicEq,
+                    leadingIcon = Icons.Filled.GraphicEq,
                     onClick = { activeSheet = ActiveSheet.AUDIO_QUALITY },
                 )
             }
             item {
-                SettingRow(
+                SettingHubRow(
                     title = stringResource(R.string.settings_concurrent_downloads),
                     subtitle = viewModel.maxConcurrentDownloads.toString(),
-                    leadingIcon = Icons.Outlined.Speed,
+                    leadingIcon = Icons.Filled.Speed,
                     onClick = { activeSheet = ActiveSheet.CONCURRENCY },
                 )
             }

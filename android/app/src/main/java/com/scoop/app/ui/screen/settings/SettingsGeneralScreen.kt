@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Contrast
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.filled.Contrast
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,10 +28,9 @@ import com.scoop.app.R
 import com.scoop.app.core.model.AccentPalette
 import com.scoop.app.core.model.ThemeMode
 import com.scoop.app.ui.common.AccentPaletteRow
+import com.scoop.app.ui.common.SettingHubRow
 import com.scoop.app.ui.common.SettingRadioSheet
-import com.scoop.app.ui.common.SettingRow
 import com.scoop.app.ui.common.SettingSectionLabel
-import com.scoop.app.ui.common.SettingSwitchRow
 import com.scoop.app.ui.common.ThemePreviewCard
 import com.scoop.app.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
@@ -87,19 +86,19 @@ fun SettingsGeneralScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koi
                 )
             }
             item {
-                SettingSwitchRow(
+                SettingHubRow(
                     title = stringResource(R.string.settings_dynamic_color),
                     subtitle = stringResource(R.string.settings_dynamic_color_subtitle),
-                    leadingIcon = Icons.Outlined.Contrast,
-                    checked = dynamicColorEnabled,
-                    onCheckedChange = viewModel::setDynamicColorEnabled,
+                    leadingIcon = Icons.Filled.Contrast,
+                    onClick = { viewModel.setDynamicColorEnabled(!dynamicColorEnabled) },
+                    trailingContent = { Switch(checked = dynamicColorEnabled, onCheckedChange = null) },
                 )
             }
             item {
-                SettingRow(
+                SettingHubRow(
                     title = stringResource(R.string.settings_dark_theme),
                     subtitle = themeMode.label(),
-                    leadingIcon = Icons.Outlined.DarkMode,
+                    leadingIcon = Icons.Filled.DarkMode,
                     onClick = { showThemeSheet = true },
                     trailingContent = {
                         Switch(
@@ -110,10 +109,10 @@ fun SettingsGeneralScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koi
                 )
             }
             item {
-                SettingRow(
+                SettingHubRow(
                     title = stringResource(R.string.settings_display_language),
                     subtitle = stringResource(R.string.display_language_english),
-                    leadingIcon = Icons.Outlined.Language,
+                    leadingIcon = Icons.Filled.Language,
                     onClick = { showLanguageSheet = true },
                 )
             }
