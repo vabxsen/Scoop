@@ -12,10 +12,10 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.VideoLibrary
-import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -128,19 +128,29 @@ fun SettingsHubScreen(
                 }
             }
 
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = viewModel::checkForUpdate,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
-            ) {
-                when (val state = updateState) {
-                    is UpdateCheckState.Checking ->
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                    is UpdateCheckState.Downloading ->
-                        CircularProgressIndicator(progress = { state.progress }, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                    else ->
-                        Icon(Icons.Outlined.SystemUpdate, contentDescription = stringResource(R.string.action_check_for_update))
-                }
-            }
+                icon = {
+                    when (val state = updateState) {
+                        is UpdateCheckState.Checking ->
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        is UpdateCheckState.Downloading ->
+                            CircularProgressIndicator(progress = { state.progress }, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        else ->
+                            Icon(Icons.Outlined.Update, contentDescription = null)
+                    }
+                },
+                text = {
+                    val label =
+                        when (updateState) {
+                            is UpdateCheckState.Checking -> stringResource(R.string.update_checking)
+                            is UpdateCheckState.Downloading -> stringResource(R.string.update_downloading)
+                            else -> stringResource(R.string.action_check_for_update)
+                        }
+                    Text(label)
+                },
+            )
         }
     }
 }
