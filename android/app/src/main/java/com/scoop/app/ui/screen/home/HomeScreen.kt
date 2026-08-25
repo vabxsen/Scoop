@@ -14,18 +14,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.outlined.Clear
-import androidx.compose.material.icons.outlined.ContentPaste
-import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.VideoLibrary
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -115,17 +117,22 @@ fun HomeScreen(
 
             Column(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(Spacing.lg),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = Alignment.End,
             ) {
-                FloatingActionButton(
-                    onClick = { clipboardManager.getText()?.text?.let { viewModel.onUrlChange(it) } }
+                SmallFloatingActionButton(
+                    onClick = { clipboardManager.getText()?.text?.let { viewModel.onUrlChange(it) } },
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 1.dp, pressedElevation = 1.dp),
                 ) {
-                    Icon(Icons.Outlined.ContentPaste, contentDescription = stringResource(R.string.action_paste))
+                    Icon(Icons.Filled.ContentPaste, contentDescription = stringResource(R.string.action_paste))
                 }
                 Spacer(modifier = Modifier.height(Spacing.md))
-                FloatingActionButton(onClick = viewModel::startDownloadFlow) {
-                    Icon(Icons.Outlined.Download, contentDescription = stringResource(R.string.action_download))
-                }
+                ExtendedFloatingActionButton(
+                    onClick = viewModel::startDownloadFlow,
+                    icon = { Icon(Icons.Filled.Download, contentDescription = null) },
+                    text = { Text(stringResource(R.string.action_download)) },
+                )
             }
         }
     }
