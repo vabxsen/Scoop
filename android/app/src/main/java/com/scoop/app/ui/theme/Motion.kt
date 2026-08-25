@@ -8,7 +8,6 @@ object Motion {
     const val QUICK_MS = 150
     const val STANDARD_MS = 220
     const val EMPHASIZED_MS = 300
-    const val CONTAINER_TRANSFORM_MS = 450
 
     /** Material 3 "emphasized decelerate" curve - for content entering the screen. */
     val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)

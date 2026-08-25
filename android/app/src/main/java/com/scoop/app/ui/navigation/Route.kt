@@ -15,8 +15,5 @@ object Route {
     const val DOWNLOAD_DETAILS_ARG = "taskId"
     const val DOWNLOAD_DETAILS = "downloadDetails/{$DOWNLOAD_DETAILS_ARG}"
 
-    /** Shared-element key for the Home settings icon <-> Settings hub screen container transform. */
-    const val SETTINGS_TRANSFORM_KEY = "settings_transform"
-
     fun downloadDetails(taskId: String) = "downloadDetails/$taskId"
 }

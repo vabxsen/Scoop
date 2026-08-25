@@ -1,9 +1,6 @@
 package com.scoop.app.ui.screen.settings
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -50,8 +47,6 @@ import com.scoop.app.R
 import com.scoop.app.core.update.UpdateCheckState
 import com.scoop.app.ui.common.SettingHubRow
 import com.scoop.app.ui.common.SettingsScreenTitle
-import com.scoop.app.ui.navigation.Route
-import com.scoop.app.ui.theme.Motion
 import com.scoop.app.util.FileShareUtils
 import org.koin.androidx.compose.koinViewModel
 
@@ -65,11 +60,9 @@ private val UpdateCheckState.phase: UpdatePhase
             else -> UpdatePhase.IDLE
         }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsHubScreen(
-    sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedVisibilityScope,
     onBack: () -> Unit,
     onOpenGeneral: () -> Unit,
     onOpenDownloads: () -> Unit,
@@ -102,14 +95,6 @@ fun SettingsHubScreen(
     }
 
     Scaffold(
-        modifier =
-            with(sharedTransitionScope) {
-                Modifier.sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = Route.SETTINGS_TRANSFORM_KEY),
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = { _, _ -> tween(Motion.CONTAINER_TRANSFORM_MS, easing = Motion.EmphasizedDecelerate) },
-                )
-            },
         topBar = {
             LargeTopAppBar(
                 title = { SettingsScreenTitle(stringResource(R.string.nav_settings)) },
