@@ -121,4 +121,11 @@
     <string name="credits_copyright">© 2026 Scoop. All rights reserved.</string>
 
     <string name="notification_channel_downloads">Downloads</string>
+
+    <string name="action_check_for_update">Check for update</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_downloading">Downloading update…</string>
+    <string name="update_up_to_date">You\'re on the latest version</string>
+    <string name="update_error_generic">Couldn\'t check for updates. Try again later.</string>
+    <string name="update_error_no_asset">The latest release doesn\'t have an APK attached.</string>
 </resources>

@@ -14,6 +14,9 @@ import com.scoop.app.core.model.DefaultVideoContainer
 import com.scoop.app.core.model.DefaultVideoQuality
 import com.scoop.app.core.model.CookieSite
 import com.scoop.app.core.model.ThemeMode
+import com.scoop.app.core.update.AppUpdateChecker
+import com.scoop.app.core.update.UpdateAvailability
+import com.scoop.app.core.update.UpdateCheckState
 import com.scoop.app.util.CookieRepository
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
@@ -24,12 +27,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SettingsViewModel(
     private val themePreferences: ThemePreferences,
     private val downloadHistoryDao: DownloadHistoryDao,
     private val cookieRepository: CookieRepository,
+    private val updateChecker: AppUpdateChecker,
 ) : ViewModel() {
 
     val themeMode get() = themePreferences.themeMode
@@ -72,6 +77,9 @@ class SettingsViewModel(
         private set
 
     var storageUsedLabel by mutableStateOf<String?>(null)
+        private set
+
+    var updateState by mutableStateOf<UpdateCheckState>(UpdateCheckState.Idle)
         private set
 
     init {
@@ -130,4 +138,28 @@ class SettingsViewModel(
     }
 
     fun signOut(site: CookieSite) = cookieRepository.signOut(site)
+
+    fun checkForUpdate() {
+        if (updateState is UpdateCheckState.Checking || updateState is UpdateCheckState.Downloading) return
+        updateState = UpdateCheckState.Checking
+        viewModelScope.launch {
+            when (val availability = updateChecker.findUpdate()) {
+                is UpdateAvailability.UpToDate -> updateState = UpdateCheckState.UpToDate
+                is UpdateAvailability.Error -> updateState = UpdateCheckState.Error(availability.message)
+                is UpdateAvailability.Available -> {
+                    updateState = UpdateCheckState.Downloading(0f)
+                    try {
+                        val file = updateChecker.downloadApk(availability.downloadUrl) { progress -> updateState = UpdateCheckState.Downloading(progress) }
+                        updateState = UpdateCheckState.ReadyToInstall(file.path)
+                    } catch (e: java.io.IOException) {
+                        updateState = UpdateCheckState.Error(updateChecker.genericErrorMessage())
+                    }
+                }
+            }
+        }
+    }
+
+    fun consumeUpdateState() {
+        updateState = UpdateCheckState.Idle
+    }
 }
