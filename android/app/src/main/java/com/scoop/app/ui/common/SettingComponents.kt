@@ -29,10 +29,10 @@ fun SettingSectionLabel(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** The large title shown in every Settings screen's top app bar, at 2x headlineMedium's scale. */
+/** The large title shown in every Settings screen's top app bar, at 1.5x headlineMedium's scale. */
 @Composable
 fun SettingsScreenTitle(text: String) {
-    Text(text, style = MaterialTheme.typography.headlineMedium.copy(fontSize = 48.sp, lineHeight = 60.sp))
+    Text(text, style = MaterialTheme.typography.headlineMedium.copy(fontSize = 36.sp, lineHeight = 45.sp))
 }
 
 @Composable
