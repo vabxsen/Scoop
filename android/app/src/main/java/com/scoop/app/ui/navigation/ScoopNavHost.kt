@@ -25,23 +25,23 @@ import com.scoop.app.ui.screen.settings.SettingsVideoAudioScreen
 import com.scoop.app.ui.theme.Motion
 
 private val enterFromEnd: AnimatedContentTransitionScope<androidx.navigation.NavBackStackEntry>.() -> EnterTransition = {
-    slideInHorizontally(animationSpec = tween(Motion.EMPHASIZED_MS), initialOffsetX = { it / 3 }) +
-        fadeIn(animationSpec = tween(Motion.EMPHASIZED_MS))
+    slideInHorizontally(animationSpec = tween(Motion.EMPHASIZED_MS, easing = Motion.EmphasizedDecelerate), initialOffsetX = { it / 3 }) +
+        fadeIn(animationSpec = tween(Motion.EMPHASIZED_MS, easing = Motion.EmphasizedDecelerate))
 }
 
 private val exitToStart: AnimatedContentTransitionScope<androidx.navigation.NavBackStackEntry>.() -> ExitTransition = {
-    slideOutHorizontally(animationSpec = tween(Motion.EMPHASIZED_MS), targetOffsetX = { -it / 5 }) +
-        fadeOut(animationSpec = tween(Motion.STANDARD_MS))
+    slideOutHorizontally(animationSpec = tween(Motion.STANDARD_MS, easing = Motion.EmphasizedAccelerate), targetOffsetX = { -it / 5 }) +
+        fadeOut(animationSpec = tween(Motion.QUICK_MS, easing = Motion.EmphasizedAccelerate))
 }
 
 private val enterFromStart: AnimatedContentTransitionScope<androidx.navigation.NavBackStackEntry>.() -> EnterTransition = {
-    slideInHorizontally(animationSpec = tween(Motion.EMPHASIZED_MS), initialOffsetX = { -it / 3 }) +
-        fadeIn(animationSpec = tween(Motion.EMPHASIZED_MS))
+    slideInHorizontally(animationSpec = tween(Motion.EMPHASIZED_MS, easing = Motion.EmphasizedDecelerate), initialOffsetX = { -it / 3 }) +
+        fadeIn(animationSpec = tween(Motion.EMPHASIZED_MS, easing = Motion.EmphasizedDecelerate))
 }
 
 private val exitToEnd: AnimatedContentTransitionScope<androidx.navigation.NavBackStackEntry>.() -> ExitTransition = {
-    slideOutHorizontally(animationSpec = tween(Motion.EMPHASIZED_MS), targetOffsetX = { it / 5 }) +
-        fadeOut(animationSpec = tween(Motion.STANDARD_MS))
+    slideOutHorizontally(animationSpec = tween(Motion.STANDARD_MS, easing = Motion.EmphasizedAccelerate), targetOffsetX = { it / 5 }) +
+        fadeOut(animationSpec = tween(Motion.QUICK_MS, easing = Motion.EmphasizedAccelerate))
 }
 
 /**
@@ -53,7 +53,7 @@ fun ScoopNavHost(startUrl: String? = null) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = Route.HOME) {
-        composable(Route.HOME) {
+        composable(Route.HOME, exitTransition = exitToStart, popEnterTransition = enterFromStart) {
             HomeScreen(
                 startUrl = startUrl,
                 onOpenDownloads = { navController.navigate(Route.DOWNLOADS) },
