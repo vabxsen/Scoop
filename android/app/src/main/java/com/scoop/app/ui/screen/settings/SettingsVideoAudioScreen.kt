@@ -29,6 +29,7 @@ import com.scoop.app.core.model.DefaultAudioFormat
 import com.scoop.app.core.model.DefaultVideoContainer
 import com.scoop.app.core.model.DefaultVideoQuality
 import com.scoop.app.ui.common.SettingHubRow
+import com.scoop.app.ui.common.SettingsScreenTitle
 import com.scoop.app.ui.common.SettingRadioSheet
 import org.koin.androidx.compose.koinViewModel
 
@@ -43,7 +44,7 @@ fun SettingsVideoAudioScreen(onBack: () -> Unit, viewModel: SettingsViewModel = 
     Scaffold(
         topBar = {
             LargeTopAppBar(
-                title = { Text(stringResource(R.string.settings_video_audio_title)) },
+                title = { SettingsScreenTitle(stringResource(R.string.settings_video_audio_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },

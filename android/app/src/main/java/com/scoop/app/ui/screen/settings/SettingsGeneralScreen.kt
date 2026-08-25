@@ -29,6 +29,7 @@ import com.scoop.app.core.model.AccentPalette
 import com.scoop.app.core.model.ThemeMode
 import com.scoop.app.ui.common.AccentPaletteRow
 import com.scoop.app.ui.common.SettingHubRow
+import com.scoop.app.ui.common.SettingsScreenTitle
 import com.scoop.app.ui.common.SettingRadioSheet
 import com.scoop.app.ui.common.SettingSectionLabel
 import com.scoop.app.ui.common.ThemePreviewCard
@@ -56,7 +57,7 @@ fun SettingsGeneralScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koi
     Scaffold(
         topBar = {
             LargeTopAppBar(
-                title = { Text(stringResource(R.string.settings_general_title)) },
+                title = { SettingsScreenTitle(stringResource(R.string.settings_general_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },

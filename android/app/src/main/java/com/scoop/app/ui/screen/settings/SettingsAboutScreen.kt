@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.scoop.app.R
 import com.scoop.app.ui.common.SettingHubRow
+import com.scoop.app.ui.common.SettingsScreenTitle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +36,7 @@ fun SettingsAboutScreen(onBack: () -> Unit, onOpenCredits: () -> Unit) {
     Scaffold(
         topBar = {
             LargeTopAppBar(
-                title = { Text(stringResource(R.string.settings_about_title)) },
+                title = { SettingsScreenTitle(stringResource(R.string.settings_about_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },

@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.scoop.app.ui.theme.Spacing
 
 @Composable
@@ -26,6 +27,12 @@ fun SettingSectionLabel(text: String, modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.primary,
         modifier = modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
     )
+}
+
+/** The large title shown in every Settings screen's top app bar, at 2x headlineMedium's scale. */
+@Composable
+fun SettingsScreenTitle(text: String) {
+    Text(text, style = MaterialTheme.typography.headlineMedium.copy(fontSize = 48.sp, lineHeight = 60.sp))
 }
 
 @Composable

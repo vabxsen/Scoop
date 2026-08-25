@@ -34,6 +34,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import com.scoop.app.R
+import com.scoop.app.ui.common.SettingsScreenTitle
 import com.scoop.app.ui.theme.Spacing
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,7 +48,7 @@ fun SettingsCreditsScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             LargeTopAppBar(
-                title = { Text(stringResource(R.string.credits_title)) },
+                title = { SettingsScreenTitle(stringResource(R.string.credits_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },

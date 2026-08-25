@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.scoop.app.R
 import com.scoop.app.ui.common.SettingHubRow
+import com.scoop.app.ui.common.SettingsScreenTitle
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,7 +29,7 @@ fun SettingsDownloadsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = k
     Scaffold(
         topBar = {
             LargeTopAppBar(
-                title = { Text(stringResource(R.string.settings_downloads_title)) },
+                title = { SettingsScreenTitle(stringResource(R.string.settings_downloads_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },

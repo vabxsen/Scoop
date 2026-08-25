@@ -20,6 +20,7 @@ import com.scoop.app.R
 import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.downloader.DownloadPaths
 import com.scoop.app.ui.common.SettingHubRow
+import com.scoop.app.ui.common.SettingsScreenTitle
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,7 +31,7 @@ fun SettingsStorageScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koi
     Scaffold(
         topBar = {
             LargeTopAppBar(
-                title = { Text(stringResource(R.string.settings_storage_title)) },
+                title = { SettingsScreenTitle(stringResource(R.string.settings_storage_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },

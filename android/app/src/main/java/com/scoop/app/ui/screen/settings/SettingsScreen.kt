@@ -29,7 +29,6 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -44,10 +43,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.scoop.app.R
 import com.scoop.app.core.update.UpdateCheckState
 import com.scoop.app.ui.common.SettingHubRow
+import com.scoop.app.ui.common.SettingsScreenTitle
 import com.scoop.app.util.FileShareUtils
 import org.koin.androidx.compose.koinViewModel
 
@@ -98,12 +97,7 @@ fun SettingsHubScreen(
     Scaffold(
         topBar = {
             LargeTopAppBar(
-                title = {
-                    Text(
-                        stringResource(R.string.nav_settings),
-                        style = MaterialTheme.typography.headlineMedium.copy(fontSize = 48.sp, lineHeight = 60.sp),
-                    )
-                },
+                title = { SettingsScreenTitle(stringResource(R.string.nav_settings)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },
