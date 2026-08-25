@@ -43,6 +43,11 @@ android {
 
     buildTypes {
         release {
+            // R8 minification here has silently broken reflection-based library internals before
+            // (see proguard-rules.pro) in a way debug builds never surface, since debug skips
+            // minification entirely. Debug installing and working is NOT sufficient signal that a
+            // release build works - always smoke-test the actual assembleRelease APK's core flow
+            // (paste a link, analyze, download) before publishing a release, not just debug.
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
