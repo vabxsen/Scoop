@@ -169,52 +169,45 @@ fun SettingsHubScreen(
             val downloadProgress = (updateState as? UpdateCheckState.Downloading)?.progress ?: 0f
             val animatedProgress by animateFloatAsState(targetValue = downloadProgress, label = "update-progress")
 
-            // The whole Scaffold shares bounds with the Home settings icon for the container
-            // transform, so the FAB would otherwise get dragged along and appear to fly across
-            // the screen while that morph is running - hide it until the bounds settle.
-            val isMorphingWithHomeIcon = animatedVisibilityScope.transition.isRunning
-
-            if (!isMorphingWithHomeIcon) {
-                ExtendedFloatingActionButton(
-                    onClick = viewModel::checkForUpdate,
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
-                    icon = {
-                        AnimatedContent(
-                            targetState = updatePhase,
-                            label = "update-icon",
-                            transitionSpec = {
-                                (fadeIn(tween(200)) + scaleIn(tween(200), initialScale = 0.6f)) togetherWith
-                                    (fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.6f))
-                            },
-                        ) { phase ->
+            ExtendedFloatingActionButton(
+                onClick = viewModel::checkForUpdate,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
+                icon = {
+                    AnimatedContent(
+                        targetState = updatePhase,
+                        label = "update-icon",
+                        transitionSpec = {
+                            (fadeIn(tween(200)) + scaleIn(tween(200), initialScale = 0.6f)) togetherWith
+                                (fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.6f))
+                        },
+                    ) { phase ->
+                        when (phase) {
+                            UpdatePhase.CHECKING -> CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            UpdatePhase.DOWNLOADING ->
+                                CircularProgressIndicator(progress = { animatedProgress }, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            UpdatePhase.IDLE -> Icon(Icons.Outlined.Update, contentDescription = null)
+                        }
+                    }
+                },
+                text = {
+                    AnimatedContent(
+                        targetState = updatePhase,
+                        label = "update-text",
+                        transitionSpec = {
+                            (fadeIn(tween(200)) + slideInVertically(tween(200)) { it / 3 }) togetherWith
+                                (fadeOut(tween(150)) + slideOutVertically(tween(150)) { -it / 3 })
+                        },
+                    ) { phase ->
+                        val label =
                             when (phase) {
-                                UpdatePhase.CHECKING -> CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                UpdatePhase.DOWNLOADING ->
-                                    CircularProgressIndicator(progress = { animatedProgress }, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                UpdatePhase.IDLE -> Icon(Icons.Outlined.Update, contentDescription = null)
+                                UpdatePhase.CHECKING -> stringResource(R.string.update_checking)
+                                UpdatePhase.DOWNLOADING -> stringResource(R.string.update_downloading)
+                                UpdatePhase.IDLE -> stringResource(R.string.action_check_for_update)
                             }
-                        }
-                    },
-                    text = {
-                        AnimatedContent(
-                            targetState = updatePhase,
-                            label = "update-text",
-                            transitionSpec = {
-                                (fadeIn(tween(200)) + slideInVertically(tween(200)) { it / 3 }) togetherWith
-                                    (fadeOut(tween(150)) + slideOutVertically(tween(150)) { -it / 3 })
-                            },
-                        ) { phase ->
-                            val label =
-                                when (phase) {
-                                    UpdatePhase.CHECKING -> stringResource(R.string.update_checking)
-                                    UpdatePhase.DOWNLOADING -> stringResource(R.string.update_downloading)
-                                    UpdatePhase.IDLE -> stringResource(R.string.action_check_for_update)
-                                }
-                            Text(label)
-                        }
-                    },
-                )
-            }
+                        Text(label)
+                    }
+                },
+            )
         }
     }
 }
