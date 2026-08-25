@@ -1,7 +1,6 @@
 package com.scoop.app.ui.screen.settings
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -156,7 +155,7 @@ fun SettingsHubScreen(
 
             ExtendedFloatingActionButton(
                 onClick = viewModel::checkForUpdate,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp).animateContentSize(),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
                 icon = {
                     AnimatedContent(
                         targetState = updatePhase,
