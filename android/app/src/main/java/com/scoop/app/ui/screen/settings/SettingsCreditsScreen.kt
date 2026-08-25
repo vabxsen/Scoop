@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -57,7 +58,7 @@ fun SettingsCreditsScreen(onBack: () -> Unit) {
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Column(
                 modifier =
-                    Modifier.align(Alignment.Center)
+                    Modifier.align(BiasAlignment(0f, -0.35f))
                         .fillMaxWidth()
                         .widthIn(max = 360.dp)
                         .padding(horizontal = Spacing.xl),
