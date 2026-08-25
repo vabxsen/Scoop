@@ -3,6 +3,8 @@ package com.scoop.app.ui.navigation
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -44,71 +46,109 @@ private val exitToEnd: AnimatedContentTransitionScope<androidx.navigation.NavBac
         fadeOut(animationSpec = tween(Motion.QUICK_MS, easing = Motion.EmphasizedAccelerate))
 }
 
+// Home <-> Settings hub is a container transform (the settings icon morphs into the screen via
+// SharedTransitionLayout below), so those two destinations fade instead of sliding - a
+// simultaneous slide would fight the bounds animation. Home -> Downloads keeps the normal slide.
+private val homeExit: AnimatedContentTransitionScope<androidx.navigation.NavBackStackEntry>.() -> ExitTransition = {
+    if (targetState.destination.route == Route.SETTINGS_HUB) {
+        fadeOut(animationSpec = tween(Motion.QUICK_MS))
+    } else {
+        exitToStart()
+    }
+}
+
+private val homePopEnter: AnimatedContentTransitionScope<androidx.navigation.NavBackStackEntry>.() -> EnterTransition = {
+    if (initialState.destination.route == Route.SETTINGS_HUB) {
+        fadeIn(animationSpec = tween(Motion.CONTAINER_TRANSFORM_MS))
+    } else {
+        enterFromStart()
+    }
+}
+
+private val settingsHubEnter: AnimatedContentTransitionScope<androidx.navigation.NavBackStackEntry>.() -> EnterTransition = {
+    fadeIn(animationSpec = tween(Motion.CONTAINER_TRANSFORM_MS))
+}
+
+private val settingsHubPopExit: AnimatedContentTransitionScope<androidx.navigation.NavBackStackEntry>.() -> ExitTransition = {
+    fadeOut(animationSpec = tween(Motion.QUICK_MS))
+}
+
 /**
  * Home is the single root/hub (matching the reference app's model): Settings and Downloads are
  * reached via icons on Home and pushed as normal back-stack destinations, not bottom-nav tabs.
+ * Home <-> Settings uses a shared-element container transform (the settings icon morphs into the
+ * Settings screen), so the whole graph lives inside one SharedTransitionLayout.
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun ScoopNavHost(startUrl: String? = null) {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = Route.HOME) {
-        composable(Route.HOME, exitTransition = exitToStart, popEnterTransition = enterFromStart) {
-            HomeScreen(
-                startUrl = startUrl,
-                onOpenDownloads = { navController.navigate(Route.DOWNLOADS) },
-                onOpenSettings = { navController.navigate(Route.SETTINGS_HUB) },
-            )
-        }
+    SharedTransitionLayout {
+        val sharedTransitionScope = this
 
-        composable(Route.DOWNLOADS, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
-            DownloadsScreen(
-                onBack = { navController.popBackStack() },
-                onOpenDownload = { taskId -> navController.navigate(Route.downloadDetails(taskId)) },
-            )
-        }
+        NavHost(navController = navController, startDestination = Route.HOME) {
+            composable(Route.HOME, exitTransition = homeExit, popEnterTransition = homePopEnter) {
+                HomeScreen(
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = this,
+                    startUrl = startUrl,
+                    onOpenDownloads = { navController.navigate(Route.DOWNLOADS) },
+                    onOpenSettings = { navController.navigate(Route.SETTINGS_HUB) },
+                )
+            }
 
-        composable(Route.SETTINGS_HUB, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
-            SettingsHubScreen(
-                onBack = { navController.popBackStack() },
-                onOpenGeneral = { navController.navigate(Route.SETTINGS_GENERAL) },
-                onOpenDownloads = { navController.navigate(Route.SETTINGS_DOWNLOADS) },
-                onOpenVideoAudio = { navController.navigate(Route.SETTINGS_VIDEO_AUDIO) },
-                onOpenStorage = { navController.navigate(Route.SETTINGS_STORAGE) },
-                onOpenAbout = { navController.navigate(Route.SETTINGS_ABOUT) },
-            )
-        }
-        composable(Route.SETTINGS_GENERAL, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
-            SettingsGeneralScreen(onBack = { navController.popBackStack() })
-        }
-        composable(Route.SETTINGS_DOWNLOADS, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
-            SettingsDownloadsScreen(onBack = { navController.popBackStack() })
-        }
-        composable(Route.SETTINGS_VIDEO_AUDIO, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
-            SettingsVideoAudioScreen(onBack = { navController.popBackStack() })
-        }
-        composable(Route.SETTINGS_STORAGE, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
-            SettingsStorageScreen(onBack = { navController.popBackStack() })
-        }
-        composable(Route.SETTINGS_ABOUT, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
-            SettingsAboutScreen(
-                onBack = { navController.popBackStack() },
-                onOpenCredits = { navController.navigate(Route.SETTINGS_CREDITS) },
-            )
-        }
-        composable(Route.SETTINGS_CREDITS, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
-            SettingsCreditsScreen(onBack = { navController.popBackStack() })
-        }
+            composable(Route.DOWNLOADS, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
+                DownloadsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenDownload = { taskId -> navController.navigate(Route.downloadDetails(taskId)) },
+                )
+            }
 
-        composable(
-            route = Route.DOWNLOAD_DETAILS,
-            enterTransition = enterFromEnd,
-            exitTransition = exitToStart,
-            popEnterTransition = enterFromStart,
-            popExitTransition = exitToEnd,
-        ) { backStack ->
-            val taskId = backStack.arguments?.getString(Route.DOWNLOAD_DETAILS_ARG).orEmpty()
-            DownloadDetailsScreen(taskId = taskId, onBack = { navController.popBackStack() })
+            composable(Route.SETTINGS_HUB, enterTransition = settingsHubEnter, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = settingsHubPopExit) {
+                SettingsHubScreen(
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = this,
+                    onBack = { navController.popBackStack() },
+                    onOpenGeneral = { navController.navigate(Route.SETTINGS_GENERAL) },
+                    onOpenDownloads = { navController.navigate(Route.SETTINGS_DOWNLOADS) },
+                    onOpenVideoAudio = { navController.navigate(Route.SETTINGS_VIDEO_AUDIO) },
+                    onOpenStorage = { navController.navigate(Route.SETTINGS_STORAGE) },
+                    onOpenAbout = { navController.navigate(Route.SETTINGS_ABOUT) },
+                )
+            }
+            composable(Route.SETTINGS_GENERAL, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
+                SettingsGeneralScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Route.SETTINGS_DOWNLOADS, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
+                SettingsDownloadsScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Route.SETTINGS_VIDEO_AUDIO, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
+                SettingsVideoAudioScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Route.SETTINGS_STORAGE, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
+                SettingsStorageScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Route.SETTINGS_ABOUT, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
+                SettingsAboutScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenCredits = { navController.navigate(Route.SETTINGS_CREDITS) },
+                )
+            }
+            composable(Route.SETTINGS_CREDITS, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
+                SettingsCreditsScreen(onBack = { navController.popBackStack() })
+            }
+
+            composable(
+                route = Route.DOWNLOAD_DETAILS,
+                enterTransition = enterFromEnd,
+                exitTransition = exitToStart,
+                popEnterTransition = enterFromStart,
+                popExitTransition = exitToEnd,
+            ) { backStack ->
+                val taskId = backStack.arguments?.getString(Route.DOWNLOAD_DETAILS_ARG).orEmpty()
+                DownloadDetailsScreen(taskId = taskId, onBack = { navController.popBackStack() })
+            }
         }
     }
 }

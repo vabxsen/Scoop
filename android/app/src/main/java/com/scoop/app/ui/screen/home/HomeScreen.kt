@@ -1,5 +1,9 @@
 package com.scoop.app.ui.screen.home
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -42,11 +46,16 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.scoop.app.R
+import com.scoop.app.ui.navigation.Route
+import com.scoop.app.ui.theme.Motion
 import com.scoop.app.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun HomeScreen(
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     startUrl: String? = null,
     onOpenDownloads: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -70,7 +79,17 @@ fun HomeScreen(
             )
             Column(modifier = Modifier.fillMaxSize().padding(Spacing.md)) {
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onOpenSettings) {
+                    IconButton(
+                        onClick = onOpenSettings,
+                        modifier =
+                            with(sharedTransitionScope) {
+                                Modifier.sharedBounds(
+                                    sharedContentState = rememberSharedContentState(key = Route.SETTINGS_TRANSFORM_KEY),
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    boundsTransform = { _, _ -> tween(Motion.CONTAINER_TRANSFORM_MS, easing = Motion.EmphasizedDecelerate) },
+                                )
+                            },
+                    ) {
                         Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.nav_settings))
                     }
                     Spacer(modifier = Modifier.weight(1f))
