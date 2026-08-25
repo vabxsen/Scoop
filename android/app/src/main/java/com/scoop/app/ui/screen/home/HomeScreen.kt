@@ -40,7 +40,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.scoop.app.R
 import com.scoop.app.ui.theme.Spacing
 import org.koin.androidx.compose.koinViewModel
@@ -81,7 +83,7 @@ fun HomeScreen(
 
                 Text(
                     stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.displaySmall,
+                    style = MaterialTheme.typography.displaySmall.copy(fontSize = 34.sp, lineHeight = 42.sp, fontWeight = FontWeight.Bold),
                     modifier = Modifier.padding(top = Spacing.lg),
                 )
 
