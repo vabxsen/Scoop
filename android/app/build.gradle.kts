@@ -52,6 +52,14 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
+            // yt-dlp/ffmpeg/aria2c/python native libs are bundled per-ABI and dominate the APK
+            // size. x86/x86_64 only matter for emulators; virtually every real Android phone in
+            // use today is arm64-v8a. Debug keeps every ABI so this still installs on the x86_64
+            // emulator used for local testing.
+            ndk {
+                abiFilters.clear()
+                abiFilters += "arm64-v8a"
+            }
         }
         debug {
             applicationIdSuffix = ".debug"
