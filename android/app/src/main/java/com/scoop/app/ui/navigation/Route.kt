@@ -15,10 +15,5 @@ object Route {
     const val DOWNLOAD_DETAILS_ARG = "taskId"
     const val DOWNLOAD_DETAILS = "downloadDetails/{$DOWNLOAD_DETAILS_ARG}"
 
-    const val COOKIES_ARG = "site"
-    const val COOKIES = "settings/cookies/{$COOKIES_ARG}"
-
     fun downloadDetails(taskId: String) = "downloadDetails/$taskId"
-
-    fun cookies(site: String) = "settings/cookies/$site"
 }

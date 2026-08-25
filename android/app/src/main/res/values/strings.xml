@@ -53,7 +53,7 @@
     <string name="settings_general_title">Look &amp; feel</string>
     <string name="settings_general_subtitle">Dark theme, accent color, dynamic color</string>
     <string name="settings_downloads_title">Downloads</string>
-    <string name="settings_downloads_subtitle">Sign in for private content</string>
+    <string name="settings_downloads_subtitle">Network and connection behavior</string>
     <string name="settings_video_audio_title">Video &amp; Audio</string>
     <string name="settings_video_audio_hub_subtitle">Quality, format, concurrent downloads</string>
     <string name="settings_storage_title">Storage</string>
@@ -83,7 +83,6 @@
     <string name="settings_display_language">Display language</string>
     <string name="display_language_english">English</string>
 
-    <string name="settings_video_audio_section">Video &amp; audio</string>
     <string name="settings_default_video_quality">Default video quality</string>
     <string name="settings_default_video_container">Default video format</string>
     <string name="settings_default_audio_format">Default audio format</string>
@@ -91,18 +90,11 @@
     <string name="settings_concurrent_downloads">Concurrent downloads</string>
     <string name="settings_storage_used">Storage used</string>
     <string name="settings_storage_used_empty">No downloads yet</string>
-    <string name="settings_save_location_section">Save location</string>
     <string name="settings_video_location">Video downloads</string>
     <string name="settings_audio_location">Audio downloads</string>
 
-    <string name="settings_sign_in_section">Sign in</string>
-    <string name="settings_sign_in_subtitle">For private or restricted content</string>
-    <string name="sign_in_status_on">Signed in</string>
-    <string name="sign_in_status_off">Not signed in</string>
-    <string name="action_sign_out">Sign out</string>
-    <string name="cookies_sign_in_title">Sign in to %1$s</string>
-    <string name="cookies_save_action">Save sign-in</string>
-    <string name="cookies_save_failed">Couldn\'t find a session yet — finish logging in above, then try again.</string>
+    <string name="settings_wifi_only_downloads">Wi-Fi only</string>
+    <string name="settings_wifi_only_downloads_subtitle">Pause new downloads on mobile data and resume automatically on Wi-Fi</string>
 
     <string name="about_version_format">Version %1$s</string>
     <string name="about_source">Source code</string>

@@ -12,12 +12,10 @@ import com.scoop.app.core.model.AudioQuality
 import com.scoop.app.core.model.DefaultAudioFormat
 import com.scoop.app.core.model.DefaultVideoContainer
 import com.scoop.app.core.model.DefaultVideoQuality
-import com.scoop.app.core.model.CookieSite
 import com.scoop.app.core.model.ThemeMode
 import com.scoop.app.core.update.AppUpdateChecker
 import com.scoop.app.core.update.UpdateAvailability
 import com.scoop.app.core.update.UpdateCheckState
-import com.scoop.app.util.CookieRepository
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
 import com.scoop.app.util.ThemePreferences
@@ -33,14 +31,12 @@ import kotlinx.coroutines.withContext
 class SettingsViewModel(
     private val themePreferences: ThemePreferences,
     private val downloadHistoryDao: DownloadHistoryDao,
-    private val cookieRepository: CookieRepository,
     private val updateChecker: AppUpdateChecker,
 ) : ViewModel() {
 
     val themeMode get() = themePreferences.themeMode
     val accentPalette get() = themePreferences.accentPalette
     val dynamicColorEnabled get() = themePreferences.dynamicColorEnabled
-    val signedInSites get() = cookieRepository.signedInSites
 
     var defaultVideoQuality by
         mutableStateOf(
@@ -74,6 +70,9 @@ class SettingsViewModel(
         private set
 
     var maxConcurrentDownloads by mutableIntStateOf(PreferenceUtil.getInt(PrefKeys.MAX_CONCURRENT_DOWNLOADS, 3))
+        private set
+
+    var wifiOnlyDownloads by mutableStateOf(PreferenceUtil.getBoolean(PrefKeys.WIFI_ONLY_DOWNLOADS, false))
         private set
 
     var storageUsedLabel by mutableStateOf<String?>(null)
@@ -137,7 +136,10 @@ class SettingsViewModel(
         PreferenceUtil.putInt(PrefKeys.MAX_CONCURRENT_DOWNLOADS, count)
     }
 
-    fun signOut(site: CookieSite) = cookieRepository.signOut(site)
+    fun updateWifiOnlyDownloads(enabled: Boolean) {
+        wifiOnlyDownloads = enabled
+        PreferenceUtil.putBoolean(PrefKeys.WIFI_ONLY_DOWNLOADS, enabled)
+    }
 
     fun checkForUpdate() {
         if (updateState is UpdateCheckState.Checking || updateState is UpdateCheckState.Downloading) return

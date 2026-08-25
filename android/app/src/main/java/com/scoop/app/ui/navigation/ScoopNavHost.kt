@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.scoop.app.core.model.CookieSite
 import com.scoop.app.ui.screen.downloaddetails.DownloadDetailsScreen
 import com.scoop.app.ui.screen.downloads.DownloadsScreen
 import com.scoop.app.ui.screen.home.HomeScreen
@@ -23,7 +22,6 @@ import com.scoop.app.ui.screen.settings.SettingsGeneralScreen
 import com.scoop.app.ui.screen.settings.SettingsHubScreen
 import com.scoop.app.ui.screen.settings.SettingsStorageScreen
 import com.scoop.app.ui.screen.settings.SettingsVideoAudioScreen
-import com.scoop.app.ui.screen.settings.cookies.CookiesScreen
 import com.scoop.app.ui.theme.Motion
 
 private val enterFromEnd: AnimatedContentTransitionScope<androidx.navigation.NavBackStackEntry>.() -> EnterTransition = {
@@ -84,10 +82,7 @@ fun ScoopNavHost(startUrl: String? = null) {
             SettingsGeneralScreen(onBack = { navController.popBackStack() })
         }
         composable(Route.SETTINGS_DOWNLOADS, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
-            SettingsDownloadsScreen(
-                onBack = { navController.popBackStack() },
-                onOpenCookies = { site -> navController.navigate(Route.cookies(site.name)) },
-            )
+            SettingsDownloadsScreen(onBack = { navController.popBackStack() })
         }
         composable(Route.SETTINGS_VIDEO_AUDIO, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
             SettingsVideoAudioScreen(onBack = { navController.popBackStack() })
@@ -103,11 +98,6 @@ fun ScoopNavHost(startUrl: String? = null) {
         }
         composable(Route.SETTINGS_CREDITS, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
             SettingsCreditsScreen(onBack = { navController.popBackStack() })
-        }
-
-        composable(Route.COOKIES, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) { backStack ->
-            val site = CookieSite.entries.firstOrNull { it.name == backStack.arguments?.getString(Route.COOKIES_ARG) } ?: CookieSite.YOUTUBE
-            CookiesScreen(site = site, onDone = { navController.popBackStack() })
         }
 
         composable(

@@ -11,7 +11,6 @@ import com.scoop.app.ui.screen.downloaddetails.DownloadDetailsViewModel
 import com.scoop.app.ui.screen.downloads.DownloadsViewModel
 import com.scoop.app.ui.screen.home.HomeViewModel
 import com.scoop.app.ui.screen.settings.SettingsViewModel
-import com.scoop.app.util.CookieRepository
 import com.scoop.app.util.ThemePreferences
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidContext
@@ -19,12 +18,10 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val appModule = module {
-    single { CookieRepository(androidContext()) }
-
     single { OkHttpClient() }
     single { AppUpdateChecker(context = androidContext(), client = get()) }
 
-    single<MediaExtractor> { YtDlpMediaExtractor(cookieRepository = get()) }
+    single<MediaExtractor> { YtDlpMediaExtractor() }
 
     single {
         Room.databaseBuilder(androidContext(), AppDatabase::class.java, AppDatabase.DATABASE_NAME).build()
@@ -32,7 +29,7 @@ val appModule = module {
     single { get<AppDatabase>().downloadHistoryDao() }
 
     single<DownloadManager> {
-        DownloadManagerImpl(extractor = get(), appContext = androidContext(), downloadHistoryDao = get(), cookieRepository = get())
+        DownloadManagerImpl(extractor = get(), appContext = androidContext(), downloadHistoryDao = get())
     }
 
     single { ThemePreferences() }
@@ -40,5 +37,5 @@ val appModule = module {
     viewModel { HomeViewModel(extractor = get(), downloadManager = get()) }
     viewModel { DownloadsViewModel(downloadManager = get()) }
     viewModel { DownloadDetailsViewModel(downloadManager = get(), downloadHistoryDao = get()) }
-    viewModel { SettingsViewModel(themePreferences = get(), downloadHistoryDao = get(), cookieRepository = get(), updateChecker = get()) }
+    viewModel { SettingsViewModel(themePreferences = get(), downloadHistoryDao = get(), updateChecker = get()) }
 }

@@ -1,6 +1,8 @@
 package com.scoop.app.downloader
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateMap
@@ -13,7 +15,7 @@ import com.scoop.app.core.model.DownloadRequest
 import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.DownloadTask
 import com.scoop.app.extractor.MediaExtractor
-import com.scoop.app.util.CookieRepository
+import com.scoop.app.util.NetworkUtils
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
 import com.yausername.youtubedl_android.YoutubeDL
@@ -35,7 +37,6 @@ class DownloadManagerImpl(
     private val extractor: MediaExtractor,
     private val appContext: Context,
     private val downloadHistoryDao: DownloadHistoryDao,
-    private val cookieRepository: CookieRepository,
 ) : DownloadManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -59,6 +60,18 @@ class DownloadManagerImpl(
                     if (runningCount > 0) DownloadService.start(appContext) else DownloadService.stop(appContext)
                 }
         }
+
+        // Re-check the queue whenever the network changes so downloads held back by Wi-Fi-only
+        // resume automatically the moment Wi-Fi becomes available, instead of staying stuck until
+        // the user reopens the app.
+        val connectivityManager = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        connectivityManager?.registerDefaultNetworkCallback(
+            object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) = dispatchNext()
+
+                override fun onCapabilitiesChanged(network: Network, networkCapabilities: android.net.NetworkCapabilities) = dispatchNext()
+            }
+        )
     }
 
     override fun enqueue(request: DownloadRequest, title: String, thumbnailUrl: String?): DownloadTask {
@@ -101,6 +114,7 @@ class DownloadManagerImpl(
         val maxConcurrency = PreferenceUtil.getInt(PrefKeys.MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENCY)
         val runningCount = tasks.values.count { it is DownloadStatus.Analyzing || it is DownloadStatus.Downloading }
         if (runningCount >= maxConcurrency) return
+        if (PreferenceUtil.getBoolean(PrefKeys.WIFI_ONLY_DOWNLOADS, false) && !NetworkUtils.isOnWifi(appContext)) return
         val (task, _) = tasks.entries.firstOrNull { it.value is DownloadStatus.Queued } ?: return
         runTask(task)
     }
@@ -153,7 +167,6 @@ class DownloadManagerImpl(
                         addOption("--no-playlist")
                         addOption("-o", File(tempDir, "%(title)s.%(ext)s").absolutePath)
                         addOption("--print", "after_move:filepath")
-                        if (cookieRepository.cookiesFile.exists()) addOption("--cookies", cookieRepository.cookiesFile.absolutePath)
                         when (task.request.kind) {
                             DownloadKind.VIDEO -> {
                                 addOption("-f", task.request.formatId ?: "bestvideo*+bestaudio/best")

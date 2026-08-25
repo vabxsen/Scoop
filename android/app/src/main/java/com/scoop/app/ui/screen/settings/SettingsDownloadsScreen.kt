@@ -2,33 +2,27 @@ package com.scoop.app.ui.screen.settings
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.scoop.app.R
-import com.scoop.app.core.model.CookieSite
-import com.scoop.app.ui.common.SettingRow
+import com.scoop.app.ui.common.SettingSwitchRow
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsDownloadsScreen(onBack: () -> Unit, onOpenCookies: (CookieSite) -> Unit, viewModel: SettingsViewModel = koinViewModel()) {
+fun SettingsDownloadsScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewModel()) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val signedInSites by viewModel.signedInSites.collectAsState()
 
     Scaffold(
         topBar = {
@@ -42,18 +36,13 @@ fun SettingsDownloadsScreen(onBack: () -> Unit, onOpenCookies: (CookieSite) -> U
         }
     ) { innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding)) {
-            items(CookieSite.entries) { site ->
-                val isSignedIn = site in signedInSites
-                SettingRow(
-                    title = site.siteLabel,
-                    subtitle = if (isSignedIn) stringResource(R.string.sign_in_status_on) else stringResource(R.string.sign_in_status_off),
-                    leadingIcon = Icons.Outlined.AccountCircle,
-                    onClick = { onOpenCookies(site) },
-                    trailingContent = {
-                        if (isSignedIn) {
-                            OutlinedButton(onClick = { viewModel.signOut(site) }) { Text(stringResource(R.string.action_sign_out)) }
-                        }
-                    },
+            item {
+                SettingSwitchRow(
+                    title = stringResource(R.string.settings_wifi_only_downloads),
+                    subtitle = stringResource(R.string.settings_wifi_only_downloads_subtitle),
+                    leadingIcon = Icons.Outlined.Wifi,
+                    checked = viewModel.wifiOnlyDownloads,
+                    onCheckedChange = viewModel::updateWifiOnlyDownloads,
                 )
             }
         }

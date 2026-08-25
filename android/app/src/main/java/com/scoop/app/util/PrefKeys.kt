@@ -9,5 +9,5 @@ object PrefKeys {
     const val DEFAULT_VIDEO_CONTAINER = "default_video_container"
     const val AUDIO_QUALITY = "audio_quality"
     const val MAX_CONCURRENT_DOWNLOADS = "max_concurrent_downloads"
-    const val SIGNED_IN_PREFIX = "signed_in_"
+    const val WIFI_ONLY_DOWNLOADS = "wifi_only_downloads"
 }
