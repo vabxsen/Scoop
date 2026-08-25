@@ -65,7 +65,7 @@ fun HomeScreen(
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
                 alignment = Alignment.Center,
-                alpha = 0.35f,
+                alpha = 0.5f,
                 modifier = Modifier.fillMaxSize(),
             )
             Column(modifier = Modifier.fillMaxSize().padding(Spacing.md)) {
