@@ -2,6 +2,7 @@ package com.scoop.app.di
 
 import androidx.room.Room
 import com.scoop.app.core.database.AppDatabase
+import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.core.update.AppUpdateChecker
 import com.scoop.app.downloader.DownloadManager
 import com.scoop.app.downloader.DownloadManagerImpl
@@ -20,8 +21,9 @@ import org.koin.dsl.module
 val appModule = module {
     single { OkHttpClient() }
     single { AppUpdateChecker(context = androidContext(), client = get()) }
+    single { MediaEngineReadiness(context = androidContext()) }
 
-    single<MediaExtractor> { YtDlpMediaExtractor() }
+    single<MediaExtractor> { YtDlpMediaExtractor(mediaEngineReadiness = get()) }
 
     single {
         Room.databaseBuilder(androidContext(), AppDatabase::class.java, AppDatabase.DATABASE_NAME).build()
@@ -29,7 +31,7 @@ val appModule = module {
     single { get<AppDatabase>().downloadHistoryDao() }
 
     single<DownloadManager> {
-        DownloadManagerImpl(extractor = get(), appContext = androidContext(), downloadHistoryDao = get())
+        DownloadManagerImpl(extractor = get(), appContext = androidContext(), downloadHistoryDao = get(), mediaEngineReadiness = get())
     }
 
     single { ThemePreferences() }

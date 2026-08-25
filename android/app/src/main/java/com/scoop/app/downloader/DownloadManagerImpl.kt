@@ -14,6 +14,7 @@ import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.DownloadRequest
 import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.DownloadTask
+import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.extractor.MediaExtractor
 import com.scoop.app.util.NetworkUtils
 import com.scoop.app.util.PrefKeys
@@ -37,6 +38,7 @@ class DownloadManagerImpl(
     private val extractor: MediaExtractor,
     private val appContext: Context,
     private val downloadHistoryDao: DownloadHistoryDao,
+    private val mediaEngineReadiness: MediaEngineReadiness,
 ) : DownloadManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -159,6 +161,7 @@ class DownloadManagerImpl(
     private suspend fun executeDownload(task: DownloadTask): Result<String?> =
         withContext(Dispatchers.IO) {
             runCatching {
+                mediaEngineReadiness.awaitReady()
                 val tempDir = DownloadPaths.tempWorkspace(appContext, task.id)
 
                 val request =

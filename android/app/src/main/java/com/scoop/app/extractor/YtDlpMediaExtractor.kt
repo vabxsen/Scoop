@@ -1,5 +1,6 @@
 package com.scoop.app.extractor
 
+import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.core.model.MediaFormat
 import com.scoop.app.core.model.MediaInfo
 import com.scoop.app.core.model.PlaylistEntryInfo
@@ -12,13 +13,14 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
 /** Extracts media metadata by shelling out to the bundled yt-dlp runtime and parsing its JSON. */
-class YtDlpMediaExtractor : MediaExtractor {
+class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness) : MediaExtractor {
 
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun analyze(url: String): Result<MediaInfo> =
         withContext(Dispatchers.IO) {
             runCatching {
+                mediaEngineReadiness.awaitReady()
                 val request =
                     YoutubeDLRequest(url).apply {
                         addOption("--dump-single-json")
@@ -35,6 +37,7 @@ class YtDlpMediaExtractor : MediaExtractor {
     override suspend fun getPlaylist(url: String): Result<PlaylistInfo> =
         withContext(Dispatchers.IO) {
             runCatching {
+                mediaEngineReadiness.awaitReady()
                 val request =
                     YoutubeDLRequest(url).apply {
                         addOption("--dump-single-json")
