@@ -9,8 +9,4 @@ object Motion {
     const val EMPHASIZED_MS = 300
 
     fun <T> quick() = tween<T>(durationMillis = QUICK_MS)
-
-    fun <T> standard() = tween<T>(durationMillis = STANDARD_MS)
-
-    fun <T> emphasized() = tween<T>(durationMillis = EMPHASIZED_MS)
 }

@@ -1,7 +1,6 @@
 package com.scoop.app.core.database
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -17,8 +16,6 @@ interface DownloadHistoryDao {
     fun observeById(id: String): Flow<DownloadedItem?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsert(item: DownloadedItem)
-
-    @Delete suspend fun delete(item: DownloadedItem)
 
     @Query("DELETE FROM downloaded_items WHERE id = :id") suspend fun deleteById(id: String)
 }

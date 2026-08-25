@@ -29,9 +29,6 @@ sealed interface DownloadStatus {
 
     data class Downloading(
         val progress: Float = -1f,
-        val downloadedBytes: Long = 0L,
-        val totalBytes: Long = 0L,
-        val speedBytesPerSecond: Long = 0L,
         val etaSeconds: Int = 0,
     ) : DownloadStatus
 
@@ -43,5 +40,3 @@ sealed interface DownloadStatus {
 
     data object Cancelled : DownloadStatus
 }
-
-data class DownloadTaskState(val task: DownloadTask, val status: DownloadStatus)
