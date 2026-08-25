@@ -1,5 +1,6 @@
 package com.scoop.app.ui.screen.home
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -26,6 +27,8 @@ sealed interface ConfigureUiState {
 
     data class Loaded(val info: MediaInfo) : ConfigureUiState
 }
+
+private const val TAG = "HomeViewModel"
 
 enum class FormatMode {
     AUTO,
@@ -70,7 +73,10 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
                     selectedFormat = null
                     configureState = ConfigureUiState.Loaded(info)
                 }
-                .onFailure { configureState = ConfigureUiState.Error(it.message ?: "Unknown error") }
+                .onFailure {
+                    Log.e(TAG, "analyze failed for $target", it)
+                    configureState = ConfigureUiState.Error(it.message ?: "Unknown error")
+                }
         }
     }
 
