@@ -1,5 +1,16 @@
 package com.scoop.app.ui.screen.settings
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -26,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +49,16 @@ import com.scoop.app.core.update.UpdateCheckState
 import com.scoop.app.ui.common.SettingHubRow
 import com.scoop.app.util.FileShareUtils
 import org.koin.androidx.compose.koinViewModel
+
+private enum class UpdatePhase { IDLE, CHECKING, DOWNLOADING }
+
+private val UpdateCheckState.phase: UpdatePhase
+    get() =
+        when (this) {
+            is UpdateCheckState.Checking -> UpdatePhase.CHECKING
+            is UpdateCheckState.Downloading -> UpdatePhase.DOWNLOADING
+            else -> UpdatePhase.IDLE
+        }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,27 +150,47 @@ fun SettingsHubScreen(
                 }
             }
 
+            val updatePhase = updateState.phase
+            val downloadProgress = (updateState as? UpdateCheckState.Downloading)?.progress ?: 0f
+            val animatedProgress by animateFloatAsState(targetValue = downloadProgress, label = "update-progress")
+
             ExtendedFloatingActionButton(
                 onClick = viewModel::checkForUpdate,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp).animateContentSize(),
                 icon = {
-                    when (val state = updateState) {
-                        is UpdateCheckState.Checking ->
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        is UpdateCheckState.Downloading ->
-                            CircularProgressIndicator(progress = { state.progress }, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        else ->
-                            Icon(Icons.Outlined.Update, contentDescription = null)
+                    AnimatedContent(
+                        targetState = updatePhase,
+                        label = "update-icon",
+                        transitionSpec = {
+                            (fadeIn(tween(200)) + scaleIn(tween(200), initialScale = 0.6f)) togetherWith
+                                (fadeOut(tween(150)) + scaleOut(tween(150), targetScale = 0.6f))
+                        },
+                    ) { phase ->
+                        when (phase) {
+                            UpdatePhase.CHECKING -> CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            UpdatePhase.DOWNLOADING ->
+                                CircularProgressIndicator(progress = { animatedProgress }, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            UpdatePhase.IDLE -> Icon(Icons.Outlined.Update, contentDescription = null)
+                        }
                     }
                 },
                 text = {
-                    val label =
-                        when (updateState) {
-                            is UpdateCheckState.Checking -> stringResource(R.string.update_checking)
-                            is UpdateCheckState.Downloading -> stringResource(R.string.update_downloading)
-                            else -> stringResource(R.string.action_check_for_update)
-                        }
-                    Text(label)
+                    AnimatedContent(
+                        targetState = updatePhase,
+                        label = "update-text",
+                        transitionSpec = {
+                            (fadeIn(tween(200)) + slideInVertically(tween(200)) { it / 3 }) togetherWith
+                                (fadeOut(tween(150)) + slideOutVertically(tween(150)) { -it / 3 })
+                        },
+                    ) { phase ->
+                        val label =
+                            when (phase) {
+                                UpdatePhase.CHECKING -> stringResource(R.string.update_checking)
+                                UpdatePhase.DOWNLOADING -> stringResource(R.string.update_downloading)
+                                UpdatePhase.IDLE -> stringResource(R.string.action_check_for_update)
+                            }
+                        Text(label)
+                    }
                 },
             )
         }
