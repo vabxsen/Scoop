@@ -53,7 +53,11 @@
     <string name="settings_general_title">Look &amp; feel</string>
     <string name="settings_general_subtitle">Dark theme, accent color, dynamic color</string>
     <string name="settings_downloads_title">Downloads</string>
-    <string name="settings_downloads_subtitle">Video &amp; audio, concurrency, storage</string>
+    <string name="settings_downloads_subtitle">Sign in for private content</string>
+    <string name="settings_video_audio_title">Video &amp; Audio</string>
+    <string name="settings_video_audio_hub_subtitle">Quality, format, concurrent downloads</string>
+    <string name="settings_storage_title">Storage</string>
+    <string name="settings_storage_subtitle">Usage and save locations</string>
     <string name="settings_about_title">About</string>
     <string name="settings_about_subtitle">Version, source code, attribution</string>
 

@@ -7,6 +7,8 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,7 +24,14 @@ import com.scoop.app.ui.common.SettingHubRow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsHubScreen(onBack: () -> Unit, onOpenGeneral: () -> Unit, onOpenDownloads: () -> Unit, onOpenAbout: () -> Unit) {
+fun SettingsHubScreen(
+    onBack: () -> Unit,
+    onOpenGeneral: () -> Unit,
+    onOpenDownloads: () -> Unit,
+    onOpenVideoAudio: () -> Unit,
+    onOpenStorage: () -> Unit,
+    onOpenAbout: () -> Unit,
+) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Scaffold(
@@ -51,6 +60,22 @@ fun SettingsHubScreen(onBack: () -> Unit, onOpenGeneral: () -> Unit, onOpenDownl
                     subtitle = stringResource(R.string.settings_downloads_subtitle),
                     leadingIcon = Icons.Filled.Download,
                     onClick = onOpenDownloads,
+                )
+            }
+            item {
+                SettingHubRow(
+                    title = stringResource(R.string.settings_video_audio_title),
+                    subtitle = stringResource(R.string.settings_video_audio_hub_subtitle),
+                    leadingIcon = Icons.Filled.VideoLibrary,
+                    onClick = onOpenVideoAudio,
+                )
+            }
+            item {
+                SettingHubRow(
+                    title = stringResource(R.string.settings_storage_title),
+                    subtitle = stringResource(R.string.settings_storage_subtitle),
+                    leadingIcon = Icons.Filled.Storage,
+                    onClick = onOpenStorage,
                 )
             }
             item {

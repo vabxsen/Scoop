@@ -7,6 +7,8 @@ object Route {
     const val SETTINGS_HUB = "settings/hub"
     const val SETTINGS_GENERAL = "settings/general"
     const val SETTINGS_DOWNLOADS = "settings/downloads"
+    const val SETTINGS_VIDEO_AUDIO = "settings/videoAudio"
+    const val SETTINGS_STORAGE = "settings/storage"
     const val SETTINGS_ABOUT = "settings/about"
     const val SETTINGS_CREDITS = "settings/credits"
 
