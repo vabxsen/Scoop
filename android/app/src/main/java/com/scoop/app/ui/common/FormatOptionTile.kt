@@ -5,7 +5,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,9 +15,12 @@ import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
@@ -42,45 +44,43 @@ fun FormatOptionTile(format: MediaFormat, selected: Boolean, onClick: () -> Unit
             label = "formatTileBorder",
         )
     val contentColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+    val subtitleColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
     val shape = RoundedCornerShape(14.dp)
 
-    Column(
+    val subtitle =
+        listOfNotNull(
+            format.fileSizeBytes?.toHumanReadableSize(),
+            format.totalBitrateKbps?.let { "%.0f kbps".format(it) },
+            format.container?.uppercase(),
+        ).joinToString(" · ")
+
+    Row(
         modifier =
             modifier
+                .fillMaxWidth()
                 .clip(shape)
                 .background(containerColor)
                 .border(BorderStroke(1.dp, borderColor), shape)
                 .clickable(onClick = onClick)
-                .padding(Spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Icon(
+            if (format.hasVideo) Icons.Outlined.Videocam else Icons.Outlined.GraphicEq,
+            contentDescription = null,
+            tint = contentColor,
+        )
+        Column(modifier = Modifier.weight(1f).padding(start = Spacing.sm)) {
             Text(
                 format.resolutionLabel ?: if (format.isAudioOnly) "Audio" else "Unknown",
                 style = MaterialTheme.typography.titleSmall,
                 color = contentColor,
                 maxLines = 1,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                if (format.hasVideo) {
-                    Icon(Icons.Outlined.Videocam, contentDescription = "Video", modifier = Modifier.padding(1.dp), tint = contentColor)
-                }
-                if (format.hasAudio) {
-                    Icon(Icons.Outlined.GraphicEq, contentDescription = "Audio", modifier = Modifier.padding(1.dp), tint = contentColor)
-                }
+            if (subtitle.isNotEmpty()) {
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = subtitleColor)
             }
         }
-        Text(
-            (format.fileSizeBytes?.toHumanReadableSize() ?: "—") +
-                (format.totalBitrateKbps?.let { " · %.0f kbps".format(it) } ?: ""),
-            style = MaterialTheme.typography.bodySmall,
-            color = contentColor,
-        )
-        Text(
-            listOfNotNull(format.container?.uppercase(), format.videoCodec, format.audioCodec).joinToString(" · "),
-            style = MaterialTheme.typography.labelSmall,
-            color = contentColor,
-            maxLines = 1,
-        )
+        RadioButton(selected = selected, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = contentColor))
     }
 }

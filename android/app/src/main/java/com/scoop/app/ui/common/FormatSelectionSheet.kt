@@ -14,13 +14,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
@@ -31,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -38,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.scoop.app.R
@@ -59,9 +59,10 @@ fun FormatSelectionSheet(
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val maxSheetHeight = LocalConfiguration.current.screenHeightDp.dp * 0.85f
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Column(modifier = Modifier.fillMaxHeight(0.85f).padding(horizontal = Spacing.md)) {
+        Column(modifier = Modifier.heightIn(max = maxSheetHeight).padding(horizontal = Spacing.md)) {
             Text(
                 if (kind == DownloadKind.VIDEO) stringResource(R.string.format_sheet_title_video) else stringResource(R.string.format_sheet_title_audio),
                 style = MaterialTheme.typography.titleLarge,
@@ -80,16 +81,14 @@ fun FormatSelectionSheet(
                     listOf(stringResource(R.string.format_section_audio) to mediaInfo.audioOnlyFormats)
                 }
 
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 150.dp),
-                modifier = Modifier.weight(1f),
+            LazyColumn(
+                modifier = Modifier.weight(1f, fill = false),
                 verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                 contentPadding = PaddingValues(top = Spacing.sm, bottom = Spacing.md),
             ) {
                 sections.forEach { (label, formats) ->
                     if (formats.isEmpty()) return@forEach
-                    item(span = { GridItemSpan(maxLineSpan) }) {
+                    item {
                         Text(
                             label,
                             style = MaterialTheme.typography.labelLarge,
@@ -97,7 +96,7 @@ fun FormatSelectionSheet(
                             modifier = Modifier.padding(top = Spacing.sm, bottom = Spacing.xs),
                         )
                     }
-                    items(formats) { format ->
+                    items(formats, key = { it.formatId }) { format ->
                         FormatOptionTile(
                             format = format,
                             selected = selectedFormat?.formatId == format.formatId,
@@ -145,6 +144,8 @@ private fun BestAvailableOption(selected: Boolean, onClick: () -> Unit) {
             animationSpec = tween(Motion.QUICK_MS),
             label = "bestAvailableBorder",
         )
+    val contentColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+    val subtitleColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         modifier =
             Modifier.fillMaxWidth()
@@ -155,11 +156,15 @@ private fun BestAvailableOption(selected: Boolean, onClick: () -> Unit) {
                 .padding(horizontal = Spacing.md, vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Icon(
+            Icons.Outlined.AutoAwesome,
+            contentDescription = null,
+            tint = if (selected) contentColor else MaterialTheme.colorScheme.primary,
+        )
         Column(modifier = Modifier.weight(1f).padding(start = Spacing.sm)) {
-            Text(stringResource(R.string.quality_best_available), style = MaterialTheme.typography.titleSmall)
-            Text(stringResource(R.string.quality_best_available_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.quality_best_available), style = MaterialTheme.typography.titleSmall, color = contentColor)
+            Text(stringResource(R.string.quality_best_available_subtitle), style = MaterialTheme.typography.bodySmall, color = subtitleColor)
         }
-        RadioButton(selected = selected, onClick = null)
+        RadioButton(selected = selected, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = contentColor))
     }
 }
