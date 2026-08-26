@@ -23,8 +23,8 @@ android {
         applicationId = "com.scoop.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 5
+        versionName = "1.0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }

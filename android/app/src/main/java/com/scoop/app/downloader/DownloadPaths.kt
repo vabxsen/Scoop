@@ -1,24 +1,79 @@
 package com.scoop.app.downloader
 
+import android.content.ContentValues
 import android.content.Context
+import android.os.Build
 import android.os.Environment
+import android.provider.MediaStore
+import android.webkit.MimeTypeMap
 import com.scoop.app.core.model.DownloadKind
 import java.io.File
+import java.io.IOException
 
 /** Where finished downloads live, shared by the download engine and the Settings "save location" row. */
 object DownloadPaths {
+    /** Legacy per-app fallback - private to this app, invisible to Gallery/Files and other apps.
+     * Only used pre-Android 10 (see [publishToMediaStore]) or if a MediaStore publish fails. */
     fun outputDir(context: Context, kind: DownloadKind): File =
         (when (kind) {
             DownloadKind.VIDEO -> context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
             DownloadKind.AUDIO_ONLY -> context.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
         } ?: context.filesDir).apply { mkdirs() }
 
-    /** Human-readable form of [outputDir] for display only (e.g. Settings), not a real filesystem path. */
+    /** Human-readable form of the save location for display only (e.g. Settings), not a real filesystem path. */
     fun displayLabel(kind: DownloadKind): String =
         when (kind) {
             DownloadKind.VIDEO -> "Movies/Scoop"
             DownloadKind.AUDIO_ONLY -> "Music/Scoop"
         }
+
+    private fun relativePath(kind: DownloadKind): String =
+        when (kind) {
+            DownloadKind.VIDEO -> Environment.DIRECTORY_MOVIES + "/Scoop"
+            DownloadKind.AUDIO_ONLY -> Environment.DIRECTORY_MUSIC + "/Scoop"
+        }
+
+    /**
+     * Publishes [source] into the device's shared Movies/Music collection via MediaStore, so it
+     * shows up in the Gallery/Files apps immediately - unlike [outputDir], which is app-private
+     * storage other apps (and the system media scanner) can't see. Deletes [source] and returns
+     * the new item's content:// URI on success, leaving [source] untouched on failure so the
+     * caller can fall back to [outputDir].
+     *
+     * Only available from Android 10 (scoped storage introduced MediaStore.RELATIVE_PATH); older
+     * versions return null and always use the legacy app-private location instead of adding a
+     * runtime WRITE_EXTERNAL_STORAGE permission flow for a vanishingly small population.
+     */
+    fun publishToMediaStore(context: Context, kind: DownloadKind, source: File, desiredName: String): String? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+        val resolver = context.contentResolver
+        val collection =
+            when (kind) {
+                DownloadKind.VIDEO -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                DownloadKind.AUDIO_ONLY -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+            }
+        val ext = desiredName.substringAfterLast('.', "")
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
+        val values =
+            ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, desiredName)
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath(kind))
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+        val itemUri = runCatching { resolver.insert(collection, values) }.getOrNull() ?: return null
+
+        return try {
+            resolver.openOutputStream(itemUri)?.use { out -> source.inputStream().use { it.copyTo(out) } }
+                ?: throw IOException("Could not open output stream for $itemUri")
+            resolver.update(itemUri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
+            source.delete()
+            itemUri.toString()
+        } catch (e: Exception) {
+            resolver.delete(itemUri, null, null)
+            null
+        }
+    }
 
     private fun tempRoot(context: Context): File = File(context.cacheDir, "downloads_tmp")
 

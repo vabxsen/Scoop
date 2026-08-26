@@ -1,5 +1,6 @@
 package com.scoop.app.ui.screen.settings
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -16,11 +17,11 @@ import com.scoop.app.core.model.ThemeMode
 import com.scoop.app.core.update.AppUpdateChecker
 import com.scoop.app.core.update.UpdateAvailability
 import com.scoop.app.core.update.UpdateCheckState
+import com.scoop.app.util.FileShareUtils
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
 import com.scoop.app.util.ThemePreferences
 import com.scoop.app.util.toHumanReadableSize
-import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -29,6 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SettingsViewModel(
+    private val appContext: Context,
     private val themePreferences: ThemePreferences,
     private val downloadHistoryDao: DownloadHistoryDao,
     private val updateChecker: AppUpdateChecker,
@@ -90,11 +92,9 @@ class SettingsViewModel(
                     var fileCount = 0
                     items.forEach { item ->
                         val path = item.filePath ?: return@forEach
-                        val file = File(path)
-                        if (file.exists()) {
-                            totalBytes += file.length()
-                            fileCount++
-                        }
+                        val size = FileShareUtils.sizeBytes(appContext, path) ?: return@forEach
+                        totalBytes += size
+                        fileCount++
                     }
                     totalBytes to fileCount
                 }

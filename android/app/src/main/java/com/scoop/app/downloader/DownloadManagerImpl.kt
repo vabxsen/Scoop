@@ -3,6 +3,7 @@ package com.scoop.app.downloader
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
+import android.net.Uri
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateMap
@@ -103,7 +104,13 @@ class DownloadManagerImpl(
         val status = task?.let { tasks[it] }
         val filePath = (status as? DownloadStatus.Completed)?.filePath
         withContext(Dispatchers.IO) {
-            if (filePath != null) File(filePath).delete()
+            if (filePath != null) {
+                if (filePath.startsWith("content://")) {
+                    runCatching { appContext.contentResolver.delete(Uri.parse(filePath), null, null) }
+                } else {
+                    File(filePath).delete()
+                }
+            }
             downloadHistoryDao.deleteById(taskId)
         }
         if (task != null) {
@@ -204,18 +211,21 @@ class DownloadManagerImpl(
                         .map { it.trim() }
                         .lastOrNull { it.isNotEmpty() && File(it).exists() }
 
-                val movedFile =
+                val savedLocation =
                     printedPath?.let { path ->
                         val sourceFile = File(path)
-                        DownloadPaths.moveWithDedup(
-                            source = sourceFile,
-                            targetDir = DownloadPaths.outputDir(appContext, task.request.kind),
-                            desiredName = sourceFile.name,
-                        )
+                        DownloadPaths.publishToMediaStore(appContext, task.request.kind, sourceFile, sourceFile.name)
+                            ?: DownloadPaths
+                                .moveWithDedup(
+                                    source = sourceFile,
+                                    targetDir = DownloadPaths.outputDir(appContext, task.request.kind),
+                                    desiredName = sourceFile.name,
+                                )
+                                .absolutePath
                     }
                 DownloadPaths.clearTempWorkspace(appContext, task.id)
 
-                movedFile?.absolutePath
+                savedLocation
             }
         }
 }
