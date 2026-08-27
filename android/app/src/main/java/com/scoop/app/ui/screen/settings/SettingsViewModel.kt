@@ -1,6 +1,8 @@
 package com.scoop.app.ui.screen.settings
 
 import android.content.Context
+import android.os.Environment
+import android.os.StatFs
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -13,6 +15,7 @@ import com.scoop.app.core.model.AudioQuality
 import com.scoop.app.core.model.DefaultAudioFormat
 import com.scoop.app.core.model.DefaultVideoContainer
 import com.scoop.app.core.model.DefaultVideoQuality
+import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.ThemeMode
 import com.scoop.app.core.update.AppUpdateChecker
 import com.scoop.app.core.update.UpdateAvailability
@@ -77,32 +80,61 @@ class SettingsViewModel(
     var wifiOnlyDownloads by mutableStateOf(PreferenceUtil.getBoolean(PrefKeys.WIFI_ONLY_DOWNLOADS, false))
         private set
 
-    var storageUsedLabel by mutableStateOf<String?>(null)
+    var deviceStorageLabel by mutableStateOf<String?>(null)
+        private set
+
+    var videoStorageLabel by mutableStateOf<String?>(null)
+        private set
+
+    var audioStorageLabel by mutableStateOf<String?>(null)
         private set
 
     var updateState by mutableStateOf<UpdateCheckState>(UpdateCheckState.Idle)
         private set
+
+    private data class StorageSnapshot(val deviceLabel: String, val videoBytes: Long, val videoCount: Int, val audioBytes: Long, val audioCount: Int)
 
     init {
         downloadHistoryDao
             .observeAll()
             .map { items ->
                 withContext(Dispatchers.IO) {
-                    var totalBytes = 0L
-                    var fileCount = 0
+                    var videoBytes = 0L
+                    var videoCount = 0
+                    var audioBytes = 0L
+                    var audioCount = 0
                     items.forEach { item ->
                         val path = item.filePath ?: return@forEach
                         val size = FileShareUtils.sizeBytes(appContext, path) ?: return@forEach
-                        totalBytes += size
-                        fileCount++
+                        if (item.kind == DownloadKind.AUDIO_ONLY.name) {
+                            audioBytes += size
+                            audioCount++
+                        } else {
+                            videoBytes += size
+                            videoCount++
+                        }
                     }
-                    totalBytes to fileCount
+                    StorageSnapshot(deviceStorageLabel(), videoBytes, videoCount, audioBytes, audioCount)
                 }
             }
-            .onEach { (totalBytes, fileCount) ->
-                storageUsedLabel = if (fileCount == 0) null else "${totalBytes.toHumanReadableSize()} across $fileCount ${if (fileCount == 1) "download" else "downloads"}"
+            .onEach { snapshot ->
+                deviceStorageLabel = snapshot.deviceLabel
+                videoStorageLabel = formatStorageBreakdown(snapshot.videoBytes, snapshot.videoCount)
+                audioStorageLabel = formatStorageBreakdown(snapshot.audioBytes, snapshot.audioCount)
             }
             .launchIn(viewModelScope)
+    }
+
+    private fun formatStorageBreakdown(bytes: Long, count: Int): String? =
+        if (count == 0) null else "${bytes.toHumanReadableSize()} across $count ${if (count == 1) "download" else "downloads"}"
+
+    /** Real used/total space on the device's shared storage volume, via the OS - not just what Scoop itself has downloaded. */
+    private fun deviceStorageLabel(): String {
+        val statFs = StatFs(Environment.getExternalStorageDirectory().path)
+        val totalBytes = statFs.blockCountLong * statFs.blockSizeLong
+        val availableBytes = statFs.availableBlocksLong * statFs.blockSizeLong
+        val usedBytes = totalBytes - availableBytes
+        return "${usedBytes.toHumanReadableSize()} used of ${totalBytes.toHumanReadableSize()}"
     }
 
     fun setThemeMode(mode: ThemeMode) = themePreferences.setThemeMode(mode)

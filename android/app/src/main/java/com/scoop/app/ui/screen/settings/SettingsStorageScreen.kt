@@ -43,21 +43,25 @@ fun SettingsStorageScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koi
             item {
                 SettingHubRow(
                     title = stringResource(R.string.settings_storage_used),
-                    subtitle = viewModel.storageUsedLabel ?: stringResource(R.string.settings_storage_used_empty),
+                    subtitle = viewModel.deviceStorageLabel ?: stringResource(R.string.settings_storage_used_loading),
                     leadingIcon = Icons.Filled.Storage,
                 )
             }
             item {
                 SettingHubRow(
                     title = stringResource(R.string.settings_video_location),
-                    subtitle = DownloadPaths.displayLabel(DownloadKind.VIDEO),
+                    subtitle =
+                        listOfNotNull(viewModel.videoStorageLabel ?: stringResource(R.string.settings_storage_used_empty), DownloadPaths.displayLabel(DownloadKind.VIDEO))
+                            .joinToString(" · "),
                     leadingIcon = Icons.Filled.Folder,
                 )
             }
             item {
                 SettingHubRow(
                     title = stringResource(R.string.settings_audio_location),
-                    subtitle = DownloadPaths.displayLabel(DownloadKind.AUDIO_ONLY),
+                    subtitle =
+                        listOfNotNull(viewModel.audioStorageLabel ?: stringResource(R.string.settings_storage_used_empty), DownloadPaths.displayLabel(DownloadKind.AUDIO_ONLY))
+                            .joinToString(" · "),
                     leadingIcon = Icons.Filled.Folder,
                 )
             }
