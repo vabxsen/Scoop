@@ -1,8 +1,11 @@
 package com.scoop.app.ui.screen.settings
 
+import android.app.usage.StorageStatsManager
 import android.content.Context
+import android.os.Build
 import android.os.Environment
 import android.os.StatFs
+import android.os.storage.StorageManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +27,7 @@ import com.scoop.app.util.FileShareUtils
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
 import com.scoop.app.util.ThemePreferences
+import com.scoop.app.util.toDecimalStorageSize
 import com.scoop.app.util.toHumanReadableSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
@@ -128,13 +132,34 @@ class SettingsViewModel(
     private fun formatStorageBreakdown(bytes: Long, count: Int): String? =
         if (count == 0) null else "${bytes.toHumanReadableSize()} across $count ${if (count == 1) "download" else "downloads"}"
 
-    /** Real used/total space on the device's shared storage volume, via the OS - not just what Scoop itself has downloaded. */
+    /**
+     * Real used/total space on the device's primary storage volume, via the OS - not just what
+     * Scoop itself has downloaded. Uses StorageStatsManager (the same API the system Settings
+     * app's own storage summary is built on) rather than raw StatFs: under scoped storage's FUSE
+     * layer, StatFs on getExternalStorageDirectory() can report a noticeably smaller total/used
+     * than the device's real capacity for a sandboxed app. Falls back to StatFs pre-Android 8.
+     */
     private fun deviceStorageLabel(): String {
+        val (totalBytes, usedBytes) =
+            runCatching {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val statsManager = appContext.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
+                        val total = statsManager.getTotalBytes(StorageManager.UUID_DEFAULT)
+                        val free = statsManager.getFreeBytes(StorageManager.UUID_DEFAULT)
+                        total to (total - free)
+                    } else {
+                        legacyDeviceStorageBytes()
+                    }
+                }
+                .getOrElse { legacyDeviceStorageBytes() }
+        return "${usedBytes.toDecimalStorageSize()} used of ${totalBytes.toDecimalStorageSize()}"
+    }
+
+    private fun legacyDeviceStorageBytes(): Pair<Long, Long> {
         val statFs = StatFs(Environment.getExternalStorageDirectory().path)
-        val totalBytes = statFs.blockCountLong * statFs.blockSizeLong
-        val availableBytes = statFs.availableBlocksLong * statFs.blockSizeLong
-        val usedBytes = totalBytes - availableBytes
-        return "${usedBytes.toHumanReadableSize()} used of ${totalBytes.toHumanReadableSize()}"
+        val total = statFs.blockCountLong * statFs.blockSizeLong
+        val available = statFs.availableBlocksLong * statFs.blockSizeLong
+        return total to (total - available)
     }
 
     fun setThemeMode(mode: ThemeMode) = themePreferences.setThemeMode(mode)

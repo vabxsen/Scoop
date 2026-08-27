@@ -12,6 +12,16 @@ fun Long.toHumanReadableSize(): String {
     return if (digitGroup == 0) "$this B" else "%.1f %s".format(value, units[digitGroup])
 }
 
+/** Decimal (SI, 1000-based) size, e.g. for device storage capacity - OS storage UIs and drive
+ * capacities are marketed/reported in decimal GB, unlike [toHumanReadableSize]'s binary GiB math. */
+fun Long.toDecimalStorageSize(): String {
+    if (this <= 0) return "0 GB"
+    val units = arrayOf("B", "KB", "MB", "GB", "TB")
+    val digitGroup = (ln(this.toDouble()) / ln(1000.0)).toInt().coerceIn(0, units.size - 1)
+    val value = this / 1000.0.pow(digitGroup)
+    return if (digitGroup == 0) "$this B" else "%.1f %s".format(value, units[digitGroup])
+}
+
 /** Compact ETA label, e.g. 95 -> "1m 35s left". */
 fun Int.toEtaLabel(): String {
     if (this <= 0) return ""
