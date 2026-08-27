@@ -71,7 +71,7 @@ fun HomeScreen(
                 Text(
                     stringResource(R.string.app_name),
                     style = MaterialTheme.typography.displaySmall,
-                    modifier = Modifier.padding(top = Spacing.lg),
+                    modifier = Modifier.padding(top = Spacing.xxl),
                 )
 
                 val urlFieldInteractionSource = remember { MutableInteractionSource() }
@@ -84,7 +84,7 @@ fun HomeScreen(
                     onValueChange = viewModel::onUrlChange,
                     modifier =
                         Modifier.fillMaxWidth()
-                            .padding(top = Spacing.lg)
+                            .padding(top = Spacing.xxl)
                             .border(width = urlFieldBorderWidth, color = urlFieldBorderColor, shape = OutlinedTextFieldDefaults.shape),
                     placeholder = { Text(stringResource(R.string.url_input_placeholder)) },
                     singleLine = true,
