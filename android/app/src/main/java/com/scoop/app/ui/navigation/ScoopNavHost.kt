@@ -20,6 +20,7 @@ import com.scoop.app.ui.screen.settings.SettingsCreditsScreen
 import com.scoop.app.ui.screen.settings.SettingsDownloadsScreen
 import com.scoop.app.ui.screen.settings.SettingsGeneralScreen
 import com.scoop.app.ui.screen.settings.SettingsHubScreen
+import com.scoop.app.ui.screen.settings.SettingsPermissionsScreen
 import com.scoop.app.ui.screen.settings.SettingsStorageScreen
 import com.scoop.app.ui.screen.settings.SettingsVideoAudioScreen
 import com.scoop.app.ui.theme.Motion
@@ -75,6 +76,7 @@ fun ScoopNavHost(startUrl: String? = null) {
                 onOpenDownloads = { navController.navigate(Route.SETTINGS_DOWNLOADS) },
                 onOpenVideoAudio = { navController.navigate(Route.SETTINGS_VIDEO_AUDIO) },
                 onOpenStorage = { navController.navigate(Route.SETTINGS_STORAGE) },
+                onOpenPermissions = { navController.navigate(Route.SETTINGS_PERMISSIONS) },
                 onOpenAbout = { navController.navigate(Route.SETTINGS_ABOUT) },
             )
         }
@@ -89,6 +91,9 @@ fun ScoopNavHost(startUrl: String? = null) {
         }
         composable(Route.SETTINGS_STORAGE, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
             SettingsStorageScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Route.SETTINGS_PERMISSIONS, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
+            SettingsPermissionsScreen(onBack = { navController.popBackStack() })
         }
         composable(Route.SETTINGS_ABOUT, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
             SettingsAboutScreen(

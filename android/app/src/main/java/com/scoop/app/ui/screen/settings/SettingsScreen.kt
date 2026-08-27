@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.outlined.Update
@@ -68,6 +69,7 @@ fun SettingsHubScreen(
     onOpenDownloads: () -> Unit,
     onOpenVideoAudio: () -> Unit,
     onOpenStorage: () -> Unit,
+    onOpenPermissions: () -> Unit,
     onOpenAbout: () -> Unit,
     viewModel: SettingsViewModel = koinViewModel(),
 ) {
@@ -138,6 +140,14 @@ fun SettingsHubScreen(
                         subtitle = stringResource(R.string.settings_storage_subtitle),
                         leadingIcon = Icons.Filled.Storage,
                         onClick = onOpenStorage,
+                    )
+                }
+                item {
+                    SettingHubRow(
+                        title = stringResource(R.string.settings_permissions_title),
+                        subtitle = stringResource(R.string.settings_permissions_subtitle),
+                        leadingIcon = Icons.Filled.Security,
+                        onClick = onOpenPermissions,
                     )
                 }
                 item {
