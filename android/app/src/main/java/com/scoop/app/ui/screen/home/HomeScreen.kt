@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Download
@@ -36,7 +37,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -61,12 +61,9 @@ fun HomeScreen(
     Scaffold(containerColor = Color(0xFFFDF8F4)) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().background(Color(0xFFFDF8F4)).padding(innerPadding)) {
             Image(
-                painter = painterResource(R.drawable.home_background_dotted),
+                painter = painterResource(R.mipmap.ic_launcher_foreground),
                 contentDescription = null,
-                contentScale = ContentScale.Fit,
-                alignment = Alignment.Center,
-                alpha = 0.5f,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.align(Alignment.Center).size(240.dp),
             )
             Column(modifier = Modifier.fillMaxSize().padding(Spacing.md)) {
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
