@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import com.scoop.app.core.media.MediaEngineReadiness
+import com.scoop.app.core.update.AppUpdateChecker
 import com.scoop.app.di.appModule
 import com.scoop.app.downloader.DownloadService
 import com.tencent.mmkv.MMKV
@@ -21,6 +22,7 @@ class ScoopApplication : Application(), KoinComponent {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mediaEngineReadiness: MediaEngineReadiness by inject()
+    private val updateChecker: AppUpdateChecker by inject()
 
     override fun onCreate() {
         super.onCreate()
@@ -36,6 +38,7 @@ class ScoopApplication : Application(), KoinComponent {
         createNotificationChannel()
 
         mediaEngineReadiness.startInitializing(applicationScope)
+        updateChecker.clearStaleDownload()
     }
 
     private fun createNotificationChannel() {

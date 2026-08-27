@@ -43,6 +43,17 @@ class AppUpdateChecker(private val context: Context, private val client: OkHttpC
 
     fun genericErrorMessage(): String = context.getString(R.string.update_error_generic)
 
+    /**
+     * Deletes a leftover downloaded update APK from a previous check, if any. Safe to call any
+     * time the app is starting fresh: reaching this point means any earlier install flow (the
+     * system installer is its own foreground UI) has already finished, one way or another, so the
+     * downloaded copy is no longer needed - keeping it around just doubles the app's on-disk size
+     * between update checks for no reason.
+     */
+    fun clearStaleDownload() {
+        File(context.cacheDir, "update.apk").delete()
+    }
+
     suspend fun downloadApk(url: String, onProgress: (Float) -> Unit): File =
         withContext(Dispatchers.IO) {
             val request = Request.Builder().url(url).build()
