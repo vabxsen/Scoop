@@ -5,13 +5,18 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import com.scoop.app.core.media.MediaEngineReadiness
+import com.scoop.app.core.model.HistoryRetention
 import com.scoop.app.core.update.AppUpdateChecker
 import com.scoop.app.di.appModule
+import com.scoop.app.downloader.DownloadManager
 import com.scoop.app.downloader.DownloadService
+import com.scoop.app.util.PrefKeys
+import com.scoop.app.util.PreferenceUtil
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.component.KoinComponent
@@ -23,6 +28,7 @@ class ScoopApplication : Application(), KoinComponent {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mediaEngineReadiness: MediaEngineReadiness by inject()
     private val updateChecker: AppUpdateChecker by inject()
+    private val downloadManager: DownloadManager by inject()
 
     override fun onCreate() {
         super.onCreate()
@@ -39,6 +45,15 @@ class ScoopApplication : Application(), KoinComponent {
 
         mediaEngineReadiness.startInitializing(applicationScope)
         updateChecker.clearStaleDownload()
+        sweepOldDownloadHistory()
+    }
+
+    private fun sweepOldDownloadHistory() {
+        val retention =
+            HistoryRetention.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.HISTORY_RETENTION, HistoryRetention.OFF.name) }
+                ?: HistoryRetention.OFF
+        val days = retention.days ?: return
+        applicationScope.launch { downloadManager.clearHistoryOlderThan(days) }
     }
 
     private fun createNotificationChannel() {

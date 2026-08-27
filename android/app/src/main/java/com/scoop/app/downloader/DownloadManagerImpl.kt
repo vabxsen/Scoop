@@ -1,7 +1,10 @@
 package com.scoop.app.downloader
 
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.Uri
@@ -10,19 +13,22 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.scoop.app.R
 import com.scoop.app.core.database.DownloadHistoryDao
 import com.scoop.app.core.database.objects.DownloadedItem
 import com.scoop.app.core.model.AudioQuality
+import com.scoop.app.core.model.AutoRetryPolicy
 import com.scoop.app.core.model.DefaultVideoContainer
 import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.DownloadRequest
+import com.scoop.app.core.model.DownloadSpeedLimit
 import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.DownloadTask
 import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.extractor.MediaExtractor
+import com.scoop.app.util.DownloadGate
 import com.scoop.app.util.FileShareUtils
-import com.scoop.app.util.NetworkUtils
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
 import com.yausername.youtubedl_android.YoutubeDL
@@ -33,12 +39,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private const val DEFAULT_MAX_CONCURRENCY = 3
+private const val RETRY_BACKOFF_BASE_MS = 8_000L
 
 class DownloadManagerImpl(
     private val extractor: MediaExtractor,
@@ -49,6 +57,7 @@ class DownloadManagerImpl(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val jobs = mutableMapOf<String, Job>()
+    private val retryAttempts = mutableMapOf<String, Int>()
 
     override val tasks: SnapshotStateMap<DownloadTask, DownloadStatus> = mutableStateMapOf()
 
@@ -80,6 +89,24 @@ class DownloadManagerImpl(
                 override fun onCapabilitiesChanged(network: Network, networkCapabilities: android.net.NetworkCapabilities) = dispatchNext()
             }
         )
+
+        // Same idea for the battery-pause gate: re-check on every level/charge-state change so a
+        // download held back by low battery resumes the moment the level rises or a charger is
+        // plugged in.
+        val batteryFilter =
+            IntentFilter().apply {
+                addAction(Intent.ACTION_BATTERY_CHANGED)
+                addAction(Intent.ACTION_POWER_CONNECTED)
+                addAction(Intent.ACTION_POWER_DISCONNECTED)
+            }
+        ContextCompat.registerReceiver(
+            appContext,
+            object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) = dispatchNext()
+            },
+            batteryFilter,
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
     }
 
     override fun enqueue(request: DownloadRequest, title: String, thumbnailUrl: String?): DownloadTask {
@@ -92,6 +119,7 @@ class DownloadManagerImpl(
         val task = tasks.keys.find { it.id == taskId } ?: return false
         YoutubeDL.destroyProcessById(taskId)
         jobs.remove(taskId)?.cancel()
+        retryAttempts.remove(taskId)
         tasks[task] = DownloadStatus.Cancelled
         return true
     }
@@ -100,6 +128,9 @@ class DownloadManagerImpl(
         val task = tasks.keys.find { it.id == taskId } ?: return
         val status = tasks[task]
         if (status is DownloadStatus.Failed || status is DownloadStatus.Cancelled) {
+            // A manual retry is the user explicitly asking again, so it gets a fresh auto-retry
+            // budget rather than inheriting whatever the automatic attempts already used up.
+            retryAttempts.remove(taskId)
             tasks[task] = DownloadStatus.Queued
         }
     }
@@ -109,13 +140,7 @@ class DownloadManagerImpl(
         val status = task?.let { tasks[it] }
         val filePath = (status as? DownloadStatus.Completed)?.filePath
         withContext(Dispatchers.IO) {
-            if (filePath != null) {
-                if (filePath.startsWith("content://")) {
-                    runCatching { appContext.contentResolver.delete(Uri.parse(filePath), null, null) }
-                } else {
-                    File(filePath).delete()
-                }
-            }
+            if (filePath != null) deleteFile(filePath)
             downloadHistoryDao.deleteById(taskId)
         }
         if (task != null) {
@@ -124,11 +149,29 @@ class DownloadManagerImpl(
         }
     }
 
+    override suspend fun clearHistoryOlderThan(days: Int) {
+        val cutoff = System.currentTimeMillis() - days * 24L * 60 * 60 * 1000
+        withContext(Dispatchers.IO) {
+            downloadHistoryDao.getOlderThan(cutoff).forEach { item ->
+                item.filePath?.let { deleteFile(it) }
+                downloadHistoryDao.deleteById(item.id)
+            }
+        }
+    }
+
+    private fun deleteFile(filePath: String) {
+        if (filePath.startsWith("content://")) {
+            runCatching { appContext.contentResolver.delete(Uri.parse(filePath), null, null) }
+        } else {
+            File(filePath).delete()
+        }
+    }
+
     private fun dispatchNext() {
         val maxConcurrency = PreferenceUtil.getInt(PrefKeys.MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENCY)
         val runningCount = tasks.values.count { it is DownloadStatus.Analyzing || it is DownloadStatus.Downloading }
         if (runningCount >= maxConcurrency) return
-        if (PreferenceUtil.getBoolean(PrefKeys.WIFI_ONLY_DOWNLOADS, false) && !NetworkUtils.isOnWifi(appContext)) return
+        if (DownloadGate.blockedReason(appContext) != null) return
         val (task, _) = tasks.entries.firstOrNull { it.value is DownloadStatus.Queued } ?: return
         runTask(task)
     }
@@ -143,8 +186,9 @@ class DownloadManagerImpl(
                         tasks[task] = DownloadStatus.Downloading()
                         executeDownload(task)
                             .onSuccess { filePath ->
-                                tasks[task] = DownloadStatus.Completed(filePath)
                                 if (filePath != null) {
+                                    retryAttempts.remove(task.id)
+                                    tasks[task] = DownloadStatus.Completed(filePath)
                                     downloadHistoryDao.upsert(
                                         DownloadedItem(
                                             id = task.id,
@@ -161,14 +205,31 @@ class DownloadManagerImpl(
                                     // A yt-dlp run that "succeeds" without a resolvable output path
                                     // isn't a usable completed download - surface it as a failure
                                     // rather than a broken/blank Completed state.
-                                    tasks[task] = DownloadStatus.Failed("Download finished but the output file could not be located")
+                                    handleFailure(task, "Download finished but the output file could not be located")
                                 }
                             }
-                            .onFailure { error -> tasks[task] = DownloadStatus.Failed(error.message ?: "Download failed", error) }
+                            .onFailure { error -> handleFailure(task, error.message ?: "Download failed", error) }
                     }
-                    .onFailure { error -> tasks[task] = DownloadStatus.Failed(error.message ?: "Analysis failed", error) }
+                    .onFailure { error -> handleFailure(task, error.message ?: "Analysis failed", error) }
                 jobs.remove(task.id)
             }
+    }
+
+    /** On failure, auto-retries with a linear backoff (attempt N waits N * 8s) up to the
+     * configured policy's budget before finally surfacing DownloadStatus.Failed. */
+    private suspend fun handleFailure(task: DownloadTask, message: String, error: Throwable? = null) {
+        val policy =
+            AutoRetryPolicy.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.AUTO_RETRY_POLICY, AutoRetryPolicy.OFF.name) }
+                ?: AutoRetryPolicy.OFF
+        val attempt = (retryAttempts[task.id] ?: 0) + 1
+        if (attempt <= policy.maxAttempts) {
+            retryAttempts[task.id] = attempt
+            delay(RETRY_BACKOFF_BASE_MS * attempt)
+            tasks[task] = DownloadStatus.Queued
+        } else {
+            retryAttempts.remove(task.id)
+            tasks[task] = DownloadStatus.Failed(message, error)
+        }
     }
 
     private suspend fun executeDownload(task: DownloadTask): Result<String?> =
@@ -183,6 +244,10 @@ class DownloadManagerImpl(
                         addOption("--no-playlist")
                         addOption("-o", File(tempDir, "%(title)s.%(ext)s").absolutePath)
                         addOption("--print", "after_move:filepath")
+                        val speedLimit =
+                            DownloadSpeedLimit.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.DOWNLOAD_SPEED_LIMIT, DownloadSpeedLimit.UNLIMITED.name) }
+                                ?.ytDlpValue
+                        if (speedLimit != null) addOption("--limit-rate", speedLimit)
                         when (task.request.kind) {
                             DownloadKind.VIDEO -> {
                                 addOption("-f", task.request.formatId ?: "bestvideo*+bestaudio/best")

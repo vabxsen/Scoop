@@ -39,5 +39,5 @@ val appModule = module {
     viewModel { HomeViewModel(extractor = get(), downloadManager = get()) }
     viewModel { DownloadsViewModel(downloadManager = get()) }
     viewModel { DownloadDetailsViewModel(downloadManager = get(), downloadHistoryDao = get()) }
-    viewModel { SettingsViewModel(appContext = androidContext(), themePreferences = get(), downloadHistoryDao = get(), updateChecker = get()) }
+    viewModel { SettingsViewModel(appContext = androidContext(), themePreferences = get(), downloadHistoryDao = get(), updateChecker = get(), downloadManager = get()) }
 }

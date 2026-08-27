@@ -23,6 +23,9 @@
     <string name="download_complete_title">Download complete</string>
     <string name="download_failed_title">Download failed</string>
     <string name="download_cancelled_title">Download cancelled</string>
+    <string name="download_queued_title">Queued…</string>
+    <string name="download_waiting_wifi_title">Waiting for Wi-Fi…</string>
+    <string name="download_waiting_battery_title">Paused — battery low</string>
     <string name="notification_download_complete_title">Download complete</string>
 
     <string name="nav_downloads">Downloads</string>
@@ -114,7 +117,11 @@
     <string name="settings_audio_location">Audio downloads</string>
 
     <string name="settings_wifi_only_downloads">Wi-Fi only</string>
-    <string name="settings_wifi_only_downloads_subtitle">Pause new downloads on mobile data and resume automatically on Wi-Fi</string>
+    <string name="settings_wifi_only_downloads_subtitle">Pause new downloads on metered connections (like mobile data or a hotspot) and resume automatically once an unmetered connection is available</string>
+    <string name="settings_auto_retry">Auto-retry failed downloads</string>
+    <string name="settings_speed_limit">Download speed limit</string>
+    <string name="settings_battery_pause">Pause on low battery</string>
+    <string name="settings_history_retention">Auto-clear download history</string>
 
     <string name="about_version_format">Version %1$s</string>
     <string name="about_source">Source code</string>

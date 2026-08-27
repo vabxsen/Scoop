@@ -46,3 +46,39 @@ enum class AudioQuality(val label: String, val ytDlpValue: String) {
     STANDARD("Standard", "5"),
     SMALL("Smallest file", "9"),
 }
+
+/** How many times a failed download auto-retries (with a short backoff) before it's marked
+ * Failed for good. A manual retry from the Downloads screen always gets a fresh budget. */
+enum class AutoRetryPolicy(val label: String, val maxAttempts: Int) {
+    OFF("Off", 0),
+    ONCE("Once", 1),
+    THREE_TIMES("Up to 3 times", 3),
+    FIVE_TIMES("Up to 5 times", 5),
+}
+
+/** Caps download bandwidth. [ytDlpValue] feeds yt-dlp's --limit-rate flag directly; null means unlimited. */
+enum class DownloadSpeedLimit(val label: String, val ytDlpValue: String?) {
+    UNLIMITED("Unlimited", null),
+    KBPS_500("500 KB/s", "500K"),
+    MBPS_1("1 MB/s", "1M"),
+    MBPS_2("2 MB/s", "2M"),
+    MBPS_5("5 MB/s", "5M"),
+}
+
+/** Pauses new downloads below this battery level (ignored while charging). Null means disabled. */
+enum class BatteryPauseThreshold(val label: String, val percent: Int?) {
+    OFF("Off", null),
+    BELOW_10("Below 10%", 10),
+    BELOW_15("Below 15%", 15),
+    BELOW_20("Below 20%", 20),
+    BELOW_25("Below 25%", 25),
+}
+
+/** Auto-deletes completed downloads (history entry + file) older than this many days. Null means never. */
+enum class HistoryRetention(val label: String, val days: Int?) {
+    OFF("Off", null),
+    DAYS_7("After 7 days", 7),
+    DAYS_14("After 14 days", 14),
+    DAYS_30("After 30 days", 30),
+    DAYS_60("After 60 days", 60),
+}

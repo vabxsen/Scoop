@@ -15,14 +15,19 @@ import androidx.lifecycle.viewModelScope
 import com.scoop.app.core.database.DownloadHistoryDao
 import com.scoop.app.core.model.AccentPalette
 import com.scoop.app.core.model.AudioQuality
+import com.scoop.app.core.model.AutoRetryPolicy
+import com.scoop.app.core.model.BatteryPauseThreshold
 import com.scoop.app.core.model.DefaultAudioFormat
 import com.scoop.app.core.model.DefaultVideoContainer
 import com.scoop.app.core.model.DefaultVideoQuality
 import com.scoop.app.core.model.DownloadKind
+import com.scoop.app.core.model.DownloadSpeedLimit
+import com.scoop.app.core.model.HistoryRetention
 import com.scoop.app.core.model.ThemeMode
 import com.scoop.app.core.update.AppUpdateChecker
 import com.scoop.app.core.update.UpdateAvailability
 import com.scoop.app.core.update.UpdateCheckState
+import com.scoop.app.downloader.DownloadManager
 import com.scoop.app.util.FileShareUtils
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
@@ -41,6 +46,7 @@ class SettingsViewModel(
     private val themePreferences: ThemePreferences,
     private val downloadHistoryDao: DownloadHistoryDao,
     private val updateChecker: AppUpdateChecker,
+    private val downloadManager: DownloadManager,
 ) : ViewModel() {
 
     val themeMode get() = themePreferences.themeMode
@@ -82,6 +88,34 @@ class SettingsViewModel(
         private set
 
     var wifiOnlyDownloads by mutableStateOf(PreferenceUtil.getBoolean(PrefKeys.WIFI_ONLY_DOWNLOADS, false))
+        private set
+
+    var autoRetryPolicy by
+        mutableStateOf(
+            AutoRetryPolicy.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.AUTO_RETRY_POLICY, AutoRetryPolicy.OFF.name) }
+                ?: AutoRetryPolicy.OFF
+        )
+        private set
+
+    var downloadSpeedLimit by
+        mutableStateOf(
+            DownloadSpeedLimit.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.DOWNLOAD_SPEED_LIMIT, DownloadSpeedLimit.UNLIMITED.name) }
+                ?: DownloadSpeedLimit.UNLIMITED
+        )
+        private set
+
+    var batteryPauseThreshold by
+        mutableStateOf(
+            BatteryPauseThreshold.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.BATTERY_PAUSE_THRESHOLD, BatteryPauseThreshold.OFF.name) }
+                ?: BatteryPauseThreshold.OFF
+        )
+        private set
+
+    var historyRetention by
+        mutableStateOf(
+            HistoryRetention.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.HISTORY_RETENTION, HistoryRetention.OFF.name) }
+                ?: HistoryRetention.OFF
+        )
         private set
 
     var deviceStorageLabel by mutableStateOf<String?>(null)
@@ -196,6 +230,29 @@ class SettingsViewModel(
     fun updateWifiOnlyDownloads(enabled: Boolean) {
         wifiOnlyDownloads = enabled
         PreferenceUtil.putBoolean(PrefKeys.WIFI_ONLY_DOWNLOADS, enabled)
+    }
+
+    fun updateAutoRetryPolicy(policy: AutoRetryPolicy) {
+        autoRetryPolicy = policy
+        PreferenceUtil.putString(PrefKeys.AUTO_RETRY_POLICY, policy.name)
+    }
+
+    fun updateDownloadSpeedLimit(limit: DownloadSpeedLimit) {
+        downloadSpeedLimit = limit
+        PreferenceUtil.putString(PrefKeys.DOWNLOAD_SPEED_LIMIT, limit.name)
+    }
+
+    fun updateBatteryPauseThreshold(threshold: BatteryPauseThreshold) {
+        batteryPauseThreshold = threshold
+        PreferenceUtil.putString(PrefKeys.BATTERY_PAUSE_THRESHOLD, threshold.name)
+    }
+
+    fun updateHistoryRetention(retention: HistoryRetention) {
+        historyRetention = retention
+        PreferenceUtil.putString(PrefKeys.HISTORY_RETENTION, retention.name)
+        // Apply the new (shorter) retention immediately rather than waiting for next app start,
+        // so picking e.g. "After 7 days" visibly sweeps old entries right away.
+        retention.days?.let { days -> viewModelScope.launch { downloadManager.clearHistoryOlderThan(days) } }
     }
 
     fun checkForUpdate() {

@@ -17,4 +17,7 @@ interface DownloadManager {
 
     /** Explicit user action: deletes the completed file on disk (if any) and removes the task. */
     suspend fun deleteTaskAndFile(taskId: String)
+
+    /** Deletes completed downloads (history entry + file) older than [days] - the auto-clear sweep. */
+    suspend fun clearHistoryOlderThan(days: Int)
 }

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.HighQuality
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
@@ -46,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.scoop.app.R
@@ -58,6 +60,8 @@ import com.scoop.app.ui.common.LoadingState
 import com.scoop.app.ui.common.SettingSectionLabel
 import com.scoop.app.ui.theme.Motion
 import com.scoop.app.ui.theme.Spacing
+import com.scoop.app.util.DownloadBlockReason
+import com.scoop.app.util.DownloadGate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -147,6 +151,32 @@ private fun DownloadProgressContent(status: DownloadStatus?, onDone: () -> Unit)
                 modifier = Modifier.padding(top = Spacing.sm, bottom = Spacing.md),
             )
             OutlinedButton(onClick = onDone, shape = RoundedCornerShape(50)) { Text(stringResource(R.string.action_done)) }
+        }
+        is DownloadStatus.Queued -> {
+            // A queued task isn't "downloading" yet - most often it's deliberately held back by
+            // Wi-Fi-only or the low-battery pause, and naming the real reason here (instead of a
+            // generic "Queued") is what makes those gates legible: without it, the task just
+            // looks stuck since nothing else on this sheet distinguishes "waiting on purpose"
+            // from "broken".
+            val context = LocalContext.current
+            val blockReason = DownloadGate.blockedReason(context)
+            Icon(
+                Icons.Outlined.Schedule,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Spacing.md).size(48.dp),
+            )
+            Text(
+                stringResource(
+                    when (blockReason) {
+                        DownloadBlockReason.METERED_CONNECTION -> R.string.download_waiting_wifi_title
+                        DownloadBlockReason.LOW_BATTERY -> R.string.download_waiting_battery_title
+                        null -> R.string.download_queued_title
+                    }
+                ),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = Spacing.sm, bottom = Spacing.md),
+            )
         }
         else -> {
             val progress = (status as? DownloadStatus.Downloading)?.progress ?: -1f
