@@ -41,4 +41,8 @@ class DownloadsViewModel(private val downloadManager: DownloadManager) : ViewMod
     fun delete(taskId: String) {
         viewModelScope.launch { downloadManager.deleteTaskAndFile(taskId) }
     }
+
+    fun clearAll() {
+        viewModelScope.launch { downloadManager.clearAll() }
+    }
 }

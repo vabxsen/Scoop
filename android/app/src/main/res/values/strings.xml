@@ -37,6 +37,9 @@
     <string name="filter_downloading">Downloading</string>
     <string name="filter_completed">Completed</string>
     <string name="filter_failed">Failed</string>
+    <string name="downloads_clear_all">Clear all</string>
+    <string name="downloads_clear_all_title">Clear all downloads?</string>
+    <string name="downloads_clear_all_body">This deletes every downloaded file along with its history. This can\'t be undone.</string>
 
     <string name="download_details_title">Download</string>
 

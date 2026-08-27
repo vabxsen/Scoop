@@ -180,6 +180,19 @@ class DownloadManagerImpl(
         }
     }
 
+    override suspend fun clearAll() {
+        tasks.keys.toList().forEach { task ->
+            YoutubeDL.destroyProcessById(task.id)
+            jobs.remove(task.id)?.cancel()
+        }
+        retryAttempts.clear()
+        withContext(Dispatchers.IO) {
+            downloadHistoryDao.getAll().forEach { item -> item.filePath?.let { deleteFile(it) } }
+            downloadHistoryDao.deleteAll()
+        }
+        tasks.clear()
+    }
+
     private fun deleteFile(filePath: String) {
         if (filePath.startsWith("content://")) {
             runCatching { appContext.contentResolver.delete(Uri.parse(filePath), null, null) }

@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.scoop.app.R
 import com.scoop.app.ui.theme.Spacing
@@ -71,12 +72,13 @@ fun HomeScreen(
                 Text(
                     stringResource(R.string.app_name),
                     style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(top = Spacing.xxl),
                 )
 
                 val urlFieldInteractionSource = remember { MutableInteractionSource() }
                 val urlFieldFocused by urlFieldInteractionSource.collectIsFocusedAsState()
-                val urlFieldBorderColor = if (urlFieldFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                val urlFieldBorderColor = if (urlFieldFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 val urlFieldBorderWidth = if (urlFieldFocused) 2.dp else 1.5.dp
 
                 OutlinedTextField(
@@ -93,6 +95,8 @@ fun HomeScreen(
                         OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color.Transparent,
                             unfocusedBorderColor = Color.Transparent,
+                            focusedPlaceholderColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurface,
                         ),
                     trailingIcon = {
                         if (viewModel.url.isNotEmpty()) {

@@ -20,4 +20,8 @@ interface DownloadManager {
 
     /** Deletes completed downloads (history entry + file) older than [days] - the auto-clear sweep. */
     suspend fun clearHistoryOlderThan(days: Int)
+
+    /** Explicit user action: cancels every in-flight download and deletes every task, history
+     * entry, and downloaded file. */
+    suspend fun clearAll()
 }
