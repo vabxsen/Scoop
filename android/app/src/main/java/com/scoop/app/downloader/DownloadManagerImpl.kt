@@ -63,6 +63,7 @@ class DownloadManagerImpl(
 
     init {
         DownloadPaths.sweepStaleTempWorkspaces(appContext)
+        hydrateFromHistory()
 
         val stateFlow = snapshotFlow { tasks.toMap() }
         // Runs on every state change so a freshly queued task is picked up even when the
@@ -107,6 +108,26 @@ class DownloadManagerImpl(
             batteryFilter,
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
+    }
+
+    /** The task map is purely in-memory, so a fresh process starts with an empty Downloads screen
+     * unless past completions are re-loaded from the Room history table here. */
+    private fun hydrateFromHistory() {
+        scope.launch {
+            val items = withContext(Dispatchers.IO) { downloadHistoryDao.getAll() }
+            items.forEach { item ->
+                val kind = DownloadKind.entries.firstOrNull { it.name == item.kind } ?: return@forEach
+                val task =
+                    DownloadTask(
+                        id = item.id,
+                        request = DownloadRequest(url = item.sourceUrl, kind = kind),
+                        title = item.title,
+                        thumbnailUrl = item.thumbnailUrl,
+                        createdAt = item.createdAt,
+                    )
+                tasks[task] = DownloadStatus.Completed(item.filePath)
+            }
+        }
     }
 
     override fun enqueue(request: DownloadRequest, title: String, thumbnailUrl: String?): DownloadTask {
