@@ -1,5 +1,6 @@
 package com.scoop.app.downloader
 
+import android.app.PendingIntent
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
@@ -7,6 +8,9 @@ import android.net.Uri
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import com.scoop.app.R
 import com.scoop.app.core.database.DownloadHistoryDao
 import com.scoop.app.core.database.objects.DownloadedItem
 import com.scoop.app.core.model.AudioQuality
@@ -17,6 +21,7 @@ import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.DownloadTask
 import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.extractor.MediaExtractor
+import com.scoop.app.util.FileShareUtils
 import com.scoop.app.util.NetworkUtils
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
@@ -151,6 +156,7 @@ class DownloadManagerImpl(
                                             createdAt = task.createdAt,
                                         )
                                     )
+                                    notifyDownloadComplete(task, filePath)
                                 } else {
                                     // A yt-dlp run that "succeeds" without a resolvable output path
                                     // isn't a usable completed download - surface it as a failure
@@ -228,4 +234,21 @@ class DownloadManagerImpl(
                 savedLocation
             }
         }
+
+    /** One-shot "Download complete" notification per finished task, separate from the ongoing
+     * foreground-service notification - tapping it opens the downloaded file. */
+    private fun notifyDownloadComplete(task: DownloadTask, filePath: String) {
+        val openIntent = FileShareUtils.openFileIntent(appContext, filePath)
+        val pendingIntent =
+            PendingIntent.getActivity(appContext, task.id.hashCode(), openIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val notification =
+            NotificationCompat.Builder(appContext, DownloadService.NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(appContext.getString(R.string.notification_download_complete_title))
+                .setContentText(task.title)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .build()
+        runCatching { NotificationManagerCompat.from(appContext).notify(task.id.hashCode(), notification) }
+    }
 }

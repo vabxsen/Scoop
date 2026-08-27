@@ -10,6 +10,7 @@ import com.scoop.app.core.model.DefaultAudioFormat
 import com.scoop.app.core.model.DefaultVideoQuality
 import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.DownloadRequest
+import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.MediaFormat
 import com.scoop.app.core.model.MediaInfo
 import com.scoop.app.downloader.DownloadManager
@@ -55,6 +56,13 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
     var showFormatPickerSheet by mutableStateOf(false)
         private set
 
+    /** The just-enqueued task the configure sheet switches to showing live progress for, if any. */
+    var activeDownloadTaskId by mutableStateOf<String?>(null)
+        private set
+
+    val activeDownloadStatus: DownloadStatus?
+        get() = activeDownloadTaskId?.let { id -> downloadManager.tasks.entries.firstOrNull { it.key.id == id }?.value }
+
     fun onUrlChange(value: String) {
         url = value
     }
@@ -85,6 +93,7 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
     fun dismissConfigureSheet() {
         configureState = ConfigureUiState.Hidden
         showFormatPickerSheet = false
+        activeDownloadTaskId = null
     }
 
     fun selectKind(kind: DownloadKind) {
@@ -133,12 +142,14 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
                 FormatMode.AUTO -> defaultFormatFor(info, selectedKind)?.formatId
                 FormatMode.CUSTOM -> selectedFormat?.formatId
             }
-        downloadManager.enqueue(
-            request = DownloadRequest(url = info.sourceUrl, kind = selectedKind, formatId = formatId, audioContainer = audioContainer),
-            title = info.title,
-            thumbnailUrl = info.thumbnailUrl,
-        )
-        dismissConfigureSheet()
+        val task =
+            downloadManager.enqueue(
+                request = DownloadRequest(url = info.sourceUrl, kind = selectedKind, formatId = formatId, audioContainer = audioContainer),
+                title = info.title,
+                thumbnailUrl = info.thumbnailUrl,
+            )
+        activeDownloadTaskId = task.id
+        showFormatPickerSheet = false
         url = ""
         return true
     }

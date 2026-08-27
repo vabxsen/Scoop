@@ -16,6 +16,14 @@
     <string name="action_delete">Delete</string>
     <string name="action_download">Download</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_done">Done</string>
+
+    <string name="download_progress_title">Downloading…</string>
+    <string name="download_processing_title">Processing…</string>
+    <string name="download_complete_title">Download complete</string>
+    <string name="download_failed_title">Download failed</string>
+    <string name="download_cancelled_title">Download cancelled</string>
+    <string name="notification_download_complete_title">Download complete</string>
 
     <string name="nav_downloads">Downloads</string>
     <string name="nav_settings">Settings</string>

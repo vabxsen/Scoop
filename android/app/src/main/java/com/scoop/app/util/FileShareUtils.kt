@@ -26,15 +26,18 @@ object FileShareUtils {
             MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "*/*"
         }
 
-    fun openFile(context: Context, filePath: String) {
+    /** Ready-to-launch ACTION_VIEW intent for [filePath] - e.g. to wrap in a PendingIntent for a notification. */
+    fun openFileIntent(context: Context, filePath: String): Intent {
         val uri = contentUriFor(context, filePath)
-        val intent =
-            Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, mimeTypeFor(context, filePath))
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-        context.startActivity(intent)
+        return Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, mimeTypeFor(context, filePath))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    }
+
+    fun openFile(context: Context, filePath: String) {
+        context.startActivity(openFileIntent(context, filePath))
     }
 
     fun installApk(context: Context, filePath: String) {

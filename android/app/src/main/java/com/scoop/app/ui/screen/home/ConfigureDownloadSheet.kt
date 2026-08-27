@@ -3,6 +3,7 @@ package com.scoop.app.ui.screen.home
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -10,6 +11,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,13 +20,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DoneAll
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.HighQuality
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -38,12 +43,14 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.scoop.app.R
 import com.scoop.app.core.model.DownloadKind
+import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.MediaInfo
 import com.scoop.app.ui.common.ErrorState
 import com.scoop.app.ui.common.FormatSelectionSheet
@@ -56,45 +63,116 @@ import com.scoop.app.ui.theme.Spacing
 @Composable
 fun ConfigureDownloadSheet(viewModel: HomeViewModel, onDismiss: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val activeTaskId = viewModel.activeDownloadTaskId
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.sm).animateContentSize(tween(Motion.STANDARD_MS)),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(Icons.Outlined.DoneAll, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Text(
-                stringResource(R.string.configure_title),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(top = Spacing.sm),
-            )
-            Text(
-                stringResource(R.string.configure_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.md),
-            )
+            if (activeTaskId != null) {
+                DownloadProgressContent(status = viewModel.activeDownloadStatus, onDone = onDismiss)
+            } else {
+                Icon(Icons.Outlined.DoneAll, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Text(
+                    stringResource(R.string.configure_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(top = Spacing.sm),
+                )
+                Text(
+                    stringResource(R.string.configure_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.md),
+                )
 
-            AnimatedContent(
-                targetState = viewModel.configureState,
-                transitionSpec = { (fadeIn(tween(Motion.STANDARD_MS))) togetherWith (fadeOut(tween(Motion.QUICK_MS))) },
-                modifier = Modifier.animateContentSize(tween(Motion.STANDARD_MS)),
-                label = "configureSheetState",
-            ) { state ->
-                when (state) {
-                    is ConfigureUiState.Hidden -> Unit
-                    is ConfigureUiState.Loading -> LoadingState(message = stringResource(R.string.analyzing))
-                    is ConfigureUiState.Error ->
-                        ErrorState(
-                            title = stringResource(R.string.analyze_error_title),
-                            message = stringResource(R.string.analyze_error_body),
-                            detail = state.message,
-                            retryLabel = stringResource(R.string.action_retry),
-                            onRetry = viewModel::retryAnalyze,
-                        )
-                    is ConfigureUiState.Loaded -> ConfigureForm(viewModel = viewModel, info = state.info, onDismiss = onDismiss)
+                AnimatedContent(
+                    targetState = viewModel.configureState,
+                    transitionSpec = { (fadeIn(tween(Motion.STANDARD_MS))) togetherWith (fadeOut(tween(Motion.QUICK_MS))) },
+                    modifier = Modifier.animateContentSize(tween(Motion.STANDARD_MS)),
+                    label = "configureSheetState",
+                ) { state ->
+                    when (state) {
+                        is ConfigureUiState.Hidden -> Unit
+                        is ConfigureUiState.Loading -> LoadingState(message = stringResource(R.string.analyzing))
+                        is ConfigureUiState.Error ->
+                            ErrorState(
+                                title = stringResource(R.string.analyze_error_title),
+                                message = stringResource(R.string.analyze_error_body),
+                                detail = state.message,
+                                retryLabel = stringResource(R.string.action_retry),
+                                onRetry = viewModel::retryAnalyze,
+                            )
+                        is ConfigureUiState.Loaded -> ConfigureForm(viewModel = viewModel, info = state.info, onDismiss = onDismiss)
+                    }
                 }
             }
+        }
+    }
+}
+
+/** Shown in place of the configure form once a download has been enqueued: live 0-100% progress,
+ * then a completed/failed end state, mirroring the task's real [DownloadStatus]. */
+@Composable
+private fun DownloadProgressContent(status: DownloadStatus?, onDone: () -> Unit) {
+    when (status) {
+        is DownloadStatus.Completed -> {
+            Icon(
+                Icons.Filled.CheckCircle,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(56.dp).padding(top = Spacing.md),
+            )
+            Text(
+                stringResource(R.string.download_complete_title),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(top = Spacing.md),
+            )
+            Button(onClick = onDone, modifier = Modifier.fillMaxWidth().padding(top = Spacing.lg), shape = RoundedCornerShape(50)) {
+                Text(stringResource(R.string.action_done))
+            }
+        }
+        is DownloadStatus.Failed ->
+            ErrorState(
+                title = stringResource(R.string.download_failed_title),
+                message = status.message,
+                retryLabel = stringResource(R.string.action_done),
+                onRetry = onDone,
+            )
+        is DownloadStatus.Cancelled, null -> {
+            Icon(Icons.Outlined.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = Spacing.md))
+            Text(
+                stringResource(R.string.download_cancelled_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = Spacing.sm, bottom = Spacing.md),
+            )
+            OutlinedButton(onClick = onDone, shape = RoundedCornerShape(50)) { Text(stringResource(R.string.action_done)) }
+        }
+        else -> {
+            val progress = (status as? DownloadStatus.Downloading)?.progress ?: -1f
+            val animatedProgress by
+                animateFloatAsState(
+                    targetValue = if (progress >= 0f) progress else 0f,
+                    animationSpec = tween(Motion.STANDARD_MS),
+                    label = "sheetDownloadProgress",
+                )
+            Box(modifier = Modifier.padding(vertical = Spacing.md).size(72.dp), contentAlignment = Alignment.Center) {
+                if (progress >= 0f) {
+                    CircularProgressIndicator(progress = { animatedProgress }, modifier = Modifier.size(72.dp), strokeWidth = 5.dp)
+                    Text("${(animatedProgress * 100).toInt()}%", style = MaterialTheme.typography.titleSmall)
+                } else {
+                    CircularProgressIndicator(modifier = Modifier.size(72.dp), strokeWidth = 5.dp)
+                }
+            }
+            Text(
+                when (status) {
+                    is DownloadStatus.Analyzing -> stringResource(R.string.analyzing)
+                    is DownloadStatus.Processing -> stringResource(R.string.download_processing_title)
+                    else -> stringResource(R.string.download_progress_title)
+                },
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = Spacing.md),
+            )
         }
     }
 }
@@ -172,7 +250,7 @@ private fun ConfigureForm(viewModel: HomeViewModel, info: MediaInfo, onDismiss: 
                 Text(stringResource(R.string.action_cancel), modifier = Modifier.padding(start = Spacing.xs))
             }
             Button(
-                onClick = { if (viewModel.confirmDownload()) onDismiss() },
+                onClick = { viewModel.confirmDownload() },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(50),
             ) {
@@ -188,7 +266,7 @@ private fun ConfigureForm(viewModel: HomeViewModel, info: MediaInfo, onDismiss: 
             kind = viewModel.selectedKind,
             selectedFormat = viewModel.selectedFormat,
             onFormatSelected = viewModel::selectFormat,
-            onConfirmDownload = { if (viewModel.confirmDownload()) onDismiss() },
+            onConfirmDownload = { viewModel.confirmDownload() },
             onDismiss = viewModel::dismissFormatPicker,
         )
     }
