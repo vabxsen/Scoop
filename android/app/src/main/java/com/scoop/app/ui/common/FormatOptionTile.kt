@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material3.Icon
@@ -23,7 +24,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.scoop.app.R
 import com.scoop.app.core.model.MediaFormat
 import com.scoop.app.ui.theme.Motion
 import com.scoop.app.ui.theme.Spacing
@@ -80,6 +83,45 @@ fun FormatOptionTile(format: MediaFormat, selected: Boolean, onClick: () -> Unit
             if (subtitle.isNotEmpty()) {
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = subtitleColor)
             }
+        }
+        RadioButton(selected = selected, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = contentColor))
+    }
+}
+
+/** The "just give me the best version" option at the top of a format list - selecting it clears
+ * any specific format pick, letting yt-dlp's own best-quality heuristic decide. */
+@Composable
+fun BestAvailableOption(selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(14.dp)
+    val containerColor by
+        animateColorAsState(
+            targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+            animationSpec = Motion.quick(),
+            label = "bestAvailableContainer",
+        )
+    val borderColor by
+        animateColorAsState(
+            targetValue = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+            animationSpec = Motion.quick(),
+            label = "bestAvailableBorder",
+        )
+    val contentColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+    val subtitleColor = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .background(containerColor)
+                .border(BorderStroke(1.dp, borderColor), shape)
+                .clickable(onClick = onClick)
+                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = if (selected) contentColor else MaterialTheme.colorScheme.primary)
+        Column(modifier = Modifier.weight(1f).padding(start = Spacing.sm)) {
+            Text(stringResource(R.string.quality_best_available), style = MaterialTheme.typography.titleSmall, color = contentColor)
+            Text(stringResource(R.string.quality_best_available_subtitle), style = MaterialTheme.typography.bodySmall, color = subtitleColor)
         }
         RadioButton(selected = selected, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = contentColor))
     }

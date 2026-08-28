@@ -312,12 +312,22 @@ class DownloadManagerImpl(
                             DownloadSpeedLimit.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.DOWNLOAD_SPEED_LIMIT, DownloadSpeedLimit.UNLIMITED.name) }
                                 ?.ytDlpValue
                         if (speedLimit != null) addOption("--limit-rate", speedLimit)
+                        if (task.request.embedThumbnail) addOption("--embed-thumbnail")
                         when (task.request.kind) {
                             DownloadKind.VIDEO -> {
                                 addOption("-f", task.request.formatId ?: "bestvideo*+bestaudio/best")
                                 val container = PreferenceUtil.getString(PrefKeys.DEFAULT_VIDEO_CONTAINER, DefaultVideoContainer.MP4.name)
                                 val containerValue = DefaultVideoContainer.entries.firstOrNull { it.name == container }?.ytDlpValue ?: "mp4"
                                 addOption("--merge-output-format", containerValue)
+                                // Embedding requires a video container to mux the subtitle track into,
+                                // so this only applies for DownloadKind.VIDEO. Writes whatever tracks
+                                // (manual or auto-generated) the source actually has - yt-dlp silently
+                                // skips this rather than failing the download if none exist.
+                                if (task.request.embedSubtitles) {
+                                    addOption("--write-subs")
+                                    addOption("--write-auto-subs")
+                                    addOption("--embed-subs")
+                                }
                             }
                             DownloadKind.AUDIO_ONLY -> {
                                 addOption("-f", task.request.formatId ?: "bestaudio/best")

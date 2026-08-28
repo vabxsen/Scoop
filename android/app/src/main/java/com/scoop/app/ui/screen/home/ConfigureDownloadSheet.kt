@@ -15,9 +15,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -25,10 +28,9 @@ import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.HighQuality
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -54,8 +57,9 @@ import com.scoop.app.R
 import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.MediaInfo
+import com.scoop.app.ui.common.BestAvailableOption
 import com.scoop.app.ui.common.ErrorState
-import com.scoop.app.ui.common.FormatSelectionSheet
+import com.scoop.app.ui.common.FormatOptionTile
 import com.scoop.app.ui.common.LoadingState
 import com.scoop.app.ui.common.SettingSectionLabel
 import com.scoop.app.ui.theme.Motion
@@ -209,7 +213,14 @@ private fun DownloadProgressContent(status: DownloadStatus?, onDone: () -> Unit)
 
 @Composable
 private fun ConfigureForm(viewModel: HomeViewModel, info: MediaInfo, onDismiss: () -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().animateContentSize(tween(Motion.STANDARD_MS))) {
+    val maxSheetHeight = LocalConfiguration.current.screenHeightDp.dp * 0.85f
+    Column(
+        modifier =
+            Modifier.fillMaxWidth()
+                .heightIn(max = maxSheetHeight)
+                .verticalScroll(rememberScrollState())
+                .animateContentSize(tween(Motion.STANDARD_MS)),
+    ) {
         SettingSectionLabel(stringResource(R.string.configure_download_type), modifier = Modifier.padding(horizontal = 0.dp))
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             SegmentedButton(
@@ -250,25 +261,60 @@ private fun ConfigureForm(viewModel: HomeViewModel, info: MediaInfo, onDismiss: 
             )
         }
 
+        // The format list used to live behind a "Custom" chip that opened its own sheet on top of
+        // this one; it's inlined here instead so picking an exact format doesn't feel like leaving
+        // the configure flow.
         AnimatedVisibility(
             visible = viewModel.formatMode == FormatMode.CUSTOM,
             enter = fadeIn(tween(Motion.STANDARD_MS)) + expandVertically(tween(Motion.STANDARD_MS)),
             exit = fadeOut(tween(Motion.QUICK_MS)) + shrinkVertically(tween(Motion.QUICK_MS)),
         ) {
-            Column {
-                SettingSectionLabel(stringResource(R.string.configure_format_preference), modifier = Modifier.padding(top = Spacing.md))
-                val formatValueLabel =
-                    viewModel.selectedFormat?.resolutionLabel
-                        ?: viewModel.selectedFormat?.container?.uppercase()
-                        ?: if (viewModel.selectedKind == DownloadKind.VIDEO) stringResource(R.string.quality_chip_label)
-                        else stringResource(R.string.audio_format_chip_label)
-                AssistChip(
-                    onClick = viewModel::openFormatPicker,
-                    label = { Text(formatValueLabel) },
-                    leadingIcon = { Icon(Icons.Outlined.HighQuality, contentDescription = null, modifier = Modifier.size(AssistChipDefaults.IconSize)) },
-                    shape = RoundedCornerShape(50),
+            Column(modifier = Modifier.padding(top = Spacing.md)) {
+                SettingSectionLabel(stringResource(R.string.configure_format_preference), modifier = Modifier.padding(horizontal = 0.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.padding(top = Spacing.xs)) {
+                    BestAvailableOption(selected = viewModel.selectedFormat == null, onClick = { viewModel.selectFormat(null) })
+
+                    val sections =
+                        if (viewModel.selectedKind == DownloadKind.VIDEO) {
+                            listOf(
+                                stringResource(R.string.format_section_suggested) to info.formats.filter { it.hasVideo && it.hasAudio },
+                                stringResource(R.string.format_section_video_only) to info.formats.filter { it.isVideoOnly },
+                            )
+                        } else {
+                            listOf(stringResource(R.string.format_section_audio) to info.audioOnlyFormats)
+                        }
+                    sections.forEach { (label, formats) ->
+                        if (formats.isEmpty()) return@forEach
+                        Text(
+                            label,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = Spacing.xs),
+                        )
+                        formats.forEach { format ->
+                            FormatOptionTile(format = format, selected = viewModel.selectedFormat?.formatId == format.formatId, onClick = { viewModel.selectFormat(format) })
+                        }
+                    }
+                }
+            }
+        }
+
+        SettingSectionLabel(stringResource(R.string.configure_additional_settings), modifier = Modifier.padding(top = Spacing.md))
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            if (viewModel.selectedKind == DownloadKind.VIDEO) {
+                FilterChip(
+                    selected = viewModel.embedSubtitles,
+                    onClick = viewModel::toggleEmbedSubtitles,
+                    label = { Text(stringResource(R.string.option_embed_subtitles)) },
+                    leadingIcon = { Icon(Icons.Outlined.Subtitles, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) },
                 )
             }
+            FilterChip(
+                selected = viewModel.embedThumbnail,
+                onClick = viewModel::toggleEmbedThumbnail,
+                label = { Text(stringResource(R.string.option_embed_thumbnail)) },
+                leadingIcon = { Icon(Icons.Outlined.Image, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) },
+            )
         }
 
         Row(
@@ -288,16 +334,5 @@ private fun ConfigureForm(viewModel: HomeViewModel, info: MediaInfo, onDismiss: 
                 Text(stringResource(R.string.action_download), modifier = Modifier.padding(start = Spacing.xs))
             }
         }
-    }
-
-    if (viewModel.showFormatPickerSheet) {
-        FormatSelectionSheet(
-            mediaInfo = info,
-            kind = viewModel.selectedKind,
-            selectedFormat = viewModel.selectedFormat,
-            onFormatSelected = viewModel::selectFormat,
-            onConfirmDownload = { viewModel.confirmDownload() },
-            onDismiss = viewModel::dismissFormatPicker,
-        )
     }
 }

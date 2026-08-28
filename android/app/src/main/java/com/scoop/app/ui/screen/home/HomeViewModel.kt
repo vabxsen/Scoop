@@ -53,7 +53,10 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
     var selectedFormat by mutableStateOf<MediaFormat?>(null)
         private set
 
-    var showFormatPickerSheet by mutableStateOf(false)
+    var embedSubtitles by mutableStateOf(false)
+        private set
+
+    var embedThumbnail by mutableStateOf(false)
         private set
 
     /** The just-enqueued task the configure sheet switches to showing live progress for, if any. */
@@ -79,6 +82,8 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
                     selectedKind = DownloadKind.VIDEO
                     formatMode = FormatMode.AUTO
                     selectedFormat = null
+                    embedSubtitles = false
+                    embedThumbnail = false
                     configureState = ConfigureUiState.Loaded(info)
                 }
                 .onFailure {
@@ -92,7 +97,6 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
 
     fun dismissConfigureSheet() {
         configureState = ConfigureUiState.Hidden
-        showFormatPickerSheet = false
         activeDownloadTaskId = null
     }
 
@@ -100,27 +104,26 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
         selectedKind = kind
         formatMode = FormatMode.AUTO
         selectedFormat = null
+        // Subtitle embedding only applies to video; switching to audio would silently carry a
+        // toggle over that no longer means anything.
+        if (kind == DownloadKind.AUDIO_ONLY) embedSubtitles = false
     }
 
     fun selectFormatMode(mode: FormatMode) {
         formatMode = mode
-        if (mode == FormatMode.AUTO) {
-            selectedFormat = null
-        } else {
-            showFormatPickerSheet = true
-        }
+        if (mode == FormatMode.AUTO) selectedFormat = null
     }
 
     fun selectFormat(format: MediaFormat?) {
         selectedFormat = format
     }
 
-    fun openFormatPicker() {
-        showFormatPickerSheet = true
+    fun toggleEmbedSubtitles() {
+        embedSubtitles = !embedSubtitles
     }
 
-    fun dismissFormatPicker() {
-        showFormatPickerSheet = false
+    fun toggleEmbedThumbnail() {
+        embedThumbnail = !embedThumbnail
     }
 
     /** Enqueues the current selection. Returns false if there's nothing loaded yet to download. */
@@ -144,12 +147,19 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
             }
         val task =
             downloadManager.enqueue(
-                request = DownloadRequest(url = info.sourceUrl, kind = selectedKind, formatId = formatId, audioContainer = audioContainer),
+                request =
+                    DownloadRequest(
+                        url = info.sourceUrl,
+                        kind = selectedKind,
+                        formatId = formatId,
+                        audioContainer = audioContainer,
+                        embedSubtitles = embedSubtitles,
+                        embedThumbnail = embedThumbnail,
+                    ),
                 title = info.title,
                 thumbnailUrl = info.thumbnailUrl,
             )
         activeDownloadTaskId = task.id
-        showFormatPickerSheet = false
         url = ""
         return true
     }

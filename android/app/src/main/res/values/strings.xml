@@ -58,11 +58,10 @@
     <string name="configure_format_preference">Format preference</string>
     <string name="option_auto">Auto</string>
     <string name="option_custom">Custom</string>
-    <string name="quality_chip_label">Quality</string>
-    <string name="audio_format_chip_label">Audio format</string>
+    <string name="configure_additional_settings">Additional settings</string>
+    <string name="option_embed_subtitles">Embed subtitles</string>
+    <string name="option_embed_thumbnail">Embed thumbnail</string>
 
-    <string name="format_sheet_title_video">Select video quality</string>
-    <string name="format_sheet_title_audio">Select audio format</string>
     <string name="format_section_suggested">Suggested</string>
     <string name="format_section_video_only">Video only</string>
     <string name="format_section_audio">Audio</string>

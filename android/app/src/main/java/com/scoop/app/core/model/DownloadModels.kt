@@ -11,6 +11,12 @@ data class DownloadRequest(
     val kind: DownloadKind,
     val formatId: String? = null,
     val audioContainer: String? = null,
+    /** Burns in whatever subtitle tracks are available - video only, since embedding requires a
+     * video container to mux into. */
+    val embedSubtitles: Boolean = false,
+    /** Embeds the source's thumbnail as cover art - works for both a video file and audio (ID3
+     * cover art). */
+    val embedThumbnail: Boolean = false,
 )
 
 /** One item in the download queue: the fixed request plus display info captured at enqueue time. */
