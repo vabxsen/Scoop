@@ -2,6 +2,7 @@ package com.scoop.app.ui.screen.settings
 
 import android.app.usage.StorageStatsManager
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.os.StatFs
@@ -28,6 +29,7 @@ import com.scoop.app.core.update.AppUpdateChecker
 import com.scoop.app.core.update.UpdateAvailability
 import com.scoop.app.core.update.UpdateCheckState
 import com.scoop.app.downloader.DownloadManager
+import com.scoop.app.downloader.DownloadPaths
 import com.scoop.app.util.FileShareUtils
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
@@ -116,6 +118,13 @@ class SettingsViewModel(
             HistoryRetention.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.HISTORY_RETENTION, HistoryRetention.OFF.name) }
                 ?: HistoryRetention.OFF
         )
+        private set
+
+    var customSaveFolderUri by mutableStateOf(DownloadPaths.customFolderUri(appContext))
+        private set
+
+    var customSaveFolderLabel by
+        mutableStateOf(customSaveFolderUri?.let { DownloadPaths.customFolderLabel(appContext, it) })
         private set
 
     var deviceStorageLabel by mutableStateOf<String?>(null)
@@ -253,6 +262,18 @@ class SettingsViewModel(
         // Apply the new (shorter) retention immediately rather than waiting for next app start,
         // so picking e.g. "After 7 days" visibly sweeps old entries right away.
         retention.days?.let { days -> viewModelScope.launch { downloadManager.clearHistoryOlderThan(days) } }
+    }
+
+    fun setCustomSaveFolder(treeUri: Uri) {
+        DownloadPaths.setCustomFolder(appContext, treeUri)
+        customSaveFolderUri = treeUri
+        customSaveFolderLabel = DownloadPaths.customFolderLabel(appContext, treeUri)
+    }
+
+    fun clearCustomSaveFolder() {
+        DownloadPaths.clearCustomFolder(appContext)
+        customSaveFolderUri = null
+        customSaveFolderLabel = null
     }
 
     fun checkForUpdate() {

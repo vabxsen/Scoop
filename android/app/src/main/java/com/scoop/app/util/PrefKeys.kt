@@ -14,4 +14,5 @@ object PrefKeys {
     const val DOWNLOAD_SPEED_LIMIT = "download_speed_limit"
     const val BATTERY_PAUSE_THRESHOLD = "battery_pause_threshold"
     const val HISTORY_RETENTION = "history_retention"
+    const val CUSTOM_SAVE_FOLDER_URI = "custom_save_folder_uri"
 }

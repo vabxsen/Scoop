@@ -17,6 +17,7 @@
     <string name="action_download">Download</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_done">Done</string>
+    <string name="action_reset">Reset</string>
 
     <string name="download_progress_title">Downloading…</string>
     <string name="download_processing_title">Processing…</string>
@@ -118,6 +119,8 @@
     <string name="settings_storage_used_loading">Calculating…</string>
     <string name="settings_video_location">Video downloads</string>
     <string name="settings_audio_location">Audio downloads</string>
+    <string name="settings_save_folder">Save folder</string>
+    <string name="settings_save_folder_default">Default (Movies/Scoop, Music/Scoop)</string>
 
     <string name="settings_wifi_only_downloads">Wi-Fi only</string>
     <string name="settings_wifi_only_downloads_subtitle">Pause new downloads on metered connections (like mobile data or a hotspot) and resume automatically once an unmetered connection is available</string>

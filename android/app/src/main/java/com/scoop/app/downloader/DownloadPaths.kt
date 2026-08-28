@@ -2,16 +2,89 @@ package com.scoop.app.downloader
 
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
+import androidx.documentfile.provider.DocumentFile
 import com.scoop.app.core.model.DownloadKind
+import com.scoop.app.util.PrefKeys
+import com.scoop.app.util.PreferenceUtil
 import java.io.File
 import java.io.IOException
 
 /** Where finished downloads live, shared by the download engine and the Settings "save location" row. */
 object DownloadPaths {
+    /** The user's chosen save-everything-here folder (SAF tree), if they picked one in Settings ->
+     * Storage. Null means "use the default Movies/Scoop and Music/Scoop locations". */
+    fun customFolderUri(context: Context): Uri? =
+        PreferenceUtil.getString(PrefKeys.CUSTOM_SAVE_FOLDER_URI, "").takeIf { it.isNotEmpty() }?.let(Uri::parse)?.takeIf { uri ->
+            // A tree granted to a since-uninstalled/reinstalled app, or revoked by the user in
+            // system Settings, would otherwise silently fail every download until re-picked.
+            context.contentResolver.persistedUriPermissions.any { it.uri == uri && it.isWritePermission }
+        }
+
+    /** Persists [treeUri] as the custom save folder, taking a permanent grant so it survives reboots. */
+    fun setCustomFolder(context: Context, treeUri: Uri) {
+        context.contentResolver.takePersistableUriPermission(
+            treeUri,
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+        )
+        clearCustomFolder(context, releasePermission = false)
+        PreferenceUtil.putString(PrefKeys.CUSTOM_SAVE_FOLDER_URI, treeUri.toString())
+    }
+
+    /** Reverts to the default Movies/Scoop and Music/Scoop locations. */
+    fun clearCustomFolder(context: Context, releasePermission: Boolean = true) {
+        if (releasePermission) {
+            customFolderUri(context)?.let { uri ->
+                runCatching {
+                    context.contentResolver.releasePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                    )
+                }
+            }
+        }
+        PreferenceUtil.putString(PrefKeys.CUSTOM_SAVE_FOLDER_URI, "")
+    }
+
+    /** A short, human-readable name for the custom folder (its own display name, not a full path -
+     * SAF doesn't expose one), for showing next to the "Change" row in Settings. */
+    fun customFolderLabel(context: Context, treeUri: Uri): String? = DocumentFile.fromTreeUri(context, treeUri)?.name
+
+    /**
+     * Copies [source] into the user's chosen custom folder as [desiredName], appending " (n)" on a
+     * name collision. Returns the new document's content:// URI, or null if no custom folder is
+     * set or the write fails (caller falls back to [publishToMediaStore]/[outputDir]).
+     */
+    fun saveToCustomFolder(context: Context, source: File, desiredName: String): String? {
+        val treeUri = customFolderUri(context) ?: return null
+        val folder = DocumentFile.fromTreeUri(context, treeUri) ?: return null
+        val ext = desiredName.substringAfterLast('.', "")
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
+        val base = if (ext.isEmpty()) desiredName else desiredName.removeSuffix(".$ext")
+
+        var candidateName = desiredName
+        var index = 1
+        while (folder.findFile(candidateName) != null) {
+            candidateName = if (ext.isEmpty()) "$base ($index)" else "$base ($index).$ext"
+            index++
+        }
+
+        return try {
+            val newFile = folder.createFile(mimeType, candidateName) ?: return null
+            context.contentResolver.openOutputStream(newFile.uri)?.use { out -> source.inputStream().use { it.copyTo(out) } }
+                ?: throw IOException("Could not open output stream for ${newFile.uri}")
+            source.delete()
+            newFile.uri.toString()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     /** Legacy per-app fallback - private to this app, invisible to Gallery/Files and other apps.
      * Only used pre-Android 10 (see [publishToMediaStore]) or if a MediaStore publish fails. */
     fun outputDir(context: Context, kind: DownloadKind): File =

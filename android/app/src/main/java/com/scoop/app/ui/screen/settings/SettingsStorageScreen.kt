@@ -1,10 +1,13 @@
 package com.scoop.app.ui.screen.settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -12,6 +15,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -27,6 +31,15 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun SettingsStorageScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewModel()) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+    val folderPickerLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { treeUri ->
+            if (treeUri != null) viewModel.setCustomSaveFolder(treeUri)
+        }
+
+    val customFolderLabel = viewModel.customSaveFolderLabel
+    val videoLocationLabel = customFolderLabel ?: DownloadPaths.displayLabel(DownloadKind.VIDEO)
+    val audioLocationLabel = customFolderLabel ?: DownloadPaths.displayLabel(DownloadKind.AUDIO_ONLY)
 
     Scaffold(
         topBar = {
@@ -49,19 +62,29 @@ fun SettingsStorageScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koi
             }
             item {
                 SettingHubRow(
+                    title = stringResource(R.string.settings_save_folder),
+                    subtitle = customFolderLabel ?: stringResource(R.string.settings_save_folder_default),
+                    leadingIcon = Icons.Filled.FolderOpen,
+                    onClick = { folderPickerLauncher.launch(null) },
+                    trailingContent =
+                        if (customFolderLabel != null) {
+                            { TextButton(onClick = viewModel::clearCustomSaveFolder) { Text(stringResource(R.string.action_reset)) } }
+                        } else {
+                            null
+                        },
+                )
+            }
+            item {
+                SettingHubRow(
                     title = stringResource(R.string.settings_video_location),
-                    subtitle =
-                        listOfNotNull(viewModel.videoStorageLabel ?: stringResource(R.string.settings_storage_used_empty), DownloadPaths.displayLabel(DownloadKind.VIDEO))
-                            .joinToString(" · "),
+                    subtitle = listOfNotNull(viewModel.videoStorageLabel ?: stringResource(R.string.settings_storage_used_empty), videoLocationLabel).joinToString(" · "),
                     leadingIcon = Icons.Filled.Folder,
                 )
             }
             item {
                 SettingHubRow(
                     title = stringResource(R.string.settings_audio_location),
-                    subtitle =
-                        listOfNotNull(viewModel.audioStorageLabel ?: stringResource(R.string.settings_storage_used_empty), DownloadPaths.displayLabel(DownloadKind.AUDIO_ONLY))
-                            .joinToString(" · "),
+                    subtitle = listOfNotNull(viewModel.audioStorageLabel ?: stringResource(R.string.settings_storage_used_empty), audioLocationLabel).joinToString(" · "),
                     leadingIcon = Icons.Filled.Folder,
                 )
             }

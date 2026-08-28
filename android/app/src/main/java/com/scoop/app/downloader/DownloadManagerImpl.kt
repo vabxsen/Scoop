@@ -319,7 +319,8 @@ class DownloadManagerImpl(
                 val savedLocation =
                     printedPath?.let { path ->
                         val sourceFile = File(path)
-                        DownloadPaths.publishToMediaStore(appContext, task.request.kind, sourceFile, sourceFile.name)
+                        DownloadPaths.saveToCustomFolder(appContext, sourceFile, sourceFile.name)
+                            ?: DownloadPaths.publishToMediaStore(appContext, task.request.kind, sourceFile, sourceFile.name)
                             ?: DownloadPaths
                                 .moveWithDedup(
                                     source = sourceFile,

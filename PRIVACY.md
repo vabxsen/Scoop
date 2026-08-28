@@ -10,8 +10,9 @@ Scoop is designed to work entirely on your device.
   format/version bookkeeping) to talk to the site you're downloading from — nothing else.
 - **Cookies**, if you ever configure Scoop to use them for authenticated downloads, are stored
   locally and are never uploaded anywhere by Scoop itself.
-- **Downloaded files and history** are stored on your device (app-specific storage, with support
-  for user-chosen folders planned) and are never uploaded to a server.
+- **Downloaded files and history** are stored on your device — either the default Movies/Scoop and
+  Music/Scoop folders, or a folder you choose yourself in Settings → Storage (via Android's
+  Storage Access Framework) — and are never uploaded to a server.
 
-This document will be revised as features that touch user data (e.g. cookie import, SAF folder
-access) are actually implemented, to describe exactly what they do.
+This document will be revised as features that touch user data (e.g. cookie import) are actually
+implemented, to describe exactly what they do.
