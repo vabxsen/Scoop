@@ -1,18 +1,28 @@
 package com.scoop.app.ui.screen.downloads
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,41 +32,127 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.scoop.app.R
 import com.scoop.app.core.model.DownloadStatus
+import com.scoop.app.core.model.DownloadTask
 import com.scoop.app.ui.common.DownloadCard
 import com.scoop.app.ui.common.EmptyDownloadsIllustration
 import com.scoop.app.ui.common.SettingsScreenTitle
 import com.scoop.app.ui.theme.Motion
 import com.scoop.app.ui.theme.Spacing
 import com.scoop.app.util.FileShareUtils
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+private const val UNDO_WINDOW_MS = 2_000L
+private const val DAY_MS = 86_400_000L
+
+private class PendingDelete(val taskId: String, val title: String, val job: Job)
+
+private fun startOfDay(timeMillis: Long): Long =
+    Calendar.getInstance()
+        .apply {
+            timeInMillis = timeMillis
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        .timeInMillis
+
+/** Buckets a timestamp into a scannable group header - "Today"/"Yesterday" for the last two days,
+ * a weekday name for the rest of the current week, then a plain month/day for anything older. */
+private fun dateGroupLabel(createdAt: Long): String {
+    val diffDays = (startOfDay(System.currentTimeMillis()) - startOfDay(createdAt)) / DAY_MS
+    return when {
+        diffDays <= 0L -> "Today"
+        diffDays == 1L -> "Yesterday"
+        diffDays in 2..6 -> SimpleDateFormat("EEEE", Locale.getDefault()).format(Date(createdAt))
+        else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(createdAt))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DownloadsScreen(onBack: () -> Unit, onOpenDownload: (String) -> Unit, viewModel: DownloadsViewModel = koinViewModel()) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var filter by remember { mutableStateOf(DownloadFilter.ALL) }
     var showClearAllDialog by remember { mutableStateOf(false) }
-    val entries = viewModel.tasks.entries.filter { viewModel.matches(it.value, filter) }
+    var pendingDeletes by remember { mutableStateOf(emptyList<PendingDelete>()) }
+    val pendingDeleteIds = pendingDeletes.map { it.taskId }.toSet()
+    val entries =
+        viewModel.tasks.entries
+            .filter { viewModel.matches(it.value, filter) && it.key.id !in pendingDeleteIds }
+            .sortedByDescending { it.key.createdAt }
+    val groupedEntries = entries.groupBy { dateGroupLabel(it.key.createdAt) }
+
+    fun requestDelete(taskId: String, title: String) {
+        val job =
+            scope.launch {
+                delay(UNDO_WINDOW_MS)
+                viewModel.delete(taskId)
+                pendingDeletes = pendingDeletes.filterNot { it.taskId == taskId }
+            }
+        pendingDeletes = pendingDeletes + PendingDelete(taskId, title, job)
+    }
+
+    fun undoDeletes() {
+        pendingDeletes.forEach { it.job.cancel() }
+        pendingDeletes = emptyList()
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        snackbarHost = {
+            AnimatedVisibility(
+                visible = pendingDeletes.isNotEmpty(),
+                enter = fadeIn(tween(Motion.QUICK_MS)) + slideInVertically(tween(Motion.QUICK_MS)) { it },
+                exit = fadeOut(tween(Motion.QUICK_MS)) + slideOutVertically(tween(Motion.QUICK_MS)) { it },
+            ) {
+                Snackbar(
+                    modifier = Modifier.padding(Spacing.md),
+                    action = { TextButton(onClick = ::undoDeletes) { Text(stringResource(R.string.action_undo)) } },
+                ) {
+                    Text(
+                        if (pendingDeletes.size == 1) {
+                            stringResource(R.string.downloads_item_removed, pendingDeletes.first().title)
+                        } else {
+                            stringResource(R.string.downloads_items_removed, pendingDeletes.size)
+                        }
+                    )
+                }
+            }
+        },
         topBar = {
             LargeTopAppBar(
                 title = { SettingsScreenTitle(stringResource(R.string.nav_downloads)) },
@@ -106,20 +202,32 @@ fun DownloadsScreen(onBack: () -> Unit, onOpenDownload: (String) -> Unit, viewMo
                             DownloadFilterChip(DownloadFilter.FAILED, filter, stringResource(R.string.filter_failed)) { filter = it }
                         }
                     }
-                    items(entries, key = { it.key.id }) { (task, status) ->
-                        DownloadCard(
-                            task = task,
-                            status = status,
-                            onClick = { onOpenDownload(task.id) },
-                            onPrimaryAction = {
-                                if (status is DownloadStatus.Completed) {
-                                    status.filePath?.let { FileShareUtils.openFile(context, it) }
-                                } else {
-                                    viewModel.primaryAction(task.id, status)
-                                }
-                            },
-                            modifier = Modifier.animateItem(tween(Motion.STANDARD_MS)).padding(bottom = Spacing.sm),
-                        )
+                    groupedEntries.forEach { (groupLabel, groupEntries) ->
+                        stickyHeader(key = groupLabel) {
+                            Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
+                                Text(
+                                    groupLabel,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(vertical = Spacing.sm),
+                                )
+                            }
+                        }
+                        items(groupEntries, key = { it.key.id }) { (task, status) ->
+                            DownloadHistoryRow(
+                                task = task,
+                                status = status,
+                                onOpen = { onOpenDownload(task.id) },
+                                onPrimaryAction = {
+                                    if (status is DownloadStatus.Completed) {
+                                        status.filePath?.let { FileShareUtils.openFile(context, it) }
+                                    } else {
+                                        viewModel.primaryAction(task.id, status)
+                                    }
+                                },
+                                onRequestDelete = { requestDelete(task.id, task.title.ifBlank { task.request.url }) },
+                            )
+                        }
                     }
                 }
             }
@@ -149,4 +257,50 @@ fun DownloadsScreen(onBack: () -> Unit, onOpenDownload: (String) -> Unit, viewMo
 @Composable
 private fun DownloadFilterChip(value: DownloadFilter, selected: DownloadFilter, label: String, onSelect: (DownloadFilter) -> Unit) {
     FilterChip(selected = value == selected, onClick = { onSelect(value) }, label = { Text(label) })
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LazyItemScope.DownloadHistoryRow(
+    task: DownloadTask,
+    status: DownloadStatus,
+    onOpen: () -> Unit,
+    onPrimaryAction: () -> Unit,
+    onRequestDelete: () -> Unit,
+) {
+    val dismissState =
+        rememberSwipeToDismissBoxState(
+            confirmValueChange = { value ->
+                if (value != SwipeToDismissBoxValue.Settled) onRequestDelete()
+                true
+            }
+        )
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = Modifier.animateItem(tween(Motion.STANDARD_MS)).padding(bottom = Spacing.sm),
+        backgroundContent = { DeleteSwipeBackground(dismissState) },
+    ) {
+        DownloadCard(task = task, status = status, onClick = onOpen, onPrimaryAction = onPrimaryAction)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DeleteSwipeBackground(dismissState: SwipeToDismissBoxState) {
+    val alignment =
+        when (dismissState.dismissDirection) {
+            SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+            SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+            SwipeToDismissBoxValue.Settled -> Alignment.Center
+        }
+    Box(
+        modifier =
+            Modifier.fillMaxSize()
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.errorContainer)
+                .padding(horizontal = Spacing.lg),
+        contentAlignment = alignment,
+    ) {
+        Icon(Icons.Outlined.Delete, contentDescription = stringResource(R.string.action_delete), tint = MaterialTheme.colorScheme.onErrorContainer)
+    }
 }
