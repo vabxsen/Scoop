@@ -176,26 +176,53 @@ class SettingsViewModel(
         if (count == 0) null else "${bytes.toHumanReadableSize()} across $count ${if (count == 1) "download" else "downloads"}"
 
     /**
-     * Real used/total space on the device's primary storage volume, via the OS - not just what
-     * Scoop itself has downloaded. Uses StorageStatsManager (the same API the system Settings
-     * app's own storage summary is built on) rather than raw StatFs: under scoped storage's FUSE
-     * layer, StatFs on getExternalStorageDirectory() can report a noticeably smaller total/used
-     * than the device's real capacity for a sandboxed app. Falls back to StatFs pre-Android 8.
+     * Real used/total space across every storage volume the device exposes - not just what Scoop
+     * itself has downloaded. Uses StorageStatsManager (the same API the system Settings app's own
+     * storage summary is built on) rather than raw StatFs: under scoped storage's FUSE layer,
+     * StatFs on getExternalStorageDirectory() can report a noticeably smaller total/used than the
+     * device's real capacity for a sandboxed app. Summed across [StorageManager.getStorageVolumes]
+     * (API 30+ can resolve every volume's UUID, including a removable SD card; below that only the
+     * primary internal volume is resolvable) rather than just [StorageManager.UUID_DEFAULT] alone,
+     * since a phone's own Settings app typically reports internal+SD combined and a single-volume
+     * total reads as "wrong" (too small) next to that on any device with expandable storage. Falls
+     * back to StatFs pre-Android 8.
      */
     private fun deviceStorageLabel(): String {
         val (totalBytes, usedBytes) =
             runCatching {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        val statsManager = appContext.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
-                        val total = statsManager.getTotalBytes(StorageManager.UUID_DEFAULT)
-                        val free = statsManager.getFreeBytes(StorageManager.UUID_DEFAULT)
-                        total to (total - free)
+                        aggregatedStorageBytes()
                     } else {
                         legacyDeviceStorageBytes()
                     }
                 }
                 .getOrElse { legacyDeviceStorageBytes() }
         return "${usedBytes.toDecimalStorageSize()} used of ${totalBytes.toDecimalStorageSize()}"
+    }
+
+    private fun aggregatedStorageBytes(): Pair<Long, Long> {
+        val statsManager = appContext.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
+        val storageManager = appContext.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+        var totalBytes = 0L
+        var freeBytes = 0L
+        var countedAny = false
+        storageManager.storageVolumes.forEach { volume ->
+            val uuid =
+                when {
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> volume.storageUuid
+                    volume.isPrimary -> StorageManager.UUID_DEFAULT
+                    // Pre-Android 11 has no public way to resolve a non-primary (e.g. SD card)
+                    // volume's UUID, so that volume is left out rather than guessed at.
+                    else -> null
+                } ?: return@forEach
+            runCatching {
+                totalBytes += statsManager.getTotalBytes(uuid)
+                freeBytes += statsManager.getFreeBytes(uuid)
+                countedAny = true
+            }
+        }
+        check(countedAny) { "No storage volume could be queried" }
+        return totalBytes to (totalBytes - freeBytes)
     }
 
     private fun legacyDeviceStorageBytes(): Pair<Long, Long> {

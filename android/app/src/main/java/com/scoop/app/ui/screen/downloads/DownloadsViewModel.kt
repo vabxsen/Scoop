@@ -16,6 +16,7 @@ enum class DownloadFilter {
 class DownloadsViewModel(private val downloadManager: DownloadManager) : ViewModel() {
 
     val tasks get() = downloadManager.tasks
+    val pendingDeleteIds get() = downloadManager.pendingDeleteIds
 
     fun matches(status: DownloadStatus, filter: DownloadFilter): Boolean =
         when (filter) {
@@ -38,9 +39,12 @@ class DownloadsViewModel(private val downloadManager: DownloadManager) : ViewMod
         }
     }
 
-    fun delete(taskId: String) {
-        viewModelScope.launch { downloadManager.deleteTaskAndFile(taskId) }
-    }
+    /** Swipe-to-delete: hides [taskId] immediately and schedules the real delete a couple of
+     * seconds out (on the download manager's own process-lifetime scope, so it still fires even
+     * if this screen is navigated away from before the undo window closes). */
+    fun requestDelete(taskId: String) = downloadManager.requestDelete(taskId)
+
+    fun undoDeletes() = downloadManager.undoAllDeletes()
 
     fun clearAll() {
         viewModelScope.launch { downloadManager.clearAll() }

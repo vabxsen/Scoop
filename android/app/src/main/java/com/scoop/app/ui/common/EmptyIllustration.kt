@@ -16,10 +16,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 
 /**
- * An original flat-vector illustration for empty states: a seated figure under a tree, with a
- * small accent circle. Composed from primitive shapes (not traced from any reference artwork).
- * All stroke widths and positions are proportional to the canvas size, since DrawScope operates
- * in raw pixels and a fixed px stroke width would render as a near-invisible hairline on
+ * An original flat-vector illustration for empty states: a tree with a small accent circle
+ * tucked close to its canopy. Composed from primitive shapes (not traced from any reference
+ * artwork). All stroke widths and positions are proportional to the canvas size, since DrawScope
+ * operates in raw pixels and a fixed px stroke width would render as a near-invisible hairline on
  * higher-density screens.
  */
 @Composable
@@ -27,12 +27,10 @@ fun EmptyDownloadsIllustration(modifier: Modifier = Modifier) {
     val canopy = MaterialTheme.colorScheme.secondaryContainer
     val canopyShadow = MaterialTheme.colorScheme.secondary.copy(alpha = 0.45f)
     val trunk = MaterialTheme.colorScheme.onSurfaceVariant
-    val figureBody = MaterialTheme.colorScheme.onSurface
-    val figureSkin = MaterialTheme.colorScheme.tertiaryContainer
     val ground = MaterialTheme.colorScheme.outlineVariant
     val accentBg = MaterialTheme.colorScheme.primaryContainer
 
-    Box(modifier = modifier.width(260.dp).height(200.dp)) {
+    Box(modifier = modifier.width(210.dp).height(200.dp)) {
         Canvas(modifier = Modifier.width(220.dp).height(200.dp)) {
             val w = size.width
             val h = size.height
@@ -59,44 +57,9 @@ fun EmptyDownloadsIllustration(modifier: Modifier = Modifier) {
             // Tree canopy (two overlapping circles for a soft, organic shape)
             drawCircle(color = canopyShadow, radius = w * 0.24f, center = Offset(trunkX - w * 0.07f, h * 0.26f))
             drawCircle(color = canopy, radius = w * 0.27f, center = Offset(trunkX + w * 0.05f, h * 0.22f))
-
-            // Seated figure, built from bold filled/stroked shapes (not thin lines) so it reads
-            // clearly at small sizes. Kept compact and close to the trunk.
-            val hipX = trunkX + w * 0.16f
-            val hipY = h * 0.80f
-            val limbWidth = w * 0.05f
-            val torsoWidth = w * 0.09f
-
-            // Legs: thigh out, shin down to a small foot - kept short so nothing overshoots the canvas.
-            drawLine(
-                color = figureBody,
-                start = Offset(hipX, hipY),
-                end = Offset(hipX + w * 0.14f, h * 0.83f),
-                strokeWidth = limbWidth,
-                cap = StrokeCap.Round,
-            )
-            drawLine(
-                color = figureBody,
-                start = Offset(hipX + w * 0.14f, h * 0.83f),
-                end = Offset(hipX + w * 0.22f, h * 0.80f),
-                strokeWidth = limbWidth,
-                cap = StrokeCap.Round,
-            )
-
-            // Torso: one bold rounded stroke from hip up to the neck.
-            drawLine(
-                color = figureBody,
-                start = Offset(hipX, hipY),
-                end = Offset(hipX, h * 0.56f),
-                strokeWidth = torsoWidth,
-                cap = StrokeCap.Round,
-            )
-
-            // Head
-            drawCircle(color = figureSkin, radius = w * 0.06f, center = Offset(hipX, h * 0.47f))
         }
 
-        // Decorative accent circle with a download glyph, offset to the right
+        // Decorative accent circle with a download glyph, tucked close to the canopy
         Box(modifier = Modifier.width(72.dp).height(72.dp).align(Alignment.CenterEnd)) {
             Canvas(modifier = Modifier.width(72.dp).height(72.dp)) { drawCircle(color = accentBg) }
             Icon(

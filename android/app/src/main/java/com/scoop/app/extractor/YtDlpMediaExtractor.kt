@@ -12,6 +12,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
+/**
+ * Forces yt-dlp's "android" YouTube player client instead of its default "web" one. YouTube's web
+ * client increasingly returns "Sign in to confirm you're not a bot" for unauthenticated requests,
+ * which normally requires passing cookies - the android client isn't subject to that same
+ * bot-check, so this keeps YouTube working without needing the cookie-import flow the app doesn't
+ * have. Applied to every yt-dlp invocation (analyze, playlist, and the actual download) since any
+ * one of them can hit the same wall independently.
+ */
+const val YOUTUBE_PLAYER_CLIENT_ARG = "youtube:player_client=android"
+
 /** Extracts media metadata by shelling out to the bundled yt-dlp runtime and parsing its JSON. */
 class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness) : MediaExtractor {
 
@@ -28,6 +38,7 @@ class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness
                         addOption("--no-warnings")
                         addOption("-R", "1")
                         addOption("--socket-timeout", "10")
+                        addOption("--extractor-args", YOUTUBE_PLAYER_CLIENT_ARG)
                     }
                 val response = YoutubeDL.getInstance().execute(request, "analyze:$url", null)
                 json.decodeFromString<YtDlpVideoJson>(response.out).toMediaInfo(url)
@@ -44,6 +55,7 @@ class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness
                         addOption("--flat-playlist")
                         addOption("--yes-playlist")
                         addOption("--no-warnings")
+                        addOption("--extractor-args", YOUTUBE_PLAYER_CLIENT_ARG)
                     }
                 val response = YoutubeDL.getInstance().execute(request, "playlist:$url", null)
                 json.decodeFromString<YtDlpPlaylistJson>(response.out).toPlaylistInfo(url)

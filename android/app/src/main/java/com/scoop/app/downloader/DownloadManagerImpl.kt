@@ -8,8 +8,10 @@ import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.Uri
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -27,6 +29,7 @@ import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.DownloadTask
 import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.extractor.MediaExtractor
+import com.scoop.app.extractor.YOUTUBE_PLAYER_CLIENT_ARG
 import com.scoop.app.util.DownloadGate
 import com.scoop.app.util.FileShareUtils
 import com.scoop.app.util.PrefKeys
@@ -47,6 +50,7 @@ import kotlinx.coroutines.withContext
 
 private const val DEFAULT_MAX_CONCURRENCY = 3
 private const val RETRY_BACKOFF_BASE_MS = 8_000L
+private const val DELETE_UNDO_WINDOW_MS = 2_000L
 
 class DownloadManagerImpl(
     private val extractor: MediaExtractor,
@@ -58,8 +62,10 @@ class DownloadManagerImpl(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val jobs = mutableMapOf<String, Job>()
     private val retryAttempts = mutableMapOf<String, Int>()
+    private val pendingDeleteJobs = mutableMapOf<String, Job>()
 
     override val tasks: SnapshotStateMap<DownloadTask, DownloadStatus> = mutableStateMapOf()
+    override val pendingDeleteIds: SnapshotStateList<String> = mutableStateListOf()
 
     init {
         DownloadPaths.sweepStaleTempWorkspaces(appContext)
@@ -170,6 +176,29 @@ class DownloadManagerImpl(
         }
     }
 
+    override fun requestDelete(taskId: String) {
+        if (taskId in pendingDeleteIds) return
+        pendingDeleteIds.add(taskId)
+        pendingDeleteJobs[taskId] =
+            scope.launch {
+                delay(DELETE_UNDO_WINDOW_MS)
+                pendingDeleteJobs.remove(taskId)
+                pendingDeleteIds.remove(taskId)
+                deleteTaskAndFile(taskId)
+            }
+    }
+
+    override fun undoDelete(taskId: String) {
+        pendingDeleteJobs.remove(taskId)?.cancel()
+        pendingDeleteIds.remove(taskId)
+    }
+
+    override fun undoAllDeletes() {
+        pendingDeleteJobs.values.forEach { it.cancel() }
+        pendingDeleteJobs.clear()
+        pendingDeleteIds.clear()
+    }
+
     override suspend fun clearHistoryOlderThan(days: Int) {
         val cutoff = System.currentTimeMillis() - days * 24L * 60 * 60 * 1000
         withContext(Dispatchers.IO) {
@@ -278,6 +307,7 @@ class DownloadManagerImpl(
                         addOption("--no-playlist")
                         addOption("-o", File(tempDir, "%(title)s.%(ext)s").absolutePath)
                         addOption("--print", "after_move:filepath")
+                        addOption("--extractor-args", YOUTUBE_PLAYER_CLIENT_ARG)
                         val speedLimit =
                             DownloadSpeedLimit.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.DOWNLOAD_SPEED_LIMIT, DownloadSpeedLimit.UNLIMITED.name) }
                                 ?.ytDlpValue

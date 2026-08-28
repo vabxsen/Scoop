@@ -41,8 +41,7 @@
     <string name="downloads_clear_all">Clear all</string>
     <string name="downloads_clear_all_title">Clear all downloads?</string>
     <string name="downloads_clear_all_body">This deletes every downloaded file along with its history. This can\'t be undone.</string>
-    <string name="downloads_item_removed">Removed “%1$s”</string>
-    <string name="downloads_items_removed">Removed %1$d items</string>
+    <string name="downloads_removed">Removed from history</string>
     <string name="action_undo">Undo</string>
 
     <string name="download_details_title">Download</string>

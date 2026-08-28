@@ -44,7 +44,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,15 +66,9 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
-private const val UNDO_WINDOW_MS = 2_000L
 private const val DAY_MS = 86_400_000L
-
-private class PendingDelete(val taskId: String, val title: String, val job: Job)
 
 private fun startOfDay(timeMillis: Long): Long =
     Calendar.getInstance()
@@ -104,52 +97,37 @@ private fun dateGroupLabel(createdAt: Long): String {
 @Composable
 fun DownloadsScreen(onBack: () -> Unit, onOpenDownload: (String) -> Unit, viewModel: DownloadsViewModel = koinViewModel()) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var filter by remember { mutableStateOf(DownloadFilter.ALL) }
     var showClearAllDialog by remember { mutableStateOf(false) }
-    var pendingDeletes by remember { mutableStateOf(emptyList<PendingDelete>()) }
-    val pendingDeleteIds = pendingDeletes.map { it.taskId }.toSet()
+    val pendingDeleteIds = viewModel.pendingDeleteIds
     val entries =
         viewModel.tasks.entries
             .filter { viewModel.matches(it.value, filter) && it.key.id !in pendingDeleteIds }
             .sortedByDescending { it.key.createdAt }
     val groupedEntries = entries.groupBy { dateGroupLabel(it.key.createdAt) }
 
-    fun requestDelete(taskId: String, title: String) {
-        val job =
-            scope.launch {
-                delay(UNDO_WINDOW_MS)
-                viewModel.delete(taskId)
-                pendingDeletes = pendingDeletes.filterNot { it.taskId == taskId }
-            }
-        pendingDeletes = pendingDeletes + PendingDelete(taskId, title, job)
-    }
-
-    fun undoDeletes() {
-        pendingDeletes.forEach { it.job.cancel() }
-        pendingDeletes = emptyList()
-    }
-
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = {
             AnimatedVisibility(
-                visible = pendingDeletes.isNotEmpty(),
+                visible = pendingDeleteIds.isNotEmpty(),
                 enter = fadeIn(tween(Motion.QUICK_MS)) + slideInVertically(tween(Motion.QUICK_MS)) { it },
                 exit = fadeOut(tween(Motion.QUICK_MS)) + slideOutVertically(tween(Motion.QUICK_MS)) { it },
             ) {
                 Snackbar(
                     modifier = Modifier.padding(Spacing.md),
-                    action = { TextButton(onClick = ::undoDeletes) { Text(stringResource(R.string.action_undo)) } },
-                ) {
-                    Text(
-                        if (pendingDeletes.size == 1) {
-                            stringResource(R.string.downloads_item_removed, pendingDeletes.first().title)
-                        } else {
-                            stringResource(R.string.downloads_items_removed, pendingDeletes.size)
+                    action = {
+                        TextButton(onClick = viewModel::undoDeletes) {
+                            Text(
+                                stringResource(R.string.action_undo),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.inverseOnSurface,
+                            )
                         }
-                    )
+                    },
+                ) {
+                    Text(stringResource(R.string.downloads_removed))
                 }
             }
         },
@@ -225,7 +203,7 @@ fun DownloadsScreen(onBack: () -> Unit, onOpenDownload: (String) -> Unit, viewMo
                                         viewModel.primaryAction(task.id, status)
                                     }
                                 },
-                                onRequestDelete = { requestDelete(task.id, task.title.ifBlank { task.request.url }) },
+                                onRequestDelete = { viewModel.requestDelete(task.id) },
                             )
                         }
                     }
