@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="120" height="120" alt="Scoop logo" />
+  <img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png" width="120" height="120" alt="Scoop logo" />
 
   # Scoop
 
