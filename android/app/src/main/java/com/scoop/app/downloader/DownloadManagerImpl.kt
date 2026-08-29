@@ -34,10 +34,12 @@ import com.scoop.app.util.DownloadGate
 import com.scoop.app.util.FileShareUtils
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
+import com.scoop.app.util.tokenizeShellArgs
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import java.io.File
 import java.util.UUID
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -126,7 +128,7 @@ class DownloadManagerImpl(
                 val task =
                     DownloadTask(
                         id = item.id,
-                        request = DownloadRequest(url = item.sourceUrl, kind = kind),
+                        request = DownloadRequest(url = item.sourceUrl, kind = kind, playlistTitle = item.playlistTitle),
                         title = item.title,
                         thumbnailUrl = item.thumbnailUrl,
                         createdAt = item.createdAt,
@@ -261,6 +263,7 @@ class DownloadManagerImpl(
                                             thumbnailUrl = task.thumbnailUrl,
                                             kind = task.request.kind.name,
                                             createdAt = task.createdAt,
+                                            playlistTitle = task.request.playlistTitle,
                                         )
                                     )
                                     notifyDownloadComplete(task, filePath)
@@ -338,12 +341,24 @@ class DownloadManagerImpl(
                                 addOption("--audio-quality", qualityValue)
                             }
                         }
+                        // Appended last so a user-typed flag here can override any default above -
+                        // yt-dlp/argparse takes the last occurrence for non-list options.
+                        task.request.customArgs?.let { addCommands(tokenizeShellArgs(it)) }
                     }
 
                 val response =
                     YoutubeDL.getInstance().execute(request, task.id) { progress, eta, _ ->
                         val current = tasks[task] as? DownloadStatus.Downloading ?: DownloadStatus.Downloading()
-                        tasks[task] = current.copy(progress = progress / 100f, etaSeconds = eta.toInt())
+                        // yt-dlp reports progress far more often than the UI needs - writing every
+                        // callback straight into the SnapshotStateMap floods Compose with dozens of
+                        // recompositions a second. Rounding to the nearest whole percent bounds this
+                        // to ~100 writes per download; animateFloatAsState in DownloadCard still
+                        // tweens smoothly between the coarser steps.
+                        val roundedProgress = (progress / 100f * 100).roundToInt() / 100f
+                        val roundedEta = eta.toInt()
+                        if (roundedProgress != current.progress || roundedEta != current.etaSeconds) {
+                            tasks[task] = current.copy(progress = roundedProgress, etaSeconds = roundedEta)
+                        }
                     }
 
                 // `--print after_move:filepath` writes the final resolved path as its own stdout

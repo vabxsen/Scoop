@@ -61,10 +61,21 @@
     <string name="configure_additional_settings">Additional settings</string>
     <string name="option_embed_subtitles">Embed subtitles</string>
     <string name="option_embed_thumbnail">Embed thumbnail</string>
+    <string name="configure_advanced">Advanced</string>
+    <string name="option_custom_command">Custom command</string>
+    <string name="custom_command_placeholder">--sponsorblock-remove sponsor</string>
+    <string name="custom_command_help">Extra yt-dlp arguments, applied after Scoop\'s own options. For advanced users.</string>
 
     <string name="format_section_suggested">Suggested</string>
     <string name="format_section_video_only">Video only</string>
     <string name="format_section_audio">Audio</string>
+
+    <string name="playlist_untitled">Playlist</string>
+    <string name="playlist_entry_count">%d videos</string>
+    <string name="playlist_auto_only_note">Playlist downloads always use the best available quality — per-video format selection isn\'t available.</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_select_none">Select none</string>
+    <string name="action_download_count">Download %d</string>
 
     <string name="settings_general_title">Look &amp; feel</string>
     <string name="settings_general_subtitle">Dark theme, accent color, dynamic color</string>

@@ -41,6 +41,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -101,11 +102,20 @@ fun DownloadsScreen(onBack: () -> Unit, onOpenDownload: (String) -> Unit, viewMo
     var filter by remember { mutableStateOf(DownloadFilter.ALL) }
     var showClearAllDialog by remember { mutableStateOf(false) }
     val pendingDeleteIds = viewModel.pendingDeleteIds
-    val entries =
-        viewModel.tasks.entries
-            .filter { viewModel.matches(it.value, filter) && it.key.id !in pendingDeleteIds }
-            .sortedByDescending { it.key.createdAt }
-    val groupedEntries = entries.groupBy { dateGroupLabel(it.key.createdAt) }
+    // Derives only the task list/order/grouping - never DownloadStatus - so a progress tick that
+    // doesn't add/remove/reclassify a task produces an equal Map and skips recomposing the whole
+    // list. Each row reads its own live status separately (see DownloadHistoryRow) instead of
+    // getting it baked into this derivation, which would defeat the point.
+    val groupedTasks by
+        remember(filter) {
+            derivedStateOf {
+                viewModel.tasks.entries
+                    .filter { viewModel.matches(it.value, filter) && it.key.id !in pendingDeleteIds }
+                    .map { it.key }
+                    .sortedByDescending { it.createdAt }
+                    .groupBy { dateGroupLabel(it.createdAt) }
+            }
+        }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -180,7 +190,7 @@ fun DownloadsScreen(onBack: () -> Unit, onOpenDownload: (String) -> Unit, viewMo
                             DownloadFilterChip(DownloadFilter.FAILED, filter, stringResource(R.string.filter_failed)) { filter = it }
                         }
                     }
-                    groupedEntries.forEach { (groupLabel, groupEntries) ->
+                    groupedTasks.forEach { (groupLabel, groupTasksForLabel) ->
                         stickyHeader(key = groupLabel) {
                             Box(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) {
                                 Text(
@@ -191,12 +201,12 @@ fun DownloadsScreen(onBack: () -> Unit, onOpenDownload: (String) -> Unit, viewMo
                                 )
                             }
                         }
-                        items(groupEntries, key = { it.key.id }) { (task, status) ->
+                        items(groupTasksForLabel, key = { it.id }) { task ->
                             DownloadHistoryRow(
                                 task = task,
-                                status = status,
+                                tasks = viewModel.tasks,
                                 onOpen = { onOpenDownload(task.id) },
-                                onPrimaryAction = {
+                                onPrimaryAction = { status ->
                                     if (status is DownloadStatus.Completed) {
                                         status.filePath?.let { FileShareUtils.openFile(context, it) }
                                     } else {
@@ -237,15 +247,20 @@ private fun DownloadFilterChip(value: DownloadFilter, selected: DownloadFilter, 
     FilterChip(selected = value == selected, onClick = { onSelect(value) }, label = { Text(label) })
 }
 
+/** Reads its own live status from [tasks] rather than taking one as a parameter - this scopes the
+ * SnapshotStateMap read to just this row's own recomposition, so a progress tick on one task only
+ * recomposes its own row instead of the whole list (see [groupedTasks] above, which deliberately
+ * excludes DownloadStatus from what it derives). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LazyItemScope.DownloadHistoryRow(
     task: DownloadTask,
-    status: DownloadStatus,
+    tasks: Map<DownloadTask, DownloadStatus>,
     onOpen: () -> Unit,
-    onPrimaryAction: () -> Unit,
+    onPrimaryAction: (DownloadStatus) -> Unit,
     onRequestDelete: () -> Unit,
 ) {
+    val status = tasks[task] ?: return
     val dismissState =
         rememberSwipeToDismissBoxState(
             confirmValueChange = { value ->
@@ -258,7 +273,7 @@ private fun LazyItemScope.DownloadHistoryRow(
         modifier = Modifier.animateItem(tween(Motion.STANDARD_MS)).padding(bottom = Spacing.sm),
         backgroundContent = { DeleteSwipeBackground(dismissState) },
     ) {
-        DownloadCard(task = task, status = status, onClick = onOpen, onPrimaryAction = onPrimaryAction)
+        DownloadCard(task = task, status = status, onClick = onOpen, onPrimaryAction = { onPrimaryAction(status) })
     }
 }
 

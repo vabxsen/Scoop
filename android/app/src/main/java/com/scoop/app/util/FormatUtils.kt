@@ -30,6 +30,14 @@ fun Int.toEtaLabel(): String {
     return if (minutes > 0) "${minutes}m ${seconds}s left" else "${seconds}s left"
 }
 
+/** Compact mm:ss (or h:mm:ss) duration label for a playlist entry, e.g. 95 -> "1:35". */
+fun Int.toDurationLabel(): String {
+    val hours = this / 3600
+    val minutes = (this % 3600) / 60
+    val seconds = this % 60
+    return if (hours > 0) "%d:%02d:%02d".format(hours, minutes, seconds) else "%d:%02d".format(minutes, seconds)
+}
+
 /** Compact relative-time label for a past timestamp, e.g. "5m ago", "3h ago", "2d ago". */
 fun Long.toRelativeTimeLabel(): String {
     val diff = (System.currentTimeMillis() - this).coerceAtLeast(0)

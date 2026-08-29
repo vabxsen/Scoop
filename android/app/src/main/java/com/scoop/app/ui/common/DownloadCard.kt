@@ -60,7 +60,7 @@ fun DownloadCard(
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.fillMaxWidth().animateContentSize(tween(Motion.STANDARD_MS)).clickable(onClick = onClick),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
@@ -75,7 +75,10 @@ fun DownloadCard(
                 KindBadge(task.request.kind, modifier = Modifier.align(Alignment.BottomStart).padding(6.dp))
             }
             Column(
-                modifier = Modifier.weight(1f).padding(horizontal = Spacing.md),
+                // Scoped to just this column (title/meta/progress bar) rather than the whole Card,
+                // since only this part's height actually changes (the progress bar appearing or
+                // disappearing) - the thumbnail and action button never need to be re-measured.
+                modifier = Modifier.weight(1f).padding(horizontal = Spacing.md).animateContentSize(tween(Motion.STANDARD_MS)),
                 verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             ) {
                 Text(
@@ -139,10 +142,13 @@ private fun DownloadCardMeta(task: DownloadTask, status: DownloadStatus) {
     when (status) {
         is DownloadStatus.Completed -> {
             val kindLabel = if (task.request.kind == DownloadKind.AUDIO_ONLY) "Audio" else "Video"
+            val playlistSuffix = task.request.playlistTitle?.let { " · from $it" } ?: ""
             Text(
-                "$kindLabel · ${task.createdAt.toRelativeTimeLabel()}",
+                "$kindLabel · ${task.createdAt.toRelativeTimeLabel()}$playlistSuffix",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         else -> StatusChip(status)

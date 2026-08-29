@@ -13,10 +13,12 @@ import com.scoop.app.core.model.DownloadRequest
 import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.MediaFormat
 import com.scoop.app.core.model.MediaInfo
+import com.scoop.app.core.model.PlaylistInfo
 import com.scoop.app.downloader.DownloadManager
 import com.scoop.app.extractor.MediaExtractor
 import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
+import com.scoop.app.util.isPlaylistUrl
 import kotlinx.coroutines.launch
 
 sealed interface ConfigureUiState {
@@ -27,6 +29,8 @@ sealed interface ConfigureUiState {
     data class Error(val message: String) : ConfigureUiState
 
     data class Loaded(val info: MediaInfo) : ConfigureUiState
+
+    data class PlaylistLoaded(val info: PlaylistInfo) : ConfigureUiState
 }
 
 private const val TAG = "HomeViewModel"
@@ -59,6 +63,17 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
     var embedThumbnail by mutableStateOf(false)
         private set
 
+    var customCommandEnabled by mutableStateOf(false)
+        private set
+
+    var customArgs by mutableStateOf("")
+        private set
+
+    /** Entry URLs currently checked in the playlist selection list. Modeled by URL (not id) since
+     * that's what actually becomes each expanded [DownloadRequest.url] at confirm time. */
+    var selectedPlaylistEntryUrls by mutableStateOf<Set<String>>(emptySet())
+        private set
+
     /** The just-enqueued task the configure sheet switches to showing live progress for, if any. */
     var activeDownloadTaskId by mutableStateOf<String?>(null)
         private set
@@ -70,26 +85,50 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
         url = value
     }
 
-    /** Entry point for the download FAB: analyzes the current URL and opens the configure sheet. */
+    /** Entry point for the download FAB: analyzes the current URL and opens the configure sheet.
+     * A "pure" playlist link (list= with no v=) routes through [MediaExtractor.getPlaylist]
+     * instead - a video link that merely carries a list= param keeps today's single-video path. */
     fun startDownloadFlow() {
         val target = url.trim()
         if (target.isEmpty()) return
         configureState = ConfigureUiState.Loading
         viewModelScope.launch {
-            extractor
-                .analyze(target)
-                .onSuccess { info ->
-                    selectedKind = DownloadKind.VIDEO
-                    formatMode = FormatMode.AUTO
-                    selectedFormat = null
-                    embedSubtitles = false
-                    embedThumbnail = false
-                    configureState = ConfigureUiState.Loaded(info)
-                }
-                .onFailure {
-                    Log.e(TAG, "analyze failed for $target", it)
-                    configureState = ConfigureUiState.Error(it.message ?: "Unknown error")
-                }
+            if (isPlaylistUrl(target)) {
+                extractor
+                    .getPlaylist(target)
+                    .onSuccess { info ->
+                        if (info.entries.isEmpty()) {
+                            configureState = ConfigureUiState.Error("Playlist has no videos")
+                            return@onSuccess
+                        }
+                        selectedKind = DownloadKind.VIDEO
+                        embedSubtitles = false
+                        embedThumbnail = false
+                        selectedPlaylistEntryUrls = info.entries.mapNotNull { it.url }.toSet()
+                        configureState = ConfigureUiState.PlaylistLoaded(info)
+                    }
+                    .onFailure {
+                        Log.e(TAG, "getPlaylist failed for $target", it)
+                        configureState = ConfigureUiState.Error(it.message ?: "Unknown error")
+                    }
+            } else {
+                extractor
+                    .analyze(target)
+                    .onSuccess { info ->
+                        selectedKind = DownloadKind.VIDEO
+                        formatMode = FormatMode.AUTO
+                        selectedFormat = null
+                        embedSubtitles = false
+                        embedThumbnail = false
+                        customCommandEnabled = false
+                        customArgs = ""
+                        configureState = ConfigureUiState.Loaded(info)
+                    }
+                    .onFailure {
+                        Log.e(TAG, "analyze failed for $target", it)
+                        configureState = ConfigureUiState.Error(it.message ?: "Unknown error")
+                    }
+            }
         }
     }
 
@@ -98,6 +137,22 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
     fun dismissConfigureSheet() {
         configureState = ConfigureUiState.Hidden
         activeDownloadTaskId = null
+        selectedPlaylistEntryUrls = emptySet()
+        customCommandEnabled = false
+        customArgs = ""
+    }
+
+    fun togglePlaylistEntry(entryUrl: String) {
+        selectedPlaylistEntryUrls =
+            if (entryUrl in selectedPlaylistEntryUrls) selectedPlaylistEntryUrls - entryUrl else selectedPlaylistEntryUrls + entryUrl
+    }
+
+    fun selectAllPlaylistEntries(info: PlaylistInfo) {
+        selectedPlaylistEntryUrls = info.entries.mapNotNull { it.url }.toSet()
+    }
+
+    fun deselectAllPlaylistEntries() {
+        selectedPlaylistEntryUrls = emptySet()
     }
 
     fun selectKind(kind: DownloadKind) {
@@ -124,6 +179,14 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
 
     fun toggleEmbedThumbnail() {
         embedThumbnail = !embedThumbnail
+    }
+
+    fun toggleCustomCommand() {
+        customCommandEnabled = !customCommandEnabled
+    }
+
+    fun onCustomArgsChange(value: String) {
+        customArgs = value
     }
 
     /** Enqueues the current selection. Returns false if there's nothing loaded yet to download. */
@@ -155,11 +218,48 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
                         audioContainer = audioContainer,
                         embedSubtitles = embedSubtitles,
                         embedThumbnail = embedThumbnail,
+                        customArgs = customArgs.trim().takeIf { customCommandEnabled && it.isNotBlank() },
                     ),
                 title = info.title,
                 thumbnailUrl = info.thumbnailUrl,
             )
         activeDownloadTaskId = task.id
+        url = ""
+        return true
+    }
+
+    /** Enqueues the currently checked playlist entries, one [DownloadRequest] each - the existing
+     * queue already handles any number of independent single-video tasks, so this just expands
+     * the playlist into N ordinary enqueue() calls rather than reusing the single-task progress
+     * view. Always Auto quality: playlist entries carry no per-video format list. */
+    fun confirmPlaylistDownload(): Boolean {
+        val info = (configureState as? ConfigureUiState.PlaylistLoaded)?.info ?: return false
+        val audioContainer =
+            if (selectedKind == DownloadKind.AUDIO_ONLY) {
+                DefaultAudioFormat.entries
+                    .firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.DEFAULT_AUDIO_FORMAT, DefaultAudioFormat.MP3.name) }
+                    ?.container ?: "mp3"
+            } else {
+                null
+            }
+        val selectedEntries = info.entries.filter { it.url != null && it.url in selectedPlaylistEntryUrls }
+        if (selectedEntries.isEmpty()) return false
+        selectedEntries.forEach { entry ->
+            downloadManager.enqueue(
+                request =
+                    DownloadRequest(
+                        url = entry.url!!,
+                        kind = selectedKind,
+                        formatId = null,
+                        audioContainer = audioContainer,
+                        embedSubtitles = embedSubtitles,
+                        embedThumbnail = embedThumbnail,
+                        playlistTitle = info.title,
+                    ),
+                title = entry.title ?: entry.url,
+                thumbnailUrl = entry.thumbnailUrl,
+            )
+        }
         url = ""
         return true
     }

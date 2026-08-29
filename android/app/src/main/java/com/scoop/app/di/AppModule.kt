@@ -26,7 +26,9 @@ val appModule = module {
     single<MediaExtractor> { YtDlpMediaExtractor(mediaEngineReadiness = get()) }
 
     single {
-        Room.databaseBuilder(androidContext(), AppDatabase::class.java, AppDatabase.DATABASE_NAME).build()
+        Room.databaseBuilder(androidContext(), AppDatabase::class.java, AppDatabase.DATABASE_NAME)
+            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .build()
     }
     single { get<AppDatabase>().downloadHistoryDao() }
 

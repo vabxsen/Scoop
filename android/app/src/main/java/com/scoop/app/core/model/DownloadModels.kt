@@ -17,6 +17,12 @@ data class DownloadRequest(
     /** Embeds the source's thumbnail as cover art - works for both a video file and audio (ID3
      * cover art). */
     val embedThumbnail: Boolean = false,
+    /** Set only when this request was expanded from a playlist entry; used purely for grouping
+     * in history/UI, never sent to yt-dlp. */
+    val playlistTitle: String? = null,
+    /** Raw extra yt-dlp arguments, tokenized and appended after Scoop's own options - lets a
+     * later flag here override an earlier default one (argparse last-wins). */
+    val customArgs: String? = null,
 )
 
 /** One item in the download queue: the fixed request plus display info captured at enqueue time. */

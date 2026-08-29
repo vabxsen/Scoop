@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Subtitles
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -40,6 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -47,16 +50,20 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.scoop.app.R
 import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.MediaInfo
+import com.scoop.app.core.model.PlaylistEntryInfo
+import com.scoop.app.core.model.PlaylistInfo
 import com.scoop.app.ui.common.BestAvailableOption
 import com.scoop.app.ui.common.ErrorState
 import com.scoop.app.ui.common.FormatOptionTile
@@ -66,6 +73,7 @@ import com.scoop.app.ui.theme.Motion
 import com.scoop.app.ui.theme.Spacing
 import com.scoop.app.util.DownloadBlockReason
 import com.scoop.app.util.DownloadGate
+import com.scoop.app.util.toDurationLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,6 +120,7 @@ fun ConfigureDownloadSheet(viewModel: HomeViewModel, onDismiss: () -> Unit) {
                                 onRetry = viewModel::retryAnalyze,
                             )
                         is ConfigureUiState.Loaded -> ConfigureForm(viewModel = viewModel, info = state.info, onDismiss = onDismiss)
+                        is ConfigureUiState.PlaylistLoaded -> PlaylistConfigureForm(viewModel = viewModel, info = state.info, onDismiss = onDismiss)
                     }
                 }
             }
@@ -317,6 +326,40 @@ private fun ConfigureForm(viewModel: HomeViewModel, info: MediaInfo, onDismiss: 
             )
         }
 
+        SettingSectionLabel(stringResource(R.string.configure_advanced), modifier = Modifier.padding(top = Spacing.md))
+        FilterChip(
+            selected = viewModel.customCommandEnabled,
+            onClick = viewModel::toggleCustomCommand,
+            label = { Text(stringResource(R.string.option_custom_command)) },
+            leadingIcon =
+                if (viewModel.customCommandEnabled) {
+                    { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
+                } else {
+                    null
+                },
+        )
+        AnimatedVisibility(
+            visible = viewModel.customCommandEnabled,
+            enter = fadeIn(tween(Motion.STANDARD_MS)) + expandVertically(tween(Motion.STANDARD_MS)),
+            exit = fadeOut(tween(Motion.QUICK_MS)) + shrinkVertically(tween(Motion.QUICK_MS)),
+        ) {
+            Column(modifier = Modifier.padding(top = Spacing.sm)) {
+                OutlinedTextField(
+                    value = viewModel.customArgs,
+                    onValueChange = viewModel::onCustomArgsChange,
+                    placeholder = { Text(stringResource(R.string.custom_command_placeholder)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                )
+                Text(
+                    stringResource(R.string.custom_command_help),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Spacing.xs),
+                )
+            }
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = Spacing.lg),
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
@@ -332,6 +375,121 @@ private fun ConfigureForm(viewModel: HomeViewModel, info: MediaInfo, onDismiss: 
             ) {
                 Icon(Icons.Outlined.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text(stringResource(R.string.action_download), modifier = Modifier.padding(start = Spacing.xs))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaylistConfigureForm(viewModel: HomeViewModel, info: PlaylistInfo, onDismiss: () -> Unit) {
+    val maxSheetHeight = LocalConfiguration.current.screenHeightDp.dp * 0.85f
+    val validEntries = remember(info) { info.entries.filter { it.url != null } }
+    val selectedCount = validEntries.count { it.url in viewModel.selectedPlaylistEntryUrls }
+
+    Column(
+        modifier =
+            Modifier.fillMaxWidth()
+                .heightIn(max = maxSheetHeight)
+                .verticalScroll(rememberScrollState())
+                .animateContentSize(tween(Motion.STANDARD_MS)),
+    ) {
+        Text(info.title ?: stringResource(R.string.playlist_untitled), style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(R.string.playlist_entry_count, validEntries.size),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.padding(top = Spacing.sm)) {
+            OutlinedButton(onClick = { viewModel.selectAllPlaylistEntries(info) }) { Text(stringResource(R.string.action_select_all)) }
+            OutlinedButton(onClick = viewModel::deselectAllPlaylistEntries) { Text(stringResource(R.string.action_select_none)) }
+        }
+
+        Column(modifier = Modifier.padding(top = Spacing.sm)) {
+            validEntries.forEach { entry ->
+                PlaylistEntryRow(
+                    entry = entry,
+                    checked = entry.url in viewModel.selectedPlaylistEntryUrls,
+                    onToggle = { viewModel.togglePlaylistEntry(entry.url!!) },
+                )
+            }
+        }
+
+        SettingSectionLabel(stringResource(R.string.configure_download_type), modifier = Modifier.padding(top = Spacing.md))
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            SegmentedButton(
+                selected = viewModel.selectedKind == DownloadKind.AUDIO_ONLY,
+                onClick = { viewModel.selectKind(DownloadKind.AUDIO_ONLY) },
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+            ) { Text(stringResource(R.string.kind_audio)) }
+            SegmentedButton(
+                selected = viewModel.selectedKind == DownloadKind.VIDEO,
+                onClick = { viewModel.selectKind(DownloadKind.VIDEO) },
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+            ) { Text(stringResource(R.string.kind_video)) }
+        }
+        Text(
+            stringResource(R.string.playlist_auto_only_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = Spacing.xs),
+        )
+
+        SettingSectionLabel(stringResource(R.string.configure_additional_settings), modifier = Modifier.padding(top = Spacing.md))
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            if (viewModel.selectedKind == DownloadKind.VIDEO) {
+                FilterChip(
+                    selected = viewModel.embedSubtitles,
+                    onClick = viewModel::toggleEmbedSubtitles,
+                    label = { Text(stringResource(R.string.option_embed_subtitles)) },
+                    leadingIcon = { Icon(Icons.Outlined.Subtitles, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) },
+                )
+            }
+            FilterChip(
+                selected = viewModel.embedThumbnail,
+                onClick = viewModel::toggleEmbedThumbnail,
+                label = { Text(stringResource(R.string.option_embed_thumbnail)) },
+                leadingIcon = { Icon(Icons.Outlined.Image, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) },
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = Spacing.lg),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), shape = RoundedCornerShape(50)) {
+                Icon(Icons.Outlined.Cancel, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(stringResource(R.string.action_cancel), modifier = Modifier.padding(start = Spacing.xs))
+            }
+            Button(
+                onClick = { if (viewModel.confirmPlaylistDownload()) onDismiss() },
+                enabled = selectedCount > 0,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(50),
+            ) {
+                Icon(Icons.Outlined.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(stringResource(R.string.action_download_count, selectedCount), modifier = Modifier.padding(start = Spacing.xs))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaylistEntryRow(entry: PlaylistEntryInfo, checked: Boolean, onToggle: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(vertical = Spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(checked = checked, onCheckedChange = { onToggle() })
+        Column(modifier = Modifier.weight(1f).padding(start = Spacing.xs)) {
+            Text(
+                entry.title ?: entry.url ?: "",
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            entry.durationSeconds?.let {
+                Text(it.toDurationLabel(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

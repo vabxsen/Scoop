@@ -12,4 +12,5 @@ data class DownloadedItem(
     val thumbnailUrl: String?,
     val kind: String,
     val createdAt: Long,
+    val playlistTitle: String? = null,
 )
