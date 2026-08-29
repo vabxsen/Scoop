@@ -46,8 +46,6 @@
 
     <string name="download_details_title">Download</string>
 
-    <string name="quality_best_available">Best available</string>
-    <string name="quality_best_available_subtitle">Let Scoop pick the best quality automatically</string>
     <string name="kind_video">Video</string>
     <string name="kind_audio">Audio</string>
 
@@ -55,9 +53,8 @@
     <string name="configure_subtitle">Adjust this download</string>
     <string name="configure_download_type">Download type</string>
     <string name="configure_format_selection">Format selection</string>
-    <string name="configure_format_preference">Format preference</string>
-    <string name="option_auto">Auto</string>
-    <string name="option_custom">Custom</string>
+    <string name="option_highest_quality">Highest quality</string>
+    <string name="option_low_quality">Low quality</string>
     <string name="configure_additional_settings">Additional settings</string>
     <string name="option_embed_subtitles">Embed subtitles</string>
     <string name="option_embed_thumbnail">Embed thumbnail</string>
@@ -65,10 +62,6 @@
     <string name="option_custom_command">Custom command</string>
     <string name="custom_command_placeholder">--sponsorblock-remove sponsor</string>
     <string name="custom_command_help">Extra yt-dlp arguments, applied after Scoop\'s own options. For advanced users.</string>
-
-    <string name="format_section_suggested">Suggested</string>
-    <string name="format_section_video_only">Video only</string>
-    <string name="format_section_audio">Audio</string>
 
     <string name="playlist_untitled">Playlist</string>
     <string name="playlist_entry_count">%d videos</string>

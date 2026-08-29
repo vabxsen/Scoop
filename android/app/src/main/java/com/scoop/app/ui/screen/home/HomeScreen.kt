@@ -1,6 +1,5 @@
 package com.scoop.app.ui.screen.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -56,8 +55,8 @@ fun HomeScreen(
         if (!startUrl.isNullOrBlank()) viewModel.onUrlChange(startUrl)
     }
 
-    Scaffold(containerColor = Color(0xFFFDF8F4)) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().background(Color(0xFFFDF8F4)).padding(innerPadding)) {
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Column(modifier = Modifier.fillMaxSize().padding(Spacing.md)) {
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onOpenSettings) {

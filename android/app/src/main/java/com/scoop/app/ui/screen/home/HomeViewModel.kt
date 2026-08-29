@@ -7,7 +7,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scoop.app.core.model.DefaultAudioFormat
-import com.scoop.app.core.model.DefaultVideoQuality
 import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.DownloadRequest
 import com.scoop.app.core.model.DownloadStatus
@@ -36,8 +35,8 @@ sealed interface ConfigureUiState {
 private const val TAG = "HomeViewModel"
 
 enum class FormatMode {
-    AUTO,
-    CUSTOM,
+    HIGHEST,
+    LOW,
 }
 
 class HomeViewModel(private val extractor: MediaExtractor, private val downloadManager: DownloadManager) : ViewModel() {
@@ -51,10 +50,7 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
     var selectedKind by mutableStateOf(DownloadKind.VIDEO)
         private set
 
-    var formatMode by mutableStateOf(FormatMode.AUTO)
-        private set
-
-    var selectedFormat by mutableStateOf<MediaFormat?>(null)
+    var formatMode by mutableStateOf(FormatMode.HIGHEST)
         private set
 
     var embedSubtitles by mutableStateOf(false)
@@ -116,8 +112,7 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
                     .analyze(target)
                     .onSuccess { info ->
                         selectedKind = DownloadKind.VIDEO
-                        formatMode = FormatMode.AUTO
-                        selectedFormat = null
+                        formatMode = FormatMode.HIGHEST
                         embedSubtitles = false
                         embedThumbnail = false
                         customCommandEnabled = false
@@ -157,8 +152,7 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
 
     fun selectKind(kind: DownloadKind) {
         selectedKind = kind
-        formatMode = FormatMode.AUTO
-        selectedFormat = null
+        formatMode = FormatMode.HIGHEST
         // Subtitle embedding only applies to video; switching to audio would silently carry a
         // toggle over that no longer means anything.
         if (kind == DownloadKind.AUDIO_ONLY) embedSubtitles = false
@@ -166,11 +160,6 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
 
     fun selectFormatMode(mode: FormatMode) {
         formatMode = mode
-        if (mode == FormatMode.AUTO) selectedFormat = null
-    }
-
-    fun selectFormat(format: MediaFormat?) {
-        selectedFormat = format
     }
 
     fun toggleEmbedSubtitles() {
@@ -200,13 +189,13 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
             } else {
                 null
             }
-        // In Auto mode we still honor the user's configured default quality (Settings > Downloads)
-        // rather than always falling back to yt-dlp's own "best" heuristic - Custom mode is the only
-        // place the picked-format UI is shown.
+        // Highest quality deliberately ignores the Settings > Downloads default cap and always
+        // leaves formatId null, which yt-dlp itself resolves to the true best available
+        // (bestvideo*+bestaudio/best / bestaudio/best) - the whole point of the button.
         val formatId =
             when (formatMode) {
-                FormatMode.AUTO -> defaultFormatFor(info, selectedKind)?.formatId
-                FormatMode.CUSTOM -> selectedFormat?.formatId
+                FormatMode.HIGHEST -> null
+                FormatMode.LOW -> lowestFormatFor(info, selectedKind)?.formatId
             }
         val task =
             downloadManager.enqueue(
@@ -264,16 +253,13 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
         return true
     }
 
-    private fun defaultFormatFor(info: MediaInfo, kind: DownloadKind): MediaFormat? =
+    /** The lowest-resolution/bitrate format available, for the "Low quality" button - mirrors the
+     * candidate selection a progressive (video+audio) format list uses, just inverted to minByOrNull. */
+    private fun lowestFormatFor(info: MediaInfo, kind: DownloadKind): MediaFormat? =
         if (kind == DownloadKind.VIDEO) {
-            val preference =
-                DefaultVideoQuality.entries.firstOrNull {
-                    it.name == PreferenceUtil.getString(PrefKeys.DEFAULT_VIDEO_QUALITY, DefaultVideoQuality.BEST.name)
-                } ?: DefaultVideoQuality.BEST
-            val targetHeight = preference.heightPx ?: return null
             val candidates = info.formats.filter { it.hasVideo && it.hasAudio }.ifEmpty { info.videoFormats }
-            candidates.minByOrNull { format -> format.height?.let { kotlin.math.abs(it - targetHeight) } ?: Int.MAX_VALUE }
+            candidates.minByOrNull { it.height ?: Int.MAX_VALUE }
         } else {
-            null
+            info.audioOnlyFormats.minByOrNull { it.audioBitrateKbps ?: Double.MAX_VALUE }
         }
 }

@@ -1,5 +1,8 @@
 package com.scoop.app.ui.theme
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
@@ -9,9 +12,19 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import com.scoop.app.core.model.AccentPalette
 import com.scoop.app.core.model.ThemeMode
+
+private tailrec fun Context.findActivity(): Activity? =
+    when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
 
 private fun lightSchemeFor(accent: AccentColors) =
     lightColorScheme(
@@ -98,6 +111,21 @@ fun ScoopTheme(
             useDarkTheme -> darkSchemeFor(accentPalette.colors())
             else -> lightSchemeFor(accentPalette.colors())
         }
+
+    // enableEdgeToEdge() only sets the status/nav bar icon color once, based on the *system's*
+    // dark/light state at Activity creation - it knows nothing about ThemeMode.LIGHT/DARK
+    // overriding that. Following useDarkTheme here instead keeps the icons legible against
+    // whatever background the app is actually showing, independent of the system setting, and
+    // keeps them in sync if the user changes the in-app theme without restarting the app.
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = view.context.findActivity()?.window ?: return@SideEffect
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !useDarkTheme
+            insetsController.isAppearanceLightNavigationBars = !useDarkTheme
+        }
+    }
 
     MaterialTheme(colorScheme = colorScheme, typography = ScoopTypography, shapes = ScoopShapes, content = content)
 }

@@ -61,12 +61,9 @@ import androidx.compose.ui.unit.dp
 import com.scoop.app.R
 import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.DownloadStatus
-import com.scoop.app.core.model.MediaInfo
 import com.scoop.app.core.model.PlaylistEntryInfo
 import com.scoop.app.core.model.PlaylistInfo
-import com.scoop.app.ui.common.BestAvailableOption
 import com.scoop.app.ui.common.ErrorState
-import com.scoop.app.ui.common.FormatOptionTile
 import com.scoop.app.ui.common.LoadingState
 import com.scoop.app.ui.common.SettingSectionLabel
 import com.scoop.app.ui.theme.Motion
@@ -119,7 +116,7 @@ fun ConfigureDownloadSheet(viewModel: HomeViewModel, onDismiss: () -> Unit) {
                                 retryLabel = stringResource(R.string.action_retry),
                                 onRetry = viewModel::retryAnalyze,
                             )
-                        is ConfigureUiState.Loaded -> ConfigureForm(viewModel = viewModel, info = state.info, onDismiss = onDismiss)
+                        is ConfigureUiState.Loaded -> ConfigureForm(viewModel = viewModel, onDismiss = onDismiss)
                         is ConfigureUiState.PlaylistLoaded -> PlaylistConfigureForm(viewModel = viewModel, info = state.info, onDismiss = onDismiss)
                     }
                 }
@@ -221,7 +218,7 @@ private fun DownloadProgressContent(status: DownloadStatus?, onDone: () -> Unit)
 }
 
 @Composable
-private fun ConfigureForm(viewModel: HomeViewModel, info: MediaInfo, onDismiss: () -> Unit) {
+private fun ConfigureForm(viewModel: HomeViewModel, onDismiss: () -> Unit) {
     val maxSheetHeight = LocalConfiguration.current.screenHeightDp.dp * 0.85f
     Column(
         modifier =
@@ -247,65 +244,27 @@ private fun ConfigureForm(viewModel: HomeViewModel, info: MediaInfo, onDismiss: 
         SettingSectionLabel(stringResource(R.string.configure_format_selection), modifier = Modifier.padding(top = Spacing.md))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             FilterChip(
-                selected = viewModel.formatMode == FormatMode.AUTO,
-                onClick = { viewModel.selectFormatMode(FormatMode.AUTO) },
-                label = { Text(stringResource(R.string.option_auto)) },
+                selected = viewModel.formatMode == FormatMode.HIGHEST,
+                onClick = { viewModel.selectFormatMode(FormatMode.HIGHEST) },
+                label = { Text(stringResource(R.string.option_highest_quality)) },
                 leadingIcon =
-                    if (viewModel.formatMode == FormatMode.AUTO) {
+                    if (viewModel.formatMode == FormatMode.HIGHEST) {
                         { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
                     } else {
                         null
                     },
             )
             FilterChip(
-                selected = viewModel.formatMode == FormatMode.CUSTOM,
-                onClick = { viewModel.selectFormatMode(FormatMode.CUSTOM) },
-                label = { Text(stringResource(R.string.option_custom)) },
+                selected = viewModel.formatMode == FormatMode.LOW,
+                onClick = { viewModel.selectFormatMode(FormatMode.LOW) },
+                label = { Text(stringResource(R.string.option_low_quality)) },
                 leadingIcon =
-                    if (viewModel.formatMode == FormatMode.CUSTOM) {
+                    if (viewModel.formatMode == FormatMode.LOW) {
                         { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
                     } else {
                         null
                     },
             )
-        }
-
-        // The format list used to live behind a "Custom" chip that opened its own sheet on top of
-        // this one; it's inlined here instead so picking an exact format doesn't feel like leaving
-        // the configure flow.
-        AnimatedVisibility(
-            visible = viewModel.formatMode == FormatMode.CUSTOM,
-            enter = fadeIn(tween(Motion.STANDARD_MS)) + expandVertically(tween(Motion.STANDARD_MS)),
-            exit = fadeOut(tween(Motion.QUICK_MS)) + shrinkVertically(tween(Motion.QUICK_MS)),
-        ) {
-            Column(modifier = Modifier.padding(top = Spacing.md)) {
-                SettingSectionLabel(stringResource(R.string.configure_format_preference), modifier = Modifier.padding(horizontal = 0.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm), modifier = Modifier.padding(top = Spacing.xs)) {
-                    BestAvailableOption(selected = viewModel.selectedFormat == null, onClick = { viewModel.selectFormat(null) })
-
-                    val sections =
-                        if (viewModel.selectedKind == DownloadKind.VIDEO) {
-                            listOf(
-                                stringResource(R.string.format_section_suggested) to info.formats.filter { it.hasVideo && it.hasAudio },
-                                stringResource(R.string.format_section_video_only) to info.formats.filter { it.isVideoOnly },
-                            )
-                        } else {
-                            listOf(stringResource(R.string.format_section_audio) to info.audioOnlyFormats)
-                        }
-                    sections.forEach { (label, formats) ->
-                        if (formats.isEmpty()) return@forEach
-                        Text(
-                            label,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = Spacing.xs),
-                        )
-                        formats.forEach { format ->
-                            FormatOptionTile(format = format, selected = viewModel.selectedFormat?.formatId == format.formatId, onClick = { viewModel.selectFormat(format) })
-                        }
-                    }
-                }
-            }
         }
 
         SettingSectionLabel(stringResource(R.string.configure_additional_settings), modifier = Modifier.padding(top = Spacing.md))
