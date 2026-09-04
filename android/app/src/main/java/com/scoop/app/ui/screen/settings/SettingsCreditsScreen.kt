@@ -23,7 +23,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -33,6 +35,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import com.scoop.app.R
 import com.scoop.app.ui.common.SettingsScreenTitle
 import com.scoop.app.ui.theme.Spacing
@@ -65,11 +69,24 @@ fun SettingsCreditsScreen(onBack: () -> Unit) {
                         .padding(horizontal = Spacing.xl),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Image(
-                    painter = painterResource(R.mipmap.ic_launcher_foreground),
-                    contentDescription = null,
-                    modifier = Modifier.size(120.dp),
-                )
+                // The launcher foreground is a dark bird on transparency, so it vanishes against a
+                // dark surface. Draw it on its own icon background instead, the way the launcher
+                // composes the adaptive icon — the artwork then reads the same in either theme.
+                Box(
+                    modifier =
+                        Modifier.size(120.dp)
+                            .clip(CircleShape)
+                            .background(colorResource(R.color.ic_launcher_background)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    // The foreground reserves the adaptive-icon safe zone: only the middle two
+                    // thirds of the canvas is inside the launcher mask, so oversize to match.
+                    Image(
+                        painter = painterResource(R.mipmap.ic_launcher_foreground),
+                        contentDescription = null,
+                        modifier = Modifier.size(180.dp),
+                    )
+                }
 
                 Text(
                     stringResource(R.string.app_name),
