@@ -17,34 +17,17 @@
 
 ---
 
-<div align="center">
-<table>
-<tr>
-<td align="center" width="20%">
-<img src="docs/screenshots/home.jpg" width="180" alt="Home screen with a link ready to paste" /><br />
-<sub>Paste or share a link</sub>
-</td>
-<td align="center" width="20%">
-<img src="docs/screenshots/configure-download.jpg" width="180" alt="Configure download sheet" /><br />
-<sub>Configure the download</sub>
-</td>
-<td align="center" width="20%">
-<img src="docs/screenshots/downloads.jpg" width="180" alt="Download history screen" /><br />
-<sub>Download history</sub>
-</td>
-<td align="center" width="20%">
-<img src="docs/screenshots/appearance.jpg" width="180" alt="Appearance settings with accent palettes" /><br />
-<sub>Appearance</sub>
-</td>
-<td align="center" width="20%">
-<img src="docs/screenshots/video-audio-settings.jpg" width="180" alt="Video and audio quality settings" /><br />
-<sub>Video &amp; audio settings</sub>
-</td>
-</tr>
-</table>
-</div>
+## Screenshots
 
----
+<div align="center">
+<div>
+<img src="docs/screenshots/home.jpg" width="30%" />
+<img src="docs/screenshots/configure-download.jpg" width="30%" />
+<img src="docs/screenshots/downloads.jpg" width="30%" />
+<img src="docs/screenshots/appearance.jpg" width="30%" />
+<img src="docs/screenshots/video-audio-settings.jpg" width="30%" />
+</div>
+</div>
 
 ## What is Scoop?
 
