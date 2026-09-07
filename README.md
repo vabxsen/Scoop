@@ -17,7 +17,7 @@
 
 ---
 
-## Screenshots
+## 📱 Screenshots
 
 <div align="center">
 <div>
@@ -33,14 +33,14 @@
 </div>
 </div>
 
-## What is Scoop?
+## 💡 What is Scoop?
 
 Scoop resolves a pasted or shared video link, lets you configure exactly how you want it saved,
 and downloads it straight to your device through a bundled [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 runtime — no server in the middle, no sign-in, nothing leaving your phone beyond the request
 needed to fetch the media itself.
 
-## Features
+## 📖 Features
 
 ### Downloading
 - **Paste or share a link** from any app — Scoop registers as a share target and as a link
@@ -99,7 +99,7 @@ needed to fetch the media itself.
 - No account, no backend, no analytics, no ads.
 - Everything runs on-device; see [`PRIVACY.md`](PRIVACY.md) for the full breakdown.
 
-## Usage
+## 🚀 Usage
 
 1. **Get a link** to a video or audio page from your browser or another app.
 2. **Send it to Scoop** — share it directly to Scoop, or open the link and let Scoop handle it
@@ -111,12 +111,12 @@ needed to fetch the media itself.
 6. **Find your file** in the Downloads tab, or in your device's Movies/Scoop or Music/Scoop
    folder (or wherever you configured Scoop to save to).
 
-## Installation
+## ⬇️ Installation
 
 Grab the latest signed APK from the [Releases page](../../releases/latest), open it, and allow
 "install unknown apps" for your browser or file manager when prompted. Scoop is arm64-v8a only.
 
-## Building from source
+## 🛠️ Building from source
 
 Requirements: JDK 21, Android SDK (compileSdk 35), an `ANDROID_HOME`/`local.properties` pointing
 at it.
@@ -128,12 +128,12 @@ cd android
 
 The debug APK lands in `android/app/build/outputs/apk/debug/`.
 
-## Tech stack
+## 🧰 Tech stack
 
 Kotlin, Jetpack Compose, Material 3, Koin (DI), Room (download history), MMKV (preferences).
 Min SDK 24, target/compile SDK 35.
 
-## Third-party dependencies and licensing
+## 📦 Third-party dependencies and licensing
 
 Scoop depends on `io.github.junkfood02.youtubedl-android` (a maintained fork of
 [yausername/youtubedl-android](https://github.com/yausername/youtubedl-android)), which bundles:
@@ -145,19 +145,19 @@ Scoop depends on `io.github.junkfood02.youtubedl-android` (a maintained fork of
 Because Scoop links against this GPL-family native stack, **Scoop itself is licensed under the
 GNU General Public License v3.0** — see [`LICENSE`](LICENSE).
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to build the project,
 what to test before opening a PR, and coding expectations.
 
-## Issues
+## 🐛 Issues
 
 Found a bug or have an idea? Open a
 [bug report](../../issues/new?template=bug_report.yml) or
 [feature request](../../issues/new?template=feature_request.yml) — both link to a short form so
 issues have what's needed to act on them.
 
-## Credits
+## 🧱 Credits
 
 Scoop's UX and architecture were designed with [**Seal**](https://github.com/JunkFood02/Seal), by
 [**JunkFood02**](https://github.com/JunkFood02), studied closely as a reference for how a
@@ -170,6 +170,6 @@ thanks. If you're looking for a mature, feature-rich app in this space today, go
 
 <div align="center">
 
-If Scoop is useful to you, consider starring the repository — it helps others discover the project.
+⭐ If Scoop is useful to you, consider starring the repository — it helps others discover the project.
 
 </div>
