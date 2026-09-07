@@ -17,7 +17,7 @@
 
 ---
 
-## 📱 Screenshots
+##  Screenshots
 
 <div align="center">
 <div>
