@@ -26,6 +26,10 @@
 <img src="docs/screenshots/downloads.jpg" width="30%" />
 <img src="docs/screenshots/appearance.jpg" width="30%" />
 <img src="docs/screenshots/video-audio-settings.jpg" width="30%" />
+<img src="docs/screenshots/download-settings.jpg" width="30%" />
+<img src="docs/screenshots/storage.jpg" width="30%" />
+<img src="docs/screenshots/permissions.jpg" width="30%" />
+<img src="docs/screenshots/settings.jpg" width="30%" />
 </div>
 </div>
 
