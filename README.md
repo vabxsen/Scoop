@@ -7,11 +7,41 @@
 
   No account. No backend. No ads. Just paste a link and download.
 
+  [![Latest release](https://img.shields.io/github/v/release/vabxsen/Scoop?label=release)](../../releases/latest)
   [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
   ![Platform](https://img.shields.io/badge/platform-Android-3DDC84)
   ![Min SDK](https://img.shields.io/badge/minSdk-24-informational)
 
-  [Download the latest release](../../releases/latest) · [Report an issue](../../issues)
+  [Download the latest release](../../releases/latest) · [Report a bug](../../issues/new?template=bug_report.yml) · [Request a feature](../../issues/new?template=feature_request.yml)
+</div>
+
+---
+
+<div align="center">
+<table>
+<tr>
+<td align="center" width="20%">
+<img src="docs/screenshots/home.jpg" width="180" alt="Home screen with a link ready to paste" /><br />
+<sub>Paste or share a link</sub>
+</td>
+<td align="center" width="20%">
+<img src="docs/screenshots/configure-download.jpg" width="180" alt="Configure download sheet" /><br />
+<sub>Configure the download</sub>
+</td>
+<td align="center" width="20%">
+<img src="docs/screenshots/downloads.jpg" width="180" alt="Download history screen" /><br />
+<sub>Download history</sub>
+</td>
+<td align="center" width="20%">
+<img src="docs/screenshots/appearance.jpg" width="180" alt="Appearance settings with accent palettes" /><br />
+<sub>Appearance</sub>
+</td>
+<td align="center" width="20%">
+<img src="docs/screenshots/video-audio-settings.jpg" width="180" alt="Video and audio quality settings" /><br />
+<sub>Video &amp; audio settings</sub>
+</td>
+</tr>
+</table>
 </div>
 
 ---
@@ -82,6 +112,18 @@ needed to fetch the media itself.
 - No account, no backend, no analytics, no ads.
 - Everything runs on-device; see [`PRIVACY.md`](PRIVACY.md) for the full breakdown.
 
+## Usage
+
+1. **Get a link** to a video or audio page from your browser or another app.
+2. **Send it to Scoop** — share it directly to Scoop, or open the link and let Scoop handle it
+   (it registers as a link handler for `http`/`https` links), or paste it into Scoop yourself.
+3. **Review what Scoop found** — title, uploader, duration, and thumbnail.
+4. **Configure the download** — video or audio-only, Highest/Low quality (or your configured
+   defaults), and optional subtitle/thumbnail embedding.
+5. **Start the download** and track its progress from the live queue.
+6. **Find your file** in the Downloads tab, or in your device's Movies/Scoop or Music/Scoop
+   folder (or wherever you configured Scoop to save to).
+
 ## Installation
 
 Grab the latest signed APK from the [Releases page](../../releases/latest), open it, and allow
@@ -116,6 +158,18 @@ Scoop depends on `io.github.junkfood02.youtubedl-android` (a maintained fork of
 Because Scoop links against this GPL-family native stack, **Scoop itself is licensed under the
 GNU General Public License v3.0** — see [`LICENSE`](LICENSE).
 
+## Contributing
+
+Contributions are welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to build the project,
+what to test before opening a PR, and coding expectations.
+
+## Issues
+
+Found a bug or have an idea? Open a
+[bug report](../../issues/new?template=bug_report.yml) or
+[feature request](../../issues/new?template=feature_request.yml) — both link to a short form so
+issues have what's needed to act on them.
+
 ## Credits
 
 Scoop's UX and architecture were designed with [**Seal**](https://github.com/JunkFood02/Seal), by
@@ -124,3 +178,11 @@ native, on-device yt-dlp downloader should look and behave. No Seal source code,
 branding are used anywhere in this project — Scoop is an independent implementation under its own
 name, icon, and package id — but the debt to Seal's design is real, and it's credited here with
 thanks. If you're looking for a mature, feature-rich app in this space today, go check out Seal.
+
+---
+
+<div align="center">
+
+If Scoop is useful to you, consider starring the repository — it helps others discover the project.
+
+</div>
