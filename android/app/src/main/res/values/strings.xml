@@ -70,6 +70,8 @@
     <string name="action_select_none">Select none</string>
     <string name="action_download_count">Download %d</string>
 
+    <string name="settings_misc_title">General</string>
+    <string name="settings_misc_subtitle">yt-dlp updates, download prompts, incognito</string>
     <string name="settings_general_title">Look &amp; feel</string>
     <string name="settings_general_subtitle">Dark theme, accent color, dynamic color</string>
     <string name="settings_downloads_title">Downloads</string>
@@ -126,6 +128,19 @@
     <string name="settings_audio_location">Audio downloads</string>
     <string name="settings_save_folder">Save folder</string>
     <string name="settings_save_folder_default">Default (Movies/Scoop, Music/Scoop)</string>
+
+    <string name="settings_update_ytdlp">Update yt-dlp</string>
+    <string name="settings_update_ytdlp_subtitle">Check for and install the latest yt-dlp version</string>
+    <string name="settings_update_ytdlp_checking">Checking for updates…</string>
+    <string name="settings_update_ytdlp_up_to_date">yt-dlp is already up to date</string>
+    <string name="settings_update_ytdlp_done">yt-dlp was updated to the latest version</string>
+    <string name="settings_update_ytdlp_error">Couldn\'t update yt-dlp. Try again later.</string>
+    <string name="settings_configure_before_download">Configure before download</string>
+    <string name="settings_configure_before_download_subtitle">Review quality and options before every download starts</string>
+    <string name="settings_save_thumbnail_file">Save thumbnails</string>
+    <string name="settings_save_thumbnail_file_subtitle">Save each video\'s thumbnail as its own image file alongside the download</string>
+    <string name="settings_incognito">Incognito</string>
+    <string name="settings_incognito_subtitle">Disable download history</string>
 
     <string name="settings_wifi_only_downloads">Wi-Fi only</string>
     <string name="settings_wifi_only_downloads_subtitle">Pause new downloads on metered connections (like mobile data or a hotspot) and resume automatically once an unmetered connection is available</string>

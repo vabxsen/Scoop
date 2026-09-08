@@ -11,6 +11,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.outlined.Update
@@ -48,6 +50,7 @@ import com.scoop.app.R
 import com.scoop.app.core.update.UpdateCheckState
 import com.scoop.app.ui.common.SettingHubRow
 import com.scoop.app.ui.common.SettingsScreenTitle
+import com.scoop.app.ui.theme.Spacing
 import com.scoop.app.util.FileShareUtils
 import org.koin.androidx.compose.koinViewModel
 
@@ -65,6 +68,7 @@ private val UpdateCheckState.phase: UpdatePhase
 @Composable
 fun SettingsHubScreen(
     onBack: () -> Unit,
+    onOpenMisc: () -> Unit,
     onOpenGeneral: () -> Unit,
     onOpenDownloads: () -> Unit,
     onOpenVideoAudio: () -> Unit,
@@ -109,7 +113,23 @@ fun SettingsHubScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            LazyColumn {
+            LazyColumn(
+                // The "Check for update" FAB floats over this list rather than living in
+                // Scaffold's own FAB slot, so it never insets content on its own. Shrinking the
+                // list's own bounds (rather than just adding contentPadding, which only reserves
+                // trailing scroll space and leaves the last row exactly where it was) keeps the
+                // last row (About) from ending up underneath it.
+                modifier = Modifier.padding(bottom = 96.dp),
+                contentPadding = PaddingValues(bottom = Spacing.md),
+            ) {
+                item {
+                    SettingHubRow(
+                        title = stringResource(R.string.settings_misc_title),
+                        subtitle = stringResource(R.string.settings_misc_subtitle),
+                        leadingIcon = Icons.Filled.Settings,
+                        onClick = onOpenMisc,
+                    )
+                }
                 item {
                     SettingHubRow(
                         title = stringResource(R.string.settings_general_title),

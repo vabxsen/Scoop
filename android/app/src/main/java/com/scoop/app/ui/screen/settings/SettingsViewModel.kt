@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.scoop.app.R
 import com.scoop.app.core.database.DownloadHistoryDao
 import com.scoop.app.core.model.AccentPalette
 import com.scoop.app.core.model.AudioQuality
@@ -23,6 +24,7 @@ import com.scoop.app.core.model.DefaultVideoContainer
 import com.scoop.app.core.model.DefaultVideoQuality
 import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.DownloadSpeedLimit
+import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.core.model.HistoryRetention
 import com.scoop.app.core.model.ThemeMode
 import com.scoop.app.core.update.AppUpdateChecker
@@ -36,6 +38,8 @@ import com.scoop.app.util.PreferenceUtil
 import com.scoop.app.util.ThemePreferences
 import com.scoop.app.util.toDecimalStorageSize
 import com.scoop.app.util.toHumanReadableSize
+import com.yausername.youtubedl_android.YoutubeDL
+import com.yausername.youtubedl_android.YoutubeDLException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -43,12 +47,23 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+sealed interface YtDlpUpdateState {
+    data object Idle : YtDlpUpdateState
+
+    data object Checking : YtDlpUpdateState
+
+    data class Done(val message: String) : YtDlpUpdateState
+
+    data class Error(val message: String) : YtDlpUpdateState
+}
+
 class SettingsViewModel(
     private val appContext: Context,
     private val themePreferences: ThemePreferences,
     private val downloadHistoryDao: DownloadHistoryDao,
     private val updateChecker: AppUpdateChecker,
     private val downloadManager: DownloadManager,
+    private val mediaEngineReadiness: MediaEngineReadiness,
 ) : ViewModel() {
 
     val themeMode get() = themePreferences.themeMode
@@ -137,6 +152,18 @@ class SettingsViewModel(
         private set
 
     var updateState by mutableStateOf<UpdateCheckState>(UpdateCheckState.Idle)
+        private set
+
+    var ytDlpUpdateState by mutableStateOf<YtDlpUpdateState>(YtDlpUpdateState.Idle)
+        private set
+
+    var configureBeforeDownload by mutableStateOf(PreferenceUtil.getBoolean(PrefKeys.CONFIGURE_BEFORE_DOWNLOAD, true))
+        private set
+
+    var saveThumbnailFile by mutableStateOf(PreferenceUtil.getBoolean(PrefKeys.SAVE_THUMBNAIL_FILE, false))
+        private set
+
+    var incognito by mutableStateOf(PreferenceUtil.getBoolean(PrefKeys.INCOGNITO, false))
         private set
 
     private data class StorageSnapshot(val deviceLabel: String, val videoBytes: Long, val videoCount: Int, val audioBytes: Long, val audioCount: Int)
@@ -325,5 +352,55 @@ class SettingsViewModel(
 
     fun consumeUpdateState() {
         updateState = UpdateCheckState.Idle
+    }
+
+    fun checkForYtDlpUpdate() {
+        if (ytDlpUpdateState is YtDlpUpdateState.Checking) return
+        ytDlpUpdateState = YtDlpUpdateState.Checking
+        viewModelScope.launch {
+            val result =
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        mediaEngineReadiness.awaitReady()
+                        YoutubeDL.getInstance().updateYoutubeDL(appContext)
+                    }
+                }
+            ytDlpUpdateState =
+                result.fold(
+                    onSuccess = { status ->
+                        val message =
+                            if (status == YoutubeDL.UpdateStatus.ALREADY_UP_TO_DATE) {
+                                appContext.getString(R.string.settings_update_ytdlp_up_to_date)
+                            } else {
+                                appContext.getString(R.string.settings_update_ytdlp_done)
+                            }
+                        YtDlpUpdateState.Done(message)
+                    },
+                    onFailure = { error ->
+                        YtDlpUpdateState.Error(
+                            (error as? YoutubeDLException)?.message ?: appContext.getString(R.string.settings_update_ytdlp_error)
+                        )
+                    },
+                )
+        }
+    }
+
+    fun consumeYtDlpUpdateState() {
+        ytDlpUpdateState = YtDlpUpdateState.Idle
+    }
+
+    fun updateConfigureBeforeDownload(enabled: Boolean) {
+        configureBeforeDownload = enabled
+        PreferenceUtil.putBoolean(PrefKeys.CONFIGURE_BEFORE_DOWNLOAD, enabled)
+    }
+
+    fun updateSaveThumbnailFile(enabled: Boolean) {
+        saveThumbnailFile = enabled
+        PreferenceUtil.putBoolean(PrefKeys.SAVE_THUMBNAIL_FILE, enabled)
+    }
+
+    fun updateIncognito(enabled: Boolean) {
+        incognito = enabled
+        PreferenceUtil.putBoolean(PrefKeys.INCOGNITO, enabled)
     }
 }

@@ -118,6 +118,10 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
                         customCommandEnabled = false
                         customArgs = ""
                         configureState = ConfigureUiState.Loaded(info)
+                        // Settings > General > "Configure before download" off means the user wants
+                        // a one-tap download with sensible defaults, skipping the review form -
+                        // the sheet still opens to show live progress via activeDownloadTaskId.
+                        if (!PreferenceUtil.getBoolean(PrefKeys.CONFIGURE_BEFORE_DOWNLOAD, true)) confirmDownload()
                     }
                     .onFailure {
                         Log.e(TAG, "analyze failed for $target", it)

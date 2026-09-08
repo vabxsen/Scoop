@@ -15,4 +15,7 @@ object PrefKeys {
     const val BATTERY_PAUSE_THRESHOLD = "battery_pause_threshold"
     const val HISTORY_RETENTION = "history_retention"
     const val CUSTOM_SAVE_FOLDER_URI = "custom_save_folder_uri"
+    const val CONFIGURE_BEFORE_DOWNLOAD = "configure_before_download"
+    const val SAVE_THUMBNAIL_FILE = "save_thumbnail_file"
+    const val INCOGNITO = "incognito"
 }

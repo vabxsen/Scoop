@@ -53,6 +53,7 @@ import kotlinx.coroutines.withContext
 private const val DEFAULT_MAX_CONCURRENCY = 3
 private const val RETRY_BACKOFF_BASE_MS = 8_000L
 private const val DELETE_UNDO_WINDOW_MS = 2_000L
+private val THUMBNAIL_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp")
 
 class DownloadManagerImpl(
     private val extractor: MediaExtractor,
@@ -254,18 +255,23 @@ class DownloadManagerImpl(
                                 if (filePath != null) {
                                     retryAttempts.remove(task.id)
                                     tasks[task] = DownloadStatus.Completed(filePath)
-                                    downloadHistoryDao.upsert(
-                                        DownloadedItem(
-                                            id = task.id,
-                                            sourceUrl = task.request.url,
-                                            title = task.title,
-                                            filePath = filePath,
-                                            thumbnailUrl = task.thumbnailUrl,
-                                            kind = task.request.kind.name,
-                                            createdAt = task.createdAt,
-                                            playlistTitle = task.request.playlistTitle,
+                                    // Incognito means "disable download history" - the completed task
+                                    // still shows in this session's live queue via the in-memory `tasks`
+                                    // map above, it just never gets persisted to survive a restart.
+                                    if (!PreferenceUtil.getBoolean(PrefKeys.INCOGNITO, false)) {
+                                        downloadHistoryDao.upsert(
+                                            DownloadedItem(
+                                                id = task.id,
+                                                sourceUrl = task.request.url,
+                                                title = task.title,
+                                                filePath = filePath,
+                                                thumbnailUrl = task.thumbnailUrl,
+                                                kind = task.request.kind.name,
+                                                createdAt = task.createdAt,
+                                                playlistTitle = task.request.playlistTitle,
+                                            )
                                         )
-                                    )
+                                    }
                                     notifyDownloadComplete(task, filePath)
                                 } else {
                                     // A yt-dlp run that "succeeds" without a resolvable output path
@@ -316,6 +322,7 @@ class DownloadManagerImpl(
                                 ?.ytDlpValue
                         if (speedLimit != null) addOption("--limit-rate", speedLimit)
                         if (task.request.embedThumbnail) addOption("--embed-thumbnail")
+                        if (PreferenceUtil.getBoolean(PrefKeys.SAVE_THUMBNAIL_FILE, false)) addOption("--write-thumbnail")
                         when (task.request.kind) {
                             DownloadKind.VIDEO -> {
                                 addOption("-f", task.request.formatId ?: "bestvideo*+bestaudio/best")
@@ -374,15 +381,30 @@ class DownloadManagerImpl(
                 val savedLocation =
                     printedPath?.let { path ->
                         val sourceFile = File(path)
-                        DownloadPaths.saveToCustomFolder(appContext, sourceFile, sourceFile.name)
-                            ?: DownloadPaths.publishToMediaStore(appContext, task.request.kind, sourceFile, sourceFile.name)
-                            ?: DownloadPaths
-                                .moveWithDedup(
-                                    source = sourceFile,
-                                    targetDir = DownloadPaths.outputDir(appContext, task.request.kind),
-                                    desiredName = sourceFile.name,
-                                )
-                                .absolutePath
+                        // --write-thumbnail (added above when "Save thumbnails" is on) drops the
+                        // thumbnail next to the media file in the same temp workspace, sharing its
+                        // base name - grab it before the move below so it can be saved alongside
+                        // the finished download using the same save-location logic.
+                        val thumbnailFile =
+                            sourceFile.parentFile
+                                ?.listFiles { f -> f != sourceFile && f.nameWithoutExtension == sourceFile.nameWithoutExtension && f.extension.lowercase() in THUMBNAIL_EXTENSIONS }
+                                ?.firstOrNull()
+                        val location =
+                            DownloadPaths.saveToCustomFolder(appContext, sourceFile, sourceFile.name)
+                                ?: DownloadPaths.publishToMediaStore(appContext, task.request.kind, sourceFile, sourceFile.name)
+                                ?: DownloadPaths
+                                    .moveWithDedup(
+                                        source = sourceFile,
+                                        targetDir = DownloadPaths.outputDir(appContext, task.request.kind),
+                                        desiredName = sourceFile.name,
+                                    )
+                                    .absolutePath
+                        thumbnailFile?.let { thumb ->
+                            DownloadPaths.saveToCustomFolder(appContext, thumb, thumb.name)
+                                ?: DownloadPaths.publishToMediaStore(appContext, task.request.kind, thumb, thumb.name)
+                                ?: DownloadPaths.moveWithDedup(thumb, DownloadPaths.outputDir(appContext, task.request.kind), thumb.name).absolutePath
+                        }
+                        location
                     }
                 DownloadPaths.clearTempWorkspace(appContext, task.id)
 
