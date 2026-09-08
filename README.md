@@ -1,5 +1,9 @@
 <div align="center">
-  <img src="docs/logo.png" width="240" height="240" alt="Scoop logo" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.png" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/logo-light.png" />
+    <img src="docs/logo-light.png" width="240" height="240" alt="Scoop logo" />
+  </picture>
 
   # Scoop
 
