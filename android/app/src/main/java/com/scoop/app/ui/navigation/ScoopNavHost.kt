@@ -24,7 +24,6 @@ import com.scoop.app.ui.screen.settings.SettingsImagesScreen
 import com.scoop.app.ui.screen.settings.SettingsHubScreen
 import com.scoop.app.ui.screen.settings.SettingsMiscScreen
 import com.scoop.app.ui.screen.settings.SettingsPermissionsScreen
-import com.scoop.app.ui.screen.settings.SettingsSignInScreen
 import com.scoop.app.ui.screen.settings.SettingsStorageScreen
 import com.scoop.app.ui.screen.settings.SettingsVideoAudioScreen
 import com.scoop.app.ui.theme.Motion
@@ -82,7 +81,6 @@ fun ScoopNavHost(startUrl: String? = null, shareSequence: Int = 0) {
             SettingsHubScreen(
                 onBack = { navController.popBackStack() },
                 onOpenMisc = { navController.navigate(Route.SETTINGS_MISC) },
-                onOpenSignIn = { navController.navigate(Route.SETTINGS_SIGN_IN) },
                 onOpenGeneral = { navController.navigate(Route.SETTINGS_GENERAL) },
                 onOpenDownloads = { navController.navigate(Route.SETTINGS_DOWNLOADS) },
                 onOpenImages = { navController.navigate(Route.SETTINGS_IMAGES) },
@@ -105,12 +103,6 @@ fun ScoopNavHost(startUrl: String? = null, shareSequence: Int = 0) {
             SettingsImagesScreen(
                 onBack = { navController.popBackStack() },
                 onOpenStorage = { navController.navigate(Route.SETTINGS_STORAGE) },
-            )
-        }
-        composable(Route.SETTINGS_SIGN_IN, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
-            SettingsSignInScreen(
-                onBack = { navController.popBackStack() },
-                onOpenInstagram = { navController.navigate(Route.INSTAGRAM_SIGN_IN) },
             )
         }
         composable(Route.INSTAGRAM_SIGN_IN, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {

@@ -31,7 +31,7 @@ Signing in may still leave a post unavailable if Instagram restricts your accoun
 
 ## Boundaries
 
-This is broad image support, not a promise that every website works. Instagram has an optional sign-in page under Settings → Sign in → Instagram. Other
+This is broad image support, not a promise that every website works. Instagram offers optional sign-in when a post requires authentication. Other
 sites have no login/cookie-import UI. Private posts your account cannot access, expired URLs, anti-bot pages and sites that
 only populate images through JavaScript may be inaccessible. The HTML fallback
 can include page icons and thumbnails; it does not claim they are originals.

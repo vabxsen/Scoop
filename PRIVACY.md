@@ -9,7 +9,7 @@ Scoop is designed to work entirely on your device.
 - **Network access** is used only to fetch metadata and media from the URL you provide, and (for
   format/version bookkeeping) to talk to the site you're downloading from — nothing else.
 - **Instagram sign-in** opens Instagram's own HTTPS page inside an app-local WebView. Scoop does not read password fields or install a JavaScript bridge. Instagram handles passwords, verification and its own website data collection.
-- **Session cookies** are stored in Android WebView's private cookie store on this device, excluded from cloud backup and device transfer. Selected Instagram cookies are passed in memory to the local gallery extractor only for Instagram post links and sent to Instagram to authenticate requests. They are not placed in command-line arguments, preferences, download history or Scoop logs. Disconnect under Settings → Sign in → Instagram to remove the WebView cookies and site storage.
+- **Session cookies** are stored in Android WebView's private cookie store on this device, excluded from cloud backup and device transfer. Selected Instagram cookies are passed in memory to the local gallery extractor only for Instagram post links and sent to Instagram to authenticate requests. They are not placed in command-line arguments, preferences, download history or Scoop logs. Use Disconnect on the Instagram sign-in screen to remove the WebView cookies and site storage.
 - **Downloaded files and history** are stored on your device — either the default Movies/Scoop and
   Music/Scoop and Pictures/Scoop folders, or a folder you choose yourself in Settings → Storage (via Android's
   Storage Access Framework) — and are never uploaded to a server.
