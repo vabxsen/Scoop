@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -220,7 +221,7 @@ class SettingsViewModel(
      * storage summary is built on) rather than raw StatFs: under scoped storage's FUSE layer,
      * StatFs on getExternalStorageDirectory() can report a noticeably smaller total/used than the
      * device's real capacity for a sandboxed app. Summed across [StorageManager.getStorageVolumes]
-     * (API 30+ can resolve every volume's UUID, including a removable SD card; below that only the
+     * (API 31+ can resolve every volume's UUID, including a removable SD card; below that only the
      * primary internal volume is resolvable) rather than just [StorageManager.UUID_DEFAULT] alone,
      * since a phone's own Settings app typically reports internal+SD combined and a single-volume
      * total reads as "wrong" (too small) next to that on any device with expandable storage. Falls
@@ -239,6 +240,7 @@ class SettingsViewModel(
         return "${usedBytes.toDecimalStorageSize()} used of ${totalBytes.toDecimalStorageSize()}"
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun aggregatedStorageBytes(): Pair<Long, Long> {
         val statsManager = appContext.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
         val storageManager = appContext.getSystemService(Context.STORAGE_SERVICE) as StorageManager
@@ -248,15 +250,17 @@ class SettingsViewModel(
         storageManager.storageVolumes.forEach { volume ->
             val uuid =
                 when {
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> volume.storageUuid
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> volume.storageUuid
                     volume.isPrimary -> StorageManager.UUID_DEFAULT
-                    // Pre-Android 11 has no public way to resolve a non-primary (e.g. SD card)
+                    // Pre-Android 12 has no public way to resolve a non-primary (e.g. SD card)
                     // volume's UUID, so that volume is left out rather than guessed at.
                     else -> null
                 } ?: return@forEach
             runCatching {
-                totalBytes += statsManager.getTotalBytes(uuid)
-                freeBytes += statsManager.getFreeBytes(uuid)
+                val volumeTotalBytes = statsManager.getTotalBytes(uuid)
+                val volumeFreeBytes = statsManager.getFreeBytes(uuid)
+                totalBytes += volumeTotalBytes
+                freeBytes += volumeFreeBytes
                 countedAny = true
             }
         }
@@ -300,11 +304,13 @@ class SettingsViewModel(
     fun updateMaxConcurrentDownloads(count: Int) {
         maxConcurrentDownloads = count
         PreferenceUtil.putInt(PrefKeys.MAX_CONCURRENT_DOWNLOADS, count)
+        downloadManager.refreshQueue()
     }
 
     fun updateWifiOnlyDownloads(enabled: Boolean) {
         wifiOnlyDownloads = enabled
         PreferenceUtil.putBoolean(PrefKeys.WIFI_ONLY_DOWNLOADS, enabled)
+        downloadManager.refreshQueue()
     }
 
     fun updateAutoRetryPolicy(policy: AutoRetryPolicy) {
@@ -320,6 +326,7 @@ class SettingsViewModel(
     fun updateBatteryPauseThreshold(threshold: BatteryPauseThreshold) {
         batteryPauseThreshold = threshold
         PreferenceUtil.putString(PrefKeys.BATTERY_PAUSE_THRESHOLD, threshold.name)
+        downloadManager.refreshQueue()
     }
 
     fun updateHistoryRetention(retention: HistoryRetention) {

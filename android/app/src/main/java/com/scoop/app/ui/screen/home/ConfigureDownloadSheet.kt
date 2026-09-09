@@ -74,7 +74,7 @@ import com.scoop.app.util.toDurationLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConfigureDownloadSheet(viewModel: HomeViewModel, onDismiss: () -> Unit, onOpenDownloads: () -> Unit) {
+fun ConfigureDownloadSheet(viewModel: HomeViewModel, onDismiss: () -> Unit, onOpenDownloads: () -> Unit, onOpenInstagram: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val activeTaskId = viewModel.activeDownloadTaskId
 
@@ -110,11 +110,16 @@ fun ConfigureDownloadSheet(viewModel: HomeViewModel, onDismiss: () -> Unit, onOp
                         is ConfigureUiState.Loading -> LoadingState(message = stringResource(R.string.analyzing))
                         is ConfigureUiState.Error ->
                             ErrorState(
-                                title = stringResource(R.string.analyze_error_title),
-                                message = stringResource(R.string.analyze_error_body),
-                                detail = state.message,
-                                retryLabel = stringResource(R.string.action_retry),
-                                onRetry = viewModel::retryAnalyze,
+                                title = stringResource(if (state.instagramSignIn) R.string.instagram_sign_in_needed else R.string.analyze_error_title),
+                                message = if (state.instagramSignIn) state.message else stringResource(R.string.analyze_error_body),
+                                detail = if (state.instagramSignIn) null else state.message,
+                                retryLabel = stringResource(if (state.instagramSignIn) R.string.instagram_sign_in else R.string.action_retry),
+                                onRetry = {
+                                    if (state.instagramSignIn) {
+                                        viewModel.prepareInstagramSignIn()
+                                        onOpenInstagram()
+                                    } else viewModel.retryAnalyze()
+                                },
                             )
                         is ConfigureUiState.ImagesLoaded -> ImageConfigureForm(viewModel, state.collection, onDismiss, onOpenDownloads)
                         is ConfigureUiState.Loaded -> ConfigureForm(viewModel = viewModel, onDismiss = onDismiss)

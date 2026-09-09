@@ -127,7 +127,8 @@ class ImageDownloadDeviceTest {
     private fun task(url: String, image: ImageCandidate) = DownloadTask(UUID.randomUUID().toString(),
         DownloadRequest(url, DownloadKind.IMAGE, image = image), "Image device test", image.url)
 
-    private class ImageServer : AutoCloseable {
+    internal class ImageServer : AutoCloseable {
+        val transientRequests = java.util.concurrent.atomic.AtomicInteger()
         val png: ByteArray = ByteArrayOutputStream().also { output ->
             val bitmap = Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888)
             bitmap.eraseColor(android.graphics.Color.BLUE)
@@ -152,6 +153,10 @@ class ImageDownloadDeviceTest {
                     val path = reader.readLine()?.split(' ')?.getOrNull(1) ?: return
                     while (!reader.readLine().isNullOrEmpty()) { }
                     val output = it.getOutputStream()
+                    if (path == "/transient" && transientRequests.incrementAndGet() == 1) {
+                        output.write("HTTP/1.1 503 Service Unavailable\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray())
+                        return
+                    }
                     if (path == "/redirect") {
                         output.write("HTTP/1.1 302 Found\r\nLocation: /original\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray())
                         return

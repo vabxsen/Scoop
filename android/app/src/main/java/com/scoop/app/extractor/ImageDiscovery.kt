@@ -31,6 +31,13 @@ class ImageDiscovery(client: OkHttpClient, private val gallery: GalleryImageExtr
     }
 
     suspend fun discover(url: String): ImageCollection {
+        // Login-page icons and avatars are not the photos from an Instagram post.
+        // Preserve the extractor's authentication error instead of offering those as a gallery.
+        if (InstagramSession.isPost(url)) {
+            val collection = gallery.discover(url)
+            if (collection.images.isEmpty()) throw IOException("This Instagram post has no accessible photos. It may contain only video or be unavailable to your account.")
+            return collection
+        }
         var failure: Exception? = null
         try { directImage(url)?.let { return it } } catch (e: CancellationException) { throw e } catch (e: Exception) { failure = e }
         try {

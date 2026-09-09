@@ -24,10 +24,15 @@ controls whether multi-image results start selected; the preference is saved acr
 app restarts. Single images remain selected. This page also explains original-quality
 saving and links to the existing Storage settings to manage the shared save folder.
 
+For Instagram login-required errors, tap **Sign in to Instagram**, finish signing in
+and any verification on Instagram's page, then tap **Use this session**. Scoop retries
+the pending image link when you return. The session can be removed with **Disconnect**.
+Signing in may still leave a post unavailable if Instagram restricts your account or the post.
+
 ## Boundaries
 
-This is broad image support, not a promise that every website works. There is no
-login/cookie-import UI. Private posts, expired URLs, anti-bot pages and sites that
+This is broad image support, not a promise that every website works. Instagram has an optional sign-in page under Settings → Sign in → Instagram. Other
+sites have no login/cookie-import UI. Private posts your account cannot access, expired URLs, anti-bot pages and sites that
 only populate images through JavaScript may be inaccessible. The HTML fallback
 can include page icons and thumbnails; it does not claim they are originals.
 Extraction is capped at 200 images per link, HTML at 2 MiB, and each downloaded

@@ -11,6 +11,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.IOException
@@ -29,10 +30,12 @@ class GalleryImageExtractor(private val context: Context, private val readiness:
     )
 
     suspend fun discover(url: String): ImageCollection {
-        val output = try { execute(url) } catch (e: TimeoutCancellationException) {
+        val cookies = InstagramSession.cookiesFor(url)
+        val output = try { execute(url, cookies) } catch (e: TimeoutCancellationException) {
             throw IOException("The gallery took too long to respond.", e)
         }
         val result = json.decodeFromString<GalleryResult>(output)
+        if (result.error == "authentication_required" && InstagramSession.isPost(url)) throw InstagramSignInRequiredException()
         if (result.error != null) throw IOException("This site could not provide images. It may require a login or restrict downloads.")
         val title = url.toHttpUrlOrNull()?.let { "${it.host} · ${it.pathSegments.lastOrNull { part -> part.isNotBlank() }.orEmpty()}" } ?: "Images"
         return ImageCollection(url, title, result.images,
@@ -42,7 +45,7 @@ class GalleryImageExtractor(private val context: Context, private val readiness:
     // Also used by the device smoke test to verify the actual packaged runtime.
     suspend fun version(): String = execute("--version")
 
-    private suspend fun execute(argument: String): String = withTimeout(60_000L) {
+    private suspend fun execute(argument: String, cookies: Map<String, String> = emptyMap()): String = withTimeout(60_000L) {
         readiness.awaitReady()
         withContext(Dispatchers.IO) {
             val runtime = prepareRuntime()
@@ -83,13 +86,19 @@ class GalleryImageExtractor(private val context: Context, private val readiness:
                     }
                     continuation.invokeOnCancellation { process.destroy() }
                     try {
+                        // Pipe the session to this child only; never put cookies in arguments or files.
+                        process.outputStream.bufferedWriter(Charsets.UTF_8).use { input ->
+                            if (argument != "--version") input.write(json.encodeToString(cookies))
+                        }
                         val output = process.inputStream.use { stream ->
                             val bytes = stream.readBytesBounded(2 * 1024 * 1024)
                             bytes.toString(Charsets.UTF_8)
                         }
                         val exit = process.waitFor()
                         if (continuation.isActive) {
-                            continuation.resumeWith(if (exit == 0) Result.success(output) else Result.failure(IOException("The site did not return an accessible image gallery.")))
+                            val structuredError = runCatching { json.decodeFromString<GalleryResult>(output).error }.getOrNull()
+                            continuation.resumeWith(if (exit == 0 || structuredError != null) Result.success(output)
+                                else Result.failure(IOException("The site did not return an accessible image gallery.")))
                         }
                     } catch (error: Exception) {
                         if (continuation.isActive) continuation.resumeWith(Result.failure(error))
@@ -105,7 +114,7 @@ class GalleryImageExtractor(private val context: Context, private val readiness:
 
     @Synchronized
     private fun prepareRuntime(): File {
-        val directory = File(context.noBackupFilesDir, "gallery-dl-1.32.11-v2")
+        val directory = File(context.noBackupFilesDir, "gallery-dl-1.32.11-v3")
         val marker = File(directory, ".ready")
         if (marker.isFile) return directory
         directory.mkdirs()

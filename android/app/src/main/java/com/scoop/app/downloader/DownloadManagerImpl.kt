@@ -1,10 +1,13 @@
 package com.scoop.app.downloader
 
+import android.Manifest
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.os.Build
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.Uri
@@ -46,6 +49,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -66,6 +72,7 @@ class DownloadManagerImpl(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val jobs = mutableMapOf<String, Job>()
+    @Volatile private var clearingAll = false
     private val retryAttempts = mutableMapOf<String, Int>()
     private val pendingDeleteJobs = mutableMapOf<String, Job>()
 
@@ -158,6 +165,8 @@ class DownloadManagerImpl(
         return true
     }
 
+    override fun refreshQueue() = dispatchNext()
+
     override fun retry(taskId: String) {
         val task = tasks.keys.find { it.id == taskId } ?: return
         val status = tasks[task]
@@ -208,25 +217,37 @@ class DownloadManagerImpl(
 
     override suspend fun clearHistoryOlderThan(days: Int) {
         val cutoff = System.currentTimeMillis() - days * 24L * 60 * 60 * 1000
-        withContext(Dispatchers.IO) {
-            downloadHistoryDao.getOlderThan(cutoff).forEach { item ->
+        val expiredIds = withContext(Dispatchers.IO) {
+            downloadHistoryDao.getOlderThan(cutoff).map { item ->
                 item.filePath?.let { deleteFile(it) }
                 downloadHistoryDao.deleteById(item.id)
-            }
+                item.id
+            }.toSet()
         }
+        expiredIds.forEach(::undoDelete)
+        tasks.keys.toList().filter { it.id in expiredIds }.forEach { tasks.remove(it) }
     }
 
     override suspend fun clearAll() {
-        tasks.keys.toList().forEach { task ->
-            YoutubeDL.destroyProcessById(task.id)
-            jobs.remove(task.id)?.cancel()
+        clearingAll = true
+        try {
+            undoAllDeletes()
+            val activeJobs = jobs.values.toList()
+            tasks.keys.toList().forEach { task -> YoutubeDL.destroyProcessById(task.id) }
+            activeJobs.forEach { it.cancel() }
+            activeJobs.joinAll()
+            jobs.clear()
+            retryAttempts.clear()
+            val sessionFiles = tasks.values.filterIsInstance<DownloadStatus.Completed>().mapNotNull { it.filePath }
+            withContext(Dispatchers.IO) {
+                val savedFiles = downloadHistoryDao.getAll().mapNotNull { it.filePath }
+                (sessionFiles + savedFiles).distinct().forEach(::deleteFile)
+                downloadHistoryDao.deleteAll()
+            }
+            tasks.clear()
+        } finally {
+            clearingAll = false
         }
-        retryAttempts.clear()
-        withContext(Dispatchers.IO) {
-            downloadHistoryDao.getAll().forEach { item -> item.filePath?.let { deleteFile(it) } }
-            downloadHistoryDao.deleteAll()
-        }
-        tasks.clear()
     }
 
     private fun deleteFile(filePath: String) {
@@ -239,6 +260,7 @@ class DownloadManagerImpl(
 
     @Synchronized
     private fun dispatchNext() {
+        if (clearingAll) return
         val maxConcurrency = PreferenceUtil.getInt(PrefKeys.MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENCY)
         val runningCount = tasks.values.count { it is DownloadStatus.Analyzing || it is DownloadStatus.Downloading }
         if (runningCount >= maxConcurrency) return
@@ -327,6 +349,8 @@ class DownloadManagerImpl(
     /** On failure, auto-retries with a linear backoff (attempt N waits N * 8s) up to the
      * configured policy's budget before finally surfacing DownloadStatus.Failed. */
     private suspend fun handleFailure(task: DownloadTask, message: String, error: Throwable? = null) {
+        currentCoroutineContext().ensureActive()
+        if (error is CancellationException) throw error
         val policy =
             AutoRetryPolicy.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.AUTO_RETRY_POLICY, AutoRetryPolicy.OFF.name) }
                 ?: AutoRetryPolicy.OFF
@@ -453,6 +477,11 @@ class DownloadManagerImpl(
     /** One-shot "Download complete" notification per finished task, separate from the ongoing
      * foreground-service notification - tapping it opens the downloaded file. */
     private fun notifyDownloadComplete(task: DownloadTask, filePath: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(appContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
         val openIntent = FileShareUtils.openFileIntent(appContext, filePath)
         val pendingIntent =
             PendingIntent.getActivity(appContext, task.id.hashCode(), openIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
@@ -464,6 +493,7 @@ class DownloadManagerImpl(
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .build()
+        // Permission may be revoked after the check; a notification failure must not fail the download.
         runCatching { NotificationManagerCompat.from(appContext).notify(task.id.hashCode(), notification) }
     }
 }

@@ -188,4 +188,17 @@
     <string name="settings_images_quality">Image quality</string>
     <string name="settings_images_quality_subtitle">Original format and quality. Images are saved without resizing or recompression.</string>
     <string name="settings_images_folder_subtitle">%1$s · Manage in Storage</string>
+    <string name="settings_sign_in_title">Sign in</string>
+    <string name="settings_sign_in_subtitle">Instagram account and saved session</string>
+    <string name="instagram_title">Instagram</string>
+    <string name="instagram_sign_in">Sign in to Instagram</string>
+    <string name="instagram_sign_in_needed">Instagram sign-in needed</string>
+    <string name="instagram_settings_subtitle">Sign in for posts that need an account</string>
+    <string name="instagram_session_saved">Session saved on this device</string>
+    <string name="instagram_session_explanation">Sign in on Instagram’s own page. Scoop keeps the session on this device for Instagram image downloads. Your password is entered only on Instagram.</string>
+    <string name="instagram_disconnect">Disconnect</string>
+    <string name="instagram_use_session">Use this session</string>
+    <string name="instagram_finish_sign_in">Finish signing in and any verification on Instagram, then tap Use this session.</string>
+    <string name="instagram_navigation_blocked">This screen only opens secure Instagram pages. Use your Instagram username and password to sign in.</string>
+    <string name="instagram_load_error">Instagram could not load. Check your connection and try again.</string>
 </resources>

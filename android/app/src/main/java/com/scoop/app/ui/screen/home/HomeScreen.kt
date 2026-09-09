@@ -49,8 +49,13 @@ fun HomeScreen(
     shareSequence: Int = 0,
     onOpenDownloads: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenInstagram: () -> Unit,
     viewModel: HomeViewModel = koinViewModel(),
 ) {
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        viewModel.onInstagramSignInReturn()
+        onPauseOrDispose { }
+    }
     val clipboardManager = LocalClipboardManager.current
 
     LaunchedEffect(startUrl, shareSequence) {
@@ -138,6 +143,6 @@ fun HomeScreen(
     }
 
     if (viewModel.configureState != ConfigureUiState.Hidden) {
-        ConfigureDownloadSheet(viewModel = viewModel, onDismiss = viewModel::dismissConfigureSheet, onOpenDownloads = onOpenDownloads)
+        ConfigureDownloadSheet(viewModel = viewModel, onDismiss = viewModel::dismissConfigureSheet, onOpenDownloads = onOpenDownloads, onOpenInstagram = onOpenInstagram)
     }
 }

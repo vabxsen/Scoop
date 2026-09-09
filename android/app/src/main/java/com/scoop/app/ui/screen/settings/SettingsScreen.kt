@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
@@ -70,6 +71,7 @@ private val UpdateCheckState.phase: UpdatePhase
 fun SettingsHubScreen(
     onBack: () -> Unit,
     onOpenMisc: () -> Unit,
+    onOpenSignIn: () -> Unit,
     onOpenGeneral: () -> Unit,
     onOpenDownloads: () -> Unit,
     onOpenImages: () -> Unit,
@@ -130,6 +132,14 @@ fun SettingsHubScreen(
                         subtitle = stringResource(R.string.settings_misc_subtitle),
                         leadingIcon = Icons.Filled.Settings,
                         onClick = onOpenMisc,
+                    )
+                }
+                item {
+                    SettingHubRow(
+                        title = stringResource(R.string.settings_sign_in_title),
+                        subtitle = stringResource(R.string.settings_sign_in_subtitle),
+                        leadingIcon = Icons.Filled.AccountCircle,
+                        onClick = onOpenSignIn,
                     )
                 }
                 item {

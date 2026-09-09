@@ -15,6 +15,7 @@ import androidx.navigation.compose.rememberNavController
 import com.scoop.app.ui.screen.downloaddetails.DownloadDetailsScreen
 import com.scoop.app.ui.screen.downloads.DownloadsScreen
 import com.scoop.app.ui.screen.home.HomeScreen
+import com.scoop.app.ui.screen.settings.InstagramSignInScreen
 import com.scoop.app.ui.screen.settings.SettingsAboutScreen
 import com.scoop.app.ui.screen.settings.SettingsCreditsScreen
 import com.scoop.app.ui.screen.settings.SettingsDownloadsScreen
@@ -23,6 +24,7 @@ import com.scoop.app.ui.screen.settings.SettingsImagesScreen
 import com.scoop.app.ui.screen.settings.SettingsHubScreen
 import com.scoop.app.ui.screen.settings.SettingsMiscScreen
 import com.scoop.app.ui.screen.settings.SettingsPermissionsScreen
+import com.scoop.app.ui.screen.settings.SettingsSignInScreen
 import com.scoop.app.ui.screen.settings.SettingsStorageScreen
 import com.scoop.app.ui.screen.settings.SettingsVideoAudioScreen
 import com.scoop.app.ui.theme.Motion
@@ -65,6 +67,7 @@ fun ScoopNavHost(startUrl: String? = null, shareSequence: Int = 0) {
                 shareSequence = shareSequence,
                 onOpenDownloads = { navController.navigate(Route.DOWNLOADS) },
                 onOpenSettings = { navController.navigate(Route.SETTINGS_HUB) },
+                onOpenInstagram = { navController.navigate(Route.INSTAGRAM_SIGN_IN) },
             )
         }
 
@@ -79,6 +82,7 @@ fun ScoopNavHost(startUrl: String? = null, shareSequence: Int = 0) {
             SettingsHubScreen(
                 onBack = { navController.popBackStack() },
                 onOpenMisc = { navController.navigate(Route.SETTINGS_MISC) },
+                onOpenSignIn = { navController.navigate(Route.SETTINGS_SIGN_IN) },
                 onOpenGeneral = { navController.navigate(Route.SETTINGS_GENERAL) },
                 onOpenDownloads = { navController.navigate(Route.SETTINGS_DOWNLOADS) },
                 onOpenImages = { navController.navigate(Route.SETTINGS_IMAGES) },
@@ -102,6 +106,15 @@ fun ScoopNavHost(startUrl: String? = null, shareSequence: Int = 0) {
                 onBack = { navController.popBackStack() },
                 onOpenStorage = { navController.navigate(Route.SETTINGS_STORAGE) },
             )
+        }
+        composable(Route.SETTINGS_SIGN_IN, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
+            SettingsSignInScreen(
+                onBack = { navController.popBackStack() },
+                onOpenInstagram = { navController.navigate(Route.INSTAGRAM_SIGN_IN) },
+            )
+        }
+        composable(Route.INSTAGRAM_SIGN_IN, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
+            InstagramSignInScreen(onBack = { navController.popBackStack() }, onDone = { navController.popBackStack() })
         }
         composable(Route.SETTINGS_VIDEO_AUDIO, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
             SettingsVideoAudioScreen(onBack = { navController.popBackStack() })

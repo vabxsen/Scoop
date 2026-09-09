@@ -23,6 +23,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import com.scoop.app.core.model.ImageCollection
 import com.scoop.app.extractor.ImageDiscovery
+import com.scoop.app.extractor.InstagramSession
+import com.scoop.app.extractor.InstagramSignInRequiredException
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 sealed interface ConfigureUiState {
@@ -30,7 +32,7 @@ sealed interface ConfigureUiState {
 
     data object Loading : ConfigureUiState
 
-    data class Error(val message: String) : ConfigureUiState
+    data class Error(val message: String, val instagramSignIn: Boolean = false) : ConfigureUiState
 
     data class Loaded(val info: MediaInfo) : ConfigureUiState
 
@@ -52,6 +54,25 @@ class HomeViewModel(
     private val imageDiscovery: ImageDiscovery,
 ) : ViewModel() {
     private var analysisJob: Job? = null
+    private var pendingInstagramSignIn = false
+
+    fun prepareInstagramSignIn() {
+        dismissConfigureSheet()
+        pendingInstagramSignIn = true
+    }
+
+    fun onInstagramSignInReturn() {
+        if (!pendingInstagramSignIn) return
+        pendingInstagramSignIn = false
+        if (InstagramSession.hasSession()) {
+            imagesOnly = true
+            startDownloadFlow()
+        }
+    }
+
+    private fun imageError(error: Exception) = ConfigureUiState.Error(
+        error.message ?: "Could not find images", error is InstagramSignInRequiredException,
+    )
     var imagesOnly by mutableStateOf(false)
         private set
     var selectedImageUrls by mutableStateOf<Set<String>>(emptySet())
@@ -155,7 +176,7 @@ class HomeViewModel(
             if (imageMode) {
                 try { showImages(imageDiscovery.discover(target)) }
                 catch (e: CancellationException) { throw e }
-                catch (e: Exception) { configureState = ConfigureUiState.Error(e.message ?: "Could not find images") }
+                catch (e: Exception) { configureState = imageError(e) }
                 return@launch
             }
             // A direct image needs no Python analysis. Failed probes leave media extraction alone.
@@ -200,7 +221,10 @@ class HomeViewModel(
                         if (it is CancellationException) throw it
                         try { showImages(imageDiscovery.discover(target)) }
                         catch (e: CancellationException) { throw e }
-                        catch (_: Exception) { configureState = ConfigureUiState.Error(it.message ?: "No downloadable media or images found") }
+                        catch (imageFailure: Exception) {
+                            configureState = if (imageFailure is InstagramSignInRequiredException) imageError(imageFailure)
+                                else ConfigureUiState.Error(it.message ?: "No downloadable media or images found")
+                        }
                     }
             }
         }

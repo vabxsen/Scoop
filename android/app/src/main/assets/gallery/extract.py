@@ -11,6 +11,38 @@ import requests
 IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif", "avif", "heic", "heif", "bmp", "tif", "tiff", "svg", "jxl"}
 LIMIT = 200
 
+COOKIE_NAMES = {"sessionid", "csrftoken", "ds_user_id", "rur", "mid", "ig_did", "ig_nrcb", "datr"}
+
+def apply_instagram_session(url, cookies):
+    parsed = urlsplit(url)
+    host = parsed.hostname or ""
+    if parsed.scheme != "https" or not (host == "instagram.com" or host.endswith(".instagram.com")):
+        return
+    if not isinstance(cookies, dict):
+        return
+    safe = {key: value for key, value in cookies.items()
+            if key in COOKIE_NAMES and isinstance(value, str) and len(value) <= 4096
+            and value and not any(char in value for char in "\r\n;")}
+    if safe:
+        config.set(("extractor", "instagram"), "cookies", safe)
+
+def initialize_source(source):
+    source.initialize()
+    if source.category == "instagram":
+        # Dictionary cookie configuration loses the browser's Secure attribute.
+        for cookie in source.cookies:
+            if cookie.name in COOKIE_NAMES:
+                cookie.secure = True
+
+def error_code(error):
+    # Classify only; never expose upstream exception text, which can contain URLs or cookies.
+    if type(error).__name__ in ("AuthenticationError", "AuthRequired") or getattr(error, "status", 0) == 401:
+        return "authentication_required"
+    message = str(error).lower()
+    if any(text in message for text in ("redirect to login", "login_required", "login required", "checkpoint", "challenge_required")):
+        return "authentication_required"
+    return type(error).__name__
+
 def extract(url):
     config.set(("extractor",), "timeout", 12)
     config.set(("extractor",), "retries", 1)
@@ -30,7 +62,7 @@ def extract(url):
         if source is None:
             continue
         supported = True
-        source.initialize()
+        initialize_source(source)
         for message in source:
             kind = message[0]
             if kind == Message.Queue and depth < 2:
@@ -61,9 +93,16 @@ def extract(url):
 
 if __name__ == "__main__":
     try:
-        result = {"version": version.__version__} if sys.argv[1] == "--version" else extract(sys.argv[1])
+        if sys.argv[1] == "--version":
+            result = {"version": version.__version__}
+        else:
+            payload = sys.stdin.read(16385)
+            if len(payload) > 16384:
+                raise ValueError("Session input too large")
+            apply_instagram_session(sys.argv[1], json.loads(payload) if payload else {})
+            result = extract(sys.argv[1])
         print(json.dumps(result, ensure_ascii=True))
     except Exception as error:
         # Do not expose session headers or full URLs in app-visible error messages.
-        print(json.dumps({"error": type(error).__name__, "images": []}))
+        print(json.dumps({"error": error_code(error), "images": []}))
         sys.exit(1)

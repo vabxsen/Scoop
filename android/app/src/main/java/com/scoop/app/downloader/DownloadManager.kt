@@ -21,6 +21,9 @@ interface DownloadManager {
 
     fun retry(taskId: String)
 
+    /** Re-evaluates queued downloads after admission or concurrency settings change. */
+    fun refreshQueue()
+
     /** Explicit user action: deletes the completed file on disk (if any) and removes the task. */
     suspend fun deleteTaskAndFile(taskId: String)
 
