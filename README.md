@@ -68,12 +68,13 @@ needed to fetch the media itself.
 - **Embed thumbnail** — embeds the source's thumbnail as cover art, for both video and audio
   downloads.
 
-### Images
-- **Direct image links**, including extensionless URLs, with original bytes and format preserved.
-- **Image galleries** from public sites supported by bundled gallery-dl, with an HTML image picker as a fallback.
-- Select **Images**, preview the results, and download individual pictures or a selection through the existing queue.
-- Images save to **Pictures/Scoop** on Android 10+, or your chosen custom folder. Existing history, incognito, retry and storage controls apply.
-- Private/login-only posts and JavaScript-only pages may be inaccessible. See [image support and limits](IMAGE_DOWNLOADS.md).
+### Image downloader
+- **Direct image links**, including extensionless URLs, with original bytes and format preserved without resizing or recompression.
+- **Public image galleries and webpages** — discover photos from supported gallery sites, with an HTML image picker as a fallback.
+- **Preview and select** — paste or share a link, choose **Images**, then download individual pictures, a selection, or all results through the existing queue.
+- **Image settings** — open **Settings > Images**, below Downloads, to choose whether gallery images start selected and access the save-folder settings.
+- **Save and manage** — images save to **Pictures/Scoop** on Android 10+, or your chosen custom folder. Open, share or delete completed images from history; existing incognito and retry controls apply.
+- Support varies by website. Private or restricted posts, expired links and JavaScript-only pages may be inaccessible. See [image support and limits](IMAGE_DOWNLOADS.md).
 
 ### Advanced
 - **Custom command**: an optional field for raw `yt-dlp` arguments, applied on top of Scoop's own
