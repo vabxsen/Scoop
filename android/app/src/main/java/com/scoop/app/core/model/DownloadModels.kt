@@ -3,6 +3,7 @@ package com.scoop.app.core.model
 enum class DownloadKind {
     VIDEO,
     AUDIO_ONLY,
+    IMAGE,
 }
 
 /** What the user asked to have downloaded, independent of how the queue executes it. */
@@ -23,6 +24,7 @@ data class DownloadRequest(
     /** Raw extra yt-dlp arguments, tokenized and appended after Scoop's own options - lets a
      * later flag here override an earlier default one (argparse last-wins). */
     val customArgs: String? = null,
+    val image: ImageCandidate? = null,
 )
 
 /** One item in the download queue: the fixed request plus display info captured at enqueue time. */

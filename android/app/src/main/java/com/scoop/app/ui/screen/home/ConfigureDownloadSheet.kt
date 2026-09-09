@@ -74,7 +74,7 @@ import com.scoop.app.util.toDurationLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConfigureDownloadSheet(viewModel: HomeViewModel, onDismiss: () -> Unit) {
+fun ConfigureDownloadSheet(viewModel: HomeViewModel, onDismiss: () -> Unit, onOpenDownloads: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val activeTaskId = viewModel.activeDownloadTaskId
 
@@ -116,6 +116,7 @@ fun ConfigureDownloadSheet(viewModel: HomeViewModel, onDismiss: () -> Unit) {
                                 retryLabel = stringResource(R.string.action_retry),
                                 onRetry = viewModel::retryAnalyze,
                             )
+                        is ConfigureUiState.ImagesLoaded -> ImageConfigureForm(viewModel, state.collection, onDismiss, onOpenDownloads)
                         is ConfigureUiState.Loaded -> ConfigureForm(viewModel = viewModel, onDismiss = onDismiss)
                         is ConfigureUiState.PlaylistLoaded -> PlaylistConfigureForm(viewModel = viewModel, info = state.info, onDismiss = onDismiss)
                     }

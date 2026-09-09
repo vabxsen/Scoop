@@ -83,6 +83,14 @@ fun SettingsStorageScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koi
             }
             item {
                 SettingHubRow(
+                    title = stringResource(R.string.settings_image_location),
+                    subtitle = listOf(viewModel.imageStorageLabel ?: stringResource(R.string.settings_storage_used_empty),
+                        customFolderLabel ?: DownloadPaths.displayLabel(DownloadKind.IMAGE)).joinToString(" · "),
+                    leadingIcon = Icons.Filled.Folder,
+                )
+            }
+            item {
+                SettingHubRow(
                     title = stringResource(R.string.settings_audio_location),
                     subtitle = listOfNotNull(viewModel.audioStorageLabel ?: stringResource(R.string.settings_storage_used_empty), audioLocationLabel).joinToString(" · "),
                     leadingIcon = Icons.Filled.Folder,

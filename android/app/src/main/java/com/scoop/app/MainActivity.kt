@@ -11,6 +11,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.scoop.app.ui.navigation.ScoopNavHost
 import com.scoop.app.ui.theme.ScoopTheme
@@ -18,6 +21,8 @@ import com.scoop.app.util.ThemePreferences
 import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {
+    private var sharedUrl by mutableStateOf<String?>(null)
+    private var shareSequence by mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,7 +34,7 @@ class MainActivity : ComponentActivity() {
             window.isNavigationBarContrastEnforced = false
         }
 
-        val startUrl = intent.extractSharedUrl()
+        sharedUrl = intent.extractSharedUrl()
 
         setContent {
             val themePreferences = koinInject<ThemePreferences>()
@@ -39,10 +44,17 @@ class MainActivity : ComponentActivity() {
 
             ScoopTheme(themeMode = themeMode, accentPalette = accentPalette, useDynamicColor = dynamicColorEnabled) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    ScoopNavHost(startUrl = startUrl)
+                    ScoopNavHost(startUrl = sharedUrl, shareSequence = shareSequence)
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        sharedUrl = intent.extractSharedUrl()
+        shareSequence++
     }
 
     private fun Intent.extractSharedUrl(): String? =

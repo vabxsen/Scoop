@@ -26,6 +26,9 @@ coil = "2.7.0"
 youtubedlAndroid = "0.17.3"
 
 [libraries]
+jsoup = { module = "org.jsoup:jsoup", version = "1.23.2" }
+coil-svg = { module = "io.coil-kt:coil-svg", version.ref = "coil" }
+desugar = { module = "com.android.tools:desugar_jdk_libs", version = "2.1.5" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "androidxDocumentfile" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivity" }

@@ -68,6 +68,13 @@ needed to fetch the media itself.
 - **Embed thumbnail** — embeds the source's thumbnail as cover art, for both video and audio
   downloads.
 
+### Images
+- **Direct image links**, including extensionless URLs, with original bytes and format preserved.
+- **Image galleries** from public sites supported by bundled gallery-dl, with an HTML image picker as a fallback.
+- Select **Images**, preview the results, and download individual pictures or a selection through the existing queue.
+- Images save to **Pictures/Scoop** on Android 10+, or your chosen custom folder. Existing history, incognito, retry and storage controls apply.
+- Private/login-only posts and JavaScript-only pages may be inaccessible. See [image support and limits](IMAGE_DOWNLOADS.md).
+
 ### Advanced
 - **Custom command**: an optional field for raw `yt-dlp` arguments, applied on top of Scoop's own
   options — for anything the UI doesn't expose yet (SponsorBlock, custom postprocessing, and so
@@ -148,6 +155,8 @@ Scoop depends on `io.github.junkfood02.youtubedl-android` (a maintained fork of
 
 Because Scoop links against this GPL-family native stack, **Scoop itself is licensed under the
 GNU General Public License v3.0** — see [`LICENSE`](LICENSE).
+
+The image feature also bundles gallery-dl and its Python dependencies as a separate process, and uses jsoup for HTML discovery. Versions, licenses and source links are listed in [image dependency notices](THIRD_PARTY_IMAGE_NOTICES.md).
 
 ## 🤝 Contributing
 

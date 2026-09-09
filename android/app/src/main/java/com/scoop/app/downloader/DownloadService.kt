@@ -7,12 +7,24 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.scoop.app.R
+import com.scoop.app.core.model.DownloadStatus
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 
 /**
  * Minimal foreground service kept alive only while [DownloadManager] has active tasks. It shows a
  * single static "downloading" notification; per-task progress notifications are follow-up work.
  */
 class DownloadService : Service() {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val downloads: DownloadManager by inject()
+    private var monitor: Job? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -25,7 +37,21 @@ class DownloadService : Service() {
                 .setOnlyAlertOnce(true)
                 .build()
         startForeground(NOTIFICATION_ID, notification)
+        if (monitor == null) {
+            monitor = scope.launch {
+                snapshotFlow {
+                    downloads.tasks.values.any { it is DownloadStatus.Analyzing || it is DownloadStatus.Downloading }
+                }.collect { active ->
+                    if (!active) stopSelf()
+                }
+            }
+        }
         return START_STICKY
+    }
+
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
     }
 
     companion object {

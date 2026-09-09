@@ -6,6 +6,9 @@ import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.core.update.AppUpdateChecker
 import com.scoop.app.downloader.DownloadManager
 import com.scoop.app.downloader.DownloadManagerImpl
+import com.scoop.app.extractor.GalleryImageExtractor
+import com.scoop.app.extractor.ImageDiscovery
+import com.scoop.app.downloader.ImageDownloader
 import com.scoop.app.extractor.MediaExtractor
 import com.scoop.app.extractor.YtDlpMediaExtractor
 import com.scoop.app.ui.screen.downloaddetails.DownloadDetailsViewModel
@@ -23,6 +26,10 @@ val appModule = module {
     single { AppUpdateChecker(context = androidContext(), client = get()) }
     single { MediaEngineReadiness(context = androidContext()) }
 
+    single { GalleryImageExtractor(androidContext(), get()) }
+    single { ImageDiscovery(get(), get()) }
+    single { ImageDownloader(androidContext(), get()) }
+
     single<MediaExtractor> { YtDlpMediaExtractor(mediaEngineReadiness = get()) }
 
     single {
@@ -33,12 +40,12 @@ val appModule = module {
     single { get<AppDatabase>().downloadHistoryDao() }
 
     single<DownloadManager> {
-        DownloadManagerImpl(extractor = get(), appContext = androidContext(), downloadHistoryDao = get(), mediaEngineReadiness = get())
+        DownloadManagerImpl(extractor = get(), appContext = androidContext(), downloadHistoryDao = get(), mediaEngineReadiness = get(), imageDownloader = get())
     }
 
     single { ThemePreferences() }
 
-    viewModel { HomeViewModel(extractor = get(), downloadManager = get()) }
+    viewModel { HomeViewModel(extractor = get(), downloadManager = get(), imageDiscovery = get()) }
     viewModel { DownloadsViewModel(downloadManager = get()) }
     viewModel { DownloadDetailsViewModel(downloadManager = get(), downloadHistoryDao = get()) }
     viewModel {

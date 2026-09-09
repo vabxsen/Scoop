@@ -40,6 +40,7 @@ import com.yausername.youtubedl_android.YoutubeDLRequest
 import java.io.File
 import java.util.UUID
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -60,6 +61,7 @@ class DownloadManagerImpl(
     private val appContext: Context,
     private val downloadHistoryDao: DownloadHistoryDao,
     private val mediaEngineReadiness: MediaEngineReadiness,
+    private val imageDownloader: ImageDownloader,
 ) : DownloadManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -84,7 +86,9 @@ class DownloadManagerImpl(
                 .map { it.values.count { s -> s is DownloadStatus.Analyzing || s is DownloadStatus.Downloading } }
                 .distinctUntilChanged()
                 .collect { runningCount ->
-                    if (runningCount > 0) DownloadService.start(appContext) else DownloadService.stop(appContext)
+                    // The service stops itself after entering foreground. Stopping it here can
+                    // race its startup when a small image finishes immediately.
+                    if (runningCount > 0) DownloadService.start(appContext)
                 }
         }
 
@@ -233,6 +237,7 @@ class DownloadManagerImpl(
         }
     }
 
+    @Synchronized
     private fun dispatchNext() {
         val maxConcurrency = PreferenceUtil.getInt(PrefKeys.MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENCY)
         val runningCount = tasks.values.count { it is DownloadStatus.Analyzing || it is DownloadStatus.Downloading }
@@ -243,6 +248,10 @@ class DownloadManagerImpl(
     }
 
     private fun runTask(task: DownloadTask) {
+        if (task.request.kind == DownloadKind.IMAGE) {
+            runImageTask(task)
+            return
+        }
         tasks[task] = DownloadStatus.Analyzing
         jobs[task.id] =
             scope.launch {
@@ -287,6 +296,34 @@ class DownloadManagerImpl(
             }
     }
 
+    private fun runImageTask(task: DownloadTask) {
+        tasks[task] = DownloadStatus.Downloading()
+        jobs[task.id] = scope.launch {
+            try {
+                val path = imageDownloader.download(task) { progress ->
+                    if (tasks[task] is DownloadStatus.Downloading) tasks[task] = DownloadStatus.Downloading(progress)
+                }
+                if (tasks[task] is DownloadStatus.Cancelled) return@launch
+                retryAttempts.remove(task.id)
+                if (!PreferenceUtil.getBoolean(PrefKeys.INCOGNITO, false)) {
+                    downloadHistoryDao.upsert(DownloadedItem(
+                        id = task.id, sourceUrl = task.request.url, title = task.title,
+                        filePath = path, thumbnailUrl = path, kind = DownloadKind.IMAGE.name,
+                        createdAt = task.createdAt, playlistTitle = task.request.playlistTitle,
+                    ))
+                }
+                tasks[task] = DownloadStatus.Completed(path)
+                notifyDownloadComplete(task, path)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                handleFailure(task, e.message ?: "Image download failed", e)
+            } finally {
+                if (jobs[task.id] == coroutineContext[Job]) jobs.remove(task.id)
+            }
+        }
+    }
+
     /** On failure, auto-retries with a linear backoff (attempt N waits N * 8s) up to the
      * configured policy's budget before finally surfacing DownloadStatus.Failed. */
     private suspend fun handleFailure(task: DownloadTask, message: String, error: Throwable? = null) {
@@ -324,6 +361,7 @@ class DownloadManagerImpl(
                         if (task.request.embedThumbnail) addOption("--embed-thumbnail")
                         if (PreferenceUtil.getBoolean(PrefKeys.SAVE_THUMBNAIL_FILE, false)) addOption("--write-thumbnail")
                         when (task.request.kind) {
+                            DownloadKind.IMAGE -> error("Images use the image downloader")
                             DownloadKind.VIDEO -> {
                                 addOption("-f", task.request.formatId ?: "bestvideo*+bestaudio/best")
                                 val container = PreferenceUtil.getString(PrefKeys.DEFAULT_VIDEO_CONTAINER, DefaultVideoContainer.MP4.name)

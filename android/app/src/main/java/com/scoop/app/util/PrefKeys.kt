@@ -16,6 +16,7 @@ object PrefKeys {
     const val HISTORY_RETENTION = "history_retention"
     const val CUSTOM_SAVE_FOLDER_URI = "custom_save_folder_uri"
     const val CONFIGURE_BEFORE_DOWNLOAD = "configure_before_download"
+    const val SELECT_ALL_GALLERY_IMAGES = "select_all_gallery_images"
     const val SAVE_THUMBNAIL_FILE = "save_thumbnail_file"
     const val INCOGNITO = "incognito"
 }

@@ -151,10 +151,16 @@ class SettingsViewModel(
     var audioStorageLabel by mutableStateOf<String?>(null)
         private set
 
+    var imageStorageLabel by mutableStateOf<String?>(null)
+        private set
+
     var updateState by mutableStateOf<UpdateCheckState>(UpdateCheckState.Idle)
         private set
 
     var ytDlpUpdateState by mutableStateOf<YtDlpUpdateState>(YtDlpUpdateState.Idle)
+        private set
+
+    var selectAllGalleryImages by mutableStateOf(PreferenceUtil.getBoolean(PrefKeys.SELECT_ALL_GALLERY_IMAGES, true))
         private set
 
     var configureBeforeDownload by mutableStateOf(PreferenceUtil.getBoolean(PrefKeys.CONFIGURE_BEFORE_DOWNLOAD, true))
@@ -166,7 +172,7 @@ class SettingsViewModel(
     var incognito by mutableStateOf(PreferenceUtil.getBoolean(PrefKeys.INCOGNITO, false))
         private set
 
-    private data class StorageSnapshot(val deviceLabel: String, val videoBytes: Long, val videoCount: Int, val audioBytes: Long, val audioCount: Int)
+    private data class StorageSnapshot(val deviceLabel: String, val videoBytes: Long, val videoCount: Int, val audioBytes: Long, val audioCount: Int, val imageBytes: Long, val imageCount: Int)
 
     init {
         downloadHistoryDao
@@ -177,10 +183,15 @@ class SettingsViewModel(
                     var videoCount = 0
                     var audioBytes = 0L
                     var audioCount = 0
+                    var imageBytes = 0L
+                    var imageCount = 0
                     items.forEach { item ->
                         val path = item.filePath ?: return@forEach
                         val size = FileShareUtils.sizeBytes(appContext, path) ?: return@forEach
-                        if (item.kind == DownloadKind.AUDIO_ONLY.name) {
+                        if (item.kind == DownloadKind.IMAGE.name) {
+                            imageBytes += size
+                            imageCount++
+                        } else if (item.kind == DownloadKind.AUDIO_ONLY.name) {
                             audioBytes += size
                             audioCount++
                         } else {
@@ -188,13 +199,14 @@ class SettingsViewModel(
                             videoCount++
                         }
                     }
-                    StorageSnapshot(deviceStorageLabel(), videoBytes, videoCount, audioBytes, audioCount)
+                    StorageSnapshot(deviceStorageLabel(), videoBytes, videoCount, audioBytes, audioCount, imageBytes, imageCount)
                 }
             }
             .onEach { snapshot ->
                 deviceStorageLabel = snapshot.deviceLabel
                 videoStorageLabel = formatStorageBreakdown(snapshot.videoBytes, snapshot.videoCount)
                 audioStorageLabel = formatStorageBreakdown(snapshot.audioBytes, snapshot.audioCount)
+                imageStorageLabel = formatStorageBreakdown(snapshot.imageBytes, snapshot.imageCount)
             }
             .launchIn(viewModelScope)
     }
@@ -387,6 +399,11 @@ class SettingsViewModel(
 
     fun consumeYtDlpUpdateState() {
         ytDlpUpdateState = YtDlpUpdateState.Idle
+    }
+
+    fun updateSelectAllGalleryImages(enabled: Boolean) {
+        selectAllGalleryImages = enabled
+        PreferenceUtil.putBoolean(PrefKeys.SELECT_ALL_GALLERY_IMAGES, enabled)
     }
 
     fun updateConfigureBeforeDownload(enabled: Boolean) {

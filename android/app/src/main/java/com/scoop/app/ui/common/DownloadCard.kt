@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Movie
@@ -68,7 +69,7 @@ fun DownloadCard(
         Row(modifier = Modifier.padding(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
             Box {
                 MediaThumbnail(
-                    url = task.thumbnailUrl,
+                    url = if (task.request.kind == DownloadKind.IMAGE && status is DownloadStatus.Completed) status.filePath else task.thumbnailUrl,
                     modifier = Modifier.size(ThumbnailSize.width, ThumbnailSize.height),
                     cornerRadius = 10.dp,
                 )
@@ -123,7 +124,7 @@ private fun KindBadge(kind: DownloadKind, modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            if (kind == DownloadKind.AUDIO_ONLY) Icons.Outlined.MusicNote else Icons.Outlined.Movie,
+            when (kind) { DownloadKind.IMAGE -> Icons.Outlined.Image; DownloadKind.AUDIO_ONLY -> Icons.Outlined.MusicNote; DownloadKind.VIDEO -> Icons.Outlined.Movie },
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(12.dp),
@@ -141,7 +142,7 @@ private fun KindBadge(kind: DownloadKind, modifier: Modifier = Modifier) {
 private fun DownloadCardMeta(task: DownloadTask, status: DownloadStatus) {
     when (status) {
         is DownloadStatus.Completed -> {
-            val kindLabel = if (task.request.kind == DownloadKind.AUDIO_ONLY) "Audio" else "Video"
+            val kindLabel = when (task.request.kind) { DownloadKind.IMAGE -> "Image"; DownloadKind.AUDIO_ONLY -> "Audio"; DownloadKind.VIDEO -> "Video" }
             val playlistSuffix = task.request.playlistTitle?.let { " · from $it" } ?: ""
             Text(
                 "$kindLabel · ${task.createdAt.toRelativeTimeLabel()}$playlistSuffix",

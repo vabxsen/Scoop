@@ -60,11 +60,11 @@ object DownloadPaths {
      * name collision. Returns the new document's content:// URI, or null if no custom folder is
      * set or the write fails (caller falls back to [publishToMediaStore]/[outputDir]).
      */
-    fun saveToCustomFolder(context: Context, source: File, desiredName: String): String? {
+    fun saveToCustomFolder(context: Context, source: File, desiredName: String, mimeTypeOverride: String? = null): String? {
         val treeUri = customFolderUri(context) ?: return null
         val folder = DocumentFile.fromTreeUri(context, treeUri) ?: return null
         val ext = desiredName.substringAfterLast('.', "")
-        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
+        val mimeType = mimeTypeOverride ?: MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
         val base = if (ext.isEmpty()) desiredName else desiredName.removeSuffix(".$ext")
 
         var candidateName = desiredName
@@ -91,6 +91,7 @@ object DownloadPaths {
         (when (kind) {
             DownloadKind.VIDEO -> context.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
             DownloadKind.AUDIO_ONLY -> context.getExternalFilesDir(Environment.DIRECTORY_MUSIC)
+            DownloadKind.IMAGE -> context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
         } ?: context.filesDir).apply { mkdirs() }
 
     /** Human-readable form of the save location for display only (e.g. Settings), not a real filesystem path. */
@@ -98,12 +99,14 @@ object DownloadPaths {
         when (kind) {
             DownloadKind.VIDEO -> "Movies/Scoop"
             DownloadKind.AUDIO_ONLY -> "Music/Scoop"
+            DownloadKind.IMAGE -> "Pictures/Scoop"
         }
 
     private fun relativePath(kind: DownloadKind): String =
         when (kind) {
             DownloadKind.VIDEO -> Environment.DIRECTORY_MOVIES + "/Scoop"
             DownloadKind.AUDIO_ONLY -> Environment.DIRECTORY_MUSIC + "/Scoop"
+            DownloadKind.IMAGE -> Environment.DIRECTORY_PICTURES + "/Scoop"
         }
 
     /**
@@ -117,16 +120,17 @@ object DownloadPaths {
      * versions return null and always use the legacy app-private location instead of adding a
      * runtime WRITE_EXTERNAL_STORAGE permission flow for a vanishingly small population.
      */
-    fun publishToMediaStore(context: Context, kind: DownloadKind, source: File, desiredName: String): String? {
+    fun publishToMediaStore(context: Context, kind: DownloadKind, source: File, desiredName: String, mimeTypeOverride: String? = null): String? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
         val resolver = context.contentResolver
         val collection =
             when (kind) {
                 DownloadKind.VIDEO -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
                 DownloadKind.AUDIO_ONLY -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                DownloadKind.IMAGE -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
             }
         val ext = desiredName.substringAfterLast('.', "")
-        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
+        val mimeType = mimeTypeOverride ?: MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
         val values =
             ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, desiredName)

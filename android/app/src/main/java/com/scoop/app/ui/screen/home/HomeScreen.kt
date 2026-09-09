@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,13 +46,14 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun HomeScreen(
     startUrl: String? = null,
+    shareSequence: Int = 0,
     onOpenDownloads: () -> Unit,
     onOpenSettings: () -> Unit,
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val clipboardManager = LocalClipboardManager.current
 
-    LaunchedEffect(startUrl) {
+    LaunchedEffect(startUrl, shareSequence) {
         if (!startUrl.isNullOrBlank()) viewModel.onUrlChange(startUrl)
     }
 
@@ -105,6 +107,12 @@ fun HomeScreen(
                         }
                     },
                 )
+                Row(modifier = Modifier.padding(top = Spacing.sm)) {
+                    FilterChip(selected = !viewModel.imagesOnly, onClick = { viewModel.selectImagesOnly(false) },
+                        label = { Text(stringResource(R.string.mode_media)) }, modifier = Modifier.padding(end = Spacing.sm))
+                    FilterChip(selected = viewModel.imagesOnly, onClick = { viewModel.selectImagesOnly(true) },
+                        label = { Text(stringResource(R.string.mode_images)) })
+                }
             }
 
             Column(
@@ -130,6 +138,6 @@ fun HomeScreen(
     }
 
     if (viewModel.configureState != ConfigureUiState.Hidden) {
-        ConfigureDownloadSheet(viewModel = viewModel, onDismiss = viewModel::dismissConfigureSheet)
+        ConfigureDownloadSheet(viewModel = viewModel, onDismiss = viewModel::dismissConfigureSheet, onOpenDownloads = onOpenDownloads)
     }
 }

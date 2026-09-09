@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Scoop</string>
 
-    <string name="url_input_placeholder">Video link</string>
+    <string name="url_input_placeholder">Paste a link</string>
     <string name="action_paste">Paste</string>
     <string name="action_clear">Clear</string>
     <string name="analyzing">Analyzing…</string>
@@ -127,7 +127,7 @@
     <string name="settings_video_location">Video downloads</string>
     <string name="settings_audio_location">Audio downloads</string>
     <string name="settings_save_folder">Save folder</string>
-    <string name="settings_save_folder_default">Default (Movies/Scoop, Music/Scoop)</string>
+    <string name="settings_save_folder_default">Default (Movies/Scoop, Music/Scoop, Pictures/Scoop)</string>
 
     <string name="settings_update_ytdlp">Update yt-dlp</string>
     <string name="settings_update_ytdlp_subtitle">Check for and install the latest yt-dlp version</string>
@@ -173,4 +173,19 @@
     <string name="update_up_to_date">You\'re on the latest version</string>
     <string name="update_error_generic">Couldn\'t check for updates. Try again later.</string>
     <string name="update_error_no_asset">The latest release doesn\'t have an APK attached.</string>
+    <string name="mode_media">Video &amp; audio</string>
+    <string name="mode_images">Images</string>
+    <string name="settings_image_location">Images</string>
+    <string name="image_selection_count">%1$d of %2$d selected</string>
+    <string name="image_select_all">Select all</string>
+    <string name="image_deselect_all">Deselect all</string>
+    <string name="image_download_selected">Download selected (%1$d)</string>
+    <string name="image_original_quality">Original format · No recompression</string>
+    <string name="image_preview_unavailable">Preview unavailable</string>
+    <string name="settings_images_subtitle">Gallery selection, quality and save location</string>
+    <string name="settings_images_select_all">Select all gallery images</string>
+    <string name="settings_images_select_all_subtitle">Preselect every image when opening a gallery. You can change the selection before downloading.</string>
+    <string name="settings_images_quality">Image quality</string>
+    <string name="settings_images_quality_subtitle">Original format and quality. Images are saved without resizing or recompression.</string>
+    <string name="settings_images_folder_subtitle">%1$s · Manage in Storage</string>
 </resources>

@@ -19,6 +19,7 @@ import com.scoop.app.ui.screen.settings.SettingsAboutScreen
 import com.scoop.app.ui.screen.settings.SettingsCreditsScreen
 import com.scoop.app.ui.screen.settings.SettingsDownloadsScreen
 import com.scoop.app.ui.screen.settings.SettingsGeneralScreen
+import com.scoop.app.ui.screen.settings.SettingsImagesScreen
 import com.scoop.app.ui.screen.settings.SettingsHubScreen
 import com.scoop.app.ui.screen.settings.SettingsMiscScreen
 import com.scoop.app.ui.screen.settings.SettingsPermissionsScreen
@@ -51,13 +52,17 @@ private val exitToEnd: AnimatedContentTransitionScope<androidx.navigation.NavBac
  * reached via icons on Home and pushed as normal back-stack destinations, not bottom-nav tabs.
  */
 @Composable
-fun ScoopNavHost(startUrl: String? = null) {
+fun ScoopNavHost(startUrl: String? = null, shareSequence: Int = 0) {
     val navController = rememberNavController()
+    androidx.compose.runtime.LaunchedEffect(startUrl, shareSequence) {
+        if (!startUrl.isNullOrBlank()) navController.popBackStack(Route.HOME, false)
+    }
 
     NavHost(navController = navController, startDestination = Route.HOME) {
         composable(Route.HOME, exitTransition = exitToStart, popEnterTransition = enterFromStart) {
             HomeScreen(
                 startUrl = startUrl,
+                shareSequence = shareSequence,
                 onOpenDownloads = { navController.navigate(Route.DOWNLOADS) },
                 onOpenSettings = { navController.navigate(Route.SETTINGS_HUB) },
             )
@@ -76,6 +81,7 @@ fun ScoopNavHost(startUrl: String? = null) {
                 onOpenMisc = { navController.navigate(Route.SETTINGS_MISC) },
                 onOpenGeneral = { navController.navigate(Route.SETTINGS_GENERAL) },
                 onOpenDownloads = { navController.navigate(Route.SETTINGS_DOWNLOADS) },
+                onOpenImages = { navController.navigate(Route.SETTINGS_IMAGES) },
                 onOpenVideoAudio = { navController.navigate(Route.SETTINGS_VIDEO_AUDIO) },
                 onOpenStorage = { navController.navigate(Route.SETTINGS_STORAGE) },
                 onOpenPermissions = { navController.navigate(Route.SETTINGS_PERMISSIONS) },
@@ -90,6 +96,12 @@ fun ScoopNavHost(startUrl: String? = null) {
         }
         composable(Route.SETTINGS_DOWNLOADS, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
             SettingsDownloadsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Route.SETTINGS_IMAGES, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
+            SettingsImagesScreen(
+                onBack = { navController.popBackStack() },
+                onOpenStorage = { navController.navigate(Route.SETTINGS_STORAGE) },
+            )
         }
         composable(Route.SETTINGS_VIDEO_AUDIO, enterTransition = enterFromEnd, exitTransition = exitToStart, popEnterTransition = enterFromStart, popExitTransition = exitToEnd) {
             SettingsVideoAudioScreen(onBack = { navController.popBackStack() })

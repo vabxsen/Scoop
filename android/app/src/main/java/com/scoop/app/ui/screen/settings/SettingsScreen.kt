@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
@@ -71,6 +72,7 @@ fun SettingsHubScreen(
     onOpenMisc: () -> Unit,
     onOpenGeneral: () -> Unit,
     onOpenDownloads: () -> Unit,
+    onOpenImages: () -> Unit,
     onOpenVideoAudio: () -> Unit,
     onOpenStorage: () -> Unit,
     onOpenPermissions: () -> Unit,
@@ -144,6 +146,14 @@ fun SettingsHubScreen(
                         subtitle = stringResource(R.string.settings_downloads_subtitle),
                         leadingIcon = Icons.Filled.Download,
                         onClick = onOpenDownloads,
+                    )
+                }
+                item {
+                    SettingHubRow(
+                        title = stringResource(R.string.mode_images),
+                        subtitle = stringResource(R.string.settings_images_subtitle),
+                        leadingIcon = Icons.Filled.Image,
+                        onClick = onOpenImages,
                     )
                 }
                 item {

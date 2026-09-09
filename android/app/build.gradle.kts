@@ -90,6 +90,7 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
@@ -120,6 +121,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
+    implementation(libs.jsoup)
+    implementation(libs.coil.svg)
+    coreLibraryDesugaring(libs.desugar)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)

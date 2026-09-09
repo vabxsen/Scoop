@@ -136,9 +136,9 @@ private fun Map.Entry<com.scoop.app.core.model.DownloadTask, DownloadStatus>?.to
     this?.let { (task, status) ->
         DownloadDetails(
             title = task.title.ifBlank { task.request.url },
-            thumbnailUrl = task.thumbnailUrl,
+            thumbnailUrl = if (task.request.kind.name == "IMAGE" && status is DownloadStatus.Completed) status.filePath else task.thumbnailUrl,
             sourceUrl = task.request.url,
-            kindLabel = if (task.request.kind.name == "AUDIO_ONLY") "Audio" else "Video",
+            kindLabel = when (task.request.kind.name) { "IMAGE" -> "Image"; "AUDIO_ONLY" -> "Audio"; else -> "Video" },
             filePath = (status as? DownloadStatus.Completed)?.filePath,
             status = status,
             createdAt = task.createdAt,
@@ -150,7 +150,7 @@ private fun DownloadedItem.toDetails(): DownloadDetails =
         title = title,
         thumbnailUrl = thumbnailUrl,
         sourceUrl = sourceUrl,
-        kindLabel = if (kind == "AUDIO_ONLY") "Audio" else "Video",
+        kindLabel = when (kind) { "IMAGE" -> "Image"; "AUDIO_ONLY" -> "Audio"; else -> "Video" },
         filePath = filePath,
         status = filePath?.let { DownloadStatus.Completed(it) },
         createdAt = createdAt,

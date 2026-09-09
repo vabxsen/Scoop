@@ -19,6 +19,11 @@ import com.scoop.app.util.PrefKeys
 import com.scoop.app.util.PreferenceUtil
 import com.scoop.app.util.isPlaylistUrl
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
+import com.scoop.app.core.model.ImageCollection
+import com.scoop.app.extractor.ImageDiscovery
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 sealed interface ConfigureUiState {
     data object Hidden : ConfigureUiState
@@ -30,6 +35,8 @@ sealed interface ConfigureUiState {
     data class Loaded(val info: MediaInfo) : ConfigureUiState
 
     data class PlaylistLoaded(val info: PlaylistInfo) : ConfigureUiState
+
+    data class ImagesLoaded(val collection: ImageCollection) : ConfigureUiState
 }
 
 private const val TAG = "HomeViewModel"
@@ -39,7 +46,55 @@ enum class FormatMode {
     LOW,
 }
 
-class HomeViewModel(private val extractor: MediaExtractor, private val downloadManager: DownloadManager) : ViewModel() {
+class HomeViewModel(
+    private val extractor: MediaExtractor,
+    private val downloadManager: DownloadManager,
+    private val imageDiscovery: ImageDiscovery,
+) : ViewModel() {
+    private var analysisJob: Job? = null
+    var imagesOnly by mutableStateOf(false)
+        private set
+    var selectedImageUrls by mutableStateOf<Set<String>>(emptySet())
+        private set
+
+    fun selectImagesOnly(value: Boolean) { imagesOnly = value }
+
+    private fun showImages(collection: ImageCollection) {
+        selectedImageUrls =
+            if (collection.images.size == 1 || PreferenceUtil.getBoolean(PrefKeys.SELECT_ALL_GALLERY_IMAGES, true)) {
+                collection.images.map { it.url }.toSet()
+            } else {
+                emptySet()
+            }
+        configureState = ConfigureUiState.ImagesLoaded(collection)
+        if (collection.images.size == 1 && !PreferenceUtil.getBoolean(PrefKeys.CONFIGURE_BEFORE_DOWNLOAD, true)) confirmImagesDownload()
+    }
+
+    fun toggleImage(imageUrl: String) {
+        selectedImageUrls = if (imageUrl in selectedImageUrls) selectedImageUrls - imageUrl else selectedImageUrls + imageUrl
+    }
+
+    fun selectAllImages(selected: Boolean) {
+        val collection = (configureState as? ConfigureUiState.ImagesLoaded)?.collection ?: return
+        selectedImageUrls = if (selected) collection.images.map { it.url }.toSet() else emptySet()
+    }
+
+    fun confirmImagesDownload(): Int {
+        val collection = (configureState as? ConfigureUiState.ImagesLoaded)?.collection ?: return 0
+        val selected = collection.images.filter { it.url in selectedImageUrls }
+        if (selected.isEmpty()) return 0
+        val tasks = selected.mapIndexed { index, image ->
+            downloadManager.enqueue(
+                DownloadRequest(url = collection.sourceUrl, kind = DownloadKind.IMAGE, image = image,
+                    playlistTitle = collection.title.takeIf { selected.size > 1 }),
+                title = image.title.ifBlank { "Image ${index + 1}" }, thumbnailUrl = image.url,
+            )
+        }
+        if (tasks.size == 1) activeDownloadTaskId = tasks.single().id
+        url = ""
+        return tasks.size
+    }
+
 
     var url by mutableStateOf("")
         private set
@@ -85,10 +140,28 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
      * A "pure" playlist link (list= with no v=) routes through [MediaExtractor.getPlaylist]
      * instead - a video link that merely carries a list= param keeps today's single-video path. */
     fun startDownloadFlow() {
-        val target = url.trim()
+        val target = Regex("https?://[^\\s<>]+", RegexOption.IGNORE_CASE).find(url.trim())?.value
+            ?.trimEnd('.', ',', ')', ']') ?: url.trim()
         if (target.isEmpty()) return
+        if (target.toHttpUrlOrNull() == null) {
+            configureState = ConfigureUiState.Error("Paste a valid http or https link.")
+            return
+        }
+        analysisJob?.cancel()
+        activeDownloadTaskId = null
         configureState = ConfigureUiState.Loading
-        viewModelScope.launch {
+        val imageMode = imagesOnly
+        analysisJob = viewModelScope.launch {
+            if (imageMode) {
+                try { showImages(imageDiscovery.discover(target)) }
+                catch (e: CancellationException) { throw e }
+                catch (e: Exception) { configureState = ConfigureUiState.Error(e.message ?: "Could not find images") }
+                return@launch
+            }
+            // A direct image needs no Python analysis. Failed probes leave media extraction alone.
+            try {
+                imageDiscovery.directImage(target)?.let { showImages(it); return@launch }
+            } catch (e: CancellationException) { throw e } catch (_: Exception) { }
             if (isPlaylistUrl(target)) {
                 extractor
                     .getPlaylist(target)
@@ -124,8 +197,10 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
                         if (!PreferenceUtil.getBoolean(PrefKeys.CONFIGURE_BEFORE_DOWNLOAD, true)) confirmDownload()
                     }
                     .onFailure {
-                        Log.e(TAG, "analyze failed for $target", it)
-                        configureState = ConfigureUiState.Error(it.message ?: "Unknown error")
+                        if (it is CancellationException) throw it
+                        try { showImages(imageDiscovery.discover(target)) }
+                        catch (e: CancellationException) { throw e }
+                        catch (_: Exception) { configureState = ConfigureUiState.Error(it.message ?: "No downloadable media or images found") }
                     }
             }
         }
@@ -134,6 +209,8 @@ class HomeViewModel(private val extractor: MediaExtractor, private val downloadM
     fun retryAnalyze() = startDownloadFlow()
 
     fun dismissConfigureSheet() {
+        analysisJob?.cancel()
+        selectedImageUrls = emptySet()
         configureState = ConfigureUiState.Hidden
         activeDownloadTaskId = null
         selectedPlaylistEntryUrls = emptySet()
