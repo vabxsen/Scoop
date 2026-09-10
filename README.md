@@ -7,7 +7,7 @@
 
   # Scoop
 
-  **A free, local-first video & audio downloader for Android.**
+  **A free, local-first image, video & audio downloader for Android.**
 
   No account. No backend. No ads. Just paste a link and download.
 
