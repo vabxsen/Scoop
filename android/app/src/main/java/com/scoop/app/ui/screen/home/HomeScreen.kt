@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
@@ -135,8 +136,16 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(Spacing.md))
                 ExtendedFloatingActionButton(
                     onClick = viewModel::startDownloadFlow,
+                    modifier = Modifier.clip(FloatingActionButtonDefaults.extendedFabShape),
                     icon = { Icon(Icons.Filled.Download, contentDescription = null) },
                     text = { Text(stringResource(R.string.action_download)) },
+                    elevation =
+                        FloatingActionButtonDefaults.elevation(
+                            defaultElevation = 0.dp,
+                            pressedElevation = 0.dp,
+                            focusedElevation = 0.dp,
+                            hoveredElevation = 0.dp,
+                        ),
                 )
             }
         }

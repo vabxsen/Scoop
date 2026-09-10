@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Update
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -44,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -196,7 +198,17 @@ fun SettingsHubScreen(
 
             ExtendedFloatingActionButton(
                 onClick = viewModel::checkForUpdate,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
+                modifier =
+                    Modifier.align(Alignment.BottomEnd)
+                        .padding(24.dp)
+                        .clip(FloatingActionButtonDefaults.extendedFabShape),
+                elevation =
+                    FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp,
+                        focusedElevation = 0.dp,
+                        hoveredElevation = 0.dp,
+                    ),
                 icon = {
                     AnimatedContent(
                         targetState = updatePhase,
