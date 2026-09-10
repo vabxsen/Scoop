@@ -1,10 +1,15 @@
 """Offline regression tests for the bundled bridge's authentication boundary."""
 import importlib.util
+import contextlib
+import io
+import json
+import runpy
 from pathlib import Path
 import sys
 sys.dont_write_bytecode = True
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 
 ANDROID = Path(__file__).resolve().parents[1]
@@ -47,6 +52,57 @@ class GallerySessionTest(unittest.TestCase):
         failure = RuntimeError('HTTP redirect to login page (https://instagram.com/?secret=sensitive)')
         self.assertEqual(bridge.error_code(failure), 'authentication_required')
         self.assertEqual(bridge.error_code(ValueError('sensitive')), 'ValueError')
+
+class GalleryHeadersTest(unittest.TestCase):
+    def test_existing_referer_is_preserved_regardless_of_case(self):
+        page = 'https://example.com/gallery'
+        image_url = 'https://example.com/image.jpg'
+        for key in ('Referer', 'referer', 'REFERER', 'rEfErEr', None):
+            with self.subTest(key=key):
+                class Source:
+                    category = 'test'
+                    referer = True
+                    session = bridge.requests.Session()
+
+                    def initialize(self):
+                        pass
+
+                    def __iter__(self):
+                        yield (bridge.Message.Url, image_url, {
+                            'extension': 'jpg',
+                            '_http_headers': {key: 'https://example.com/original'} if key else {},
+                        })
+
+                with patch.object(bridge.extractor, 'find', return_value=Source()):
+                    headers = bridge.extract(page)['images'][0]['headers']
+                referers = [value for name, value in headers.items() if name.lower() == 'referer']
+                self.assertEqual(referers, ['https://example.com/original' if key else page])
+
+
+class GalleryInputLimitTest(unittest.TestCase):
+    def test_input_at_limit_is_accepted_and_larger_input_is_rejected(self):
+        for size in (16383, 16384, 16385):
+            with self.subTest(size=size):
+                payload = '{}' + ' ' * (size - 2)
+                output = io.StringIO()
+                with patch.object(sys, 'argv', [str(spec.origin), 'https://example.com/']), \
+                        patch.object(sys, 'stdin', io.StringIO(payload)), \
+                        patch.object(bridge.extractor, 'find', return_value=None) as find, \
+                        contextlib.redirect_stdout(output):
+                    if size > 16384:
+                        with self.assertRaises(SystemExit) as failure:
+                            runpy.run_path(str(spec.origin), run_name='__main__')
+                        self.assertEqual(failure.exception.code, 1)
+                        find.assert_not_called()
+                    else:
+                        runpy.run_path(str(spec.origin), run_name='__main__')
+                        find.assert_called_once()
+                result = json.loads(output.getvalue())
+                if size > 16384:
+                    self.assertEqual(result['error'], 'ValueError')
+                else:
+                    self.assertNotIn('error', result)
+
 
 if __name__ == '__main__':
     try:

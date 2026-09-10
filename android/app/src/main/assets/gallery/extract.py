@@ -78,7 +78,7 @@ def extract(url):
             prepared = source.session.prepare_request(requests.Request("GET", image_url, headers=metadata.get("_http_headers")))
             headers = {k: v for k, v in prepared.headers.items()
                        if k.lower() in ("user-agent", "referer", "origin", "cookie", "accept", "authorization")}
-            if source.referer and "Referer" not in headers:
+            if source.referer and not any(key.lower() == "referer" for key in headers):
                 headers["Referer"] = page
             filename = str(metadata.get("filename") or metadata.get("id") or "Image")
             images.append({"url": image_url, "title": filename,
