@@ -109,14 +109,14 @@ needed to fetch the media itself.
   status bar.
 
 ### Privacy
-- No account, no backend, no analytics, no ads.
+- No Scoop account, no backend, no analytics, no ads.
 - Everything runs on-device; see [`PRIVACY.md`](PRIVACY.md) for the full breakdown.
 
 ## 🚀 Usage
 
 1. **Get a link** to a video or audio page from your browser or another app.
 2. **Send it to Scoop** — share it directly to Scoop, or open the link and let Scoop handle it
-   (it registers as a link handler for `http`/`https` links), or paste it into Scoop yourself.
+   (it registers as a link handler for `https` links), or paste it into Scoop yourself.
 3. **Review what Scoop found** — title, uploader, duration, and thumbnail.
 4. **Configure the download** — video or audio-only, Highest/Low quality (or your configured
    defaults), and optional subtitle/thumbnail embedding.

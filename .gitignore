@@ -1,2 +1,26 @@
 # Local build artifacts - too large for GitHub (100MB file limit) and not source
 /installer/
+
+# Signing material. Leaking these lets anyone publish an update that Android
+# accepts as a legitimate Scoop build, so they must never reach the repository.
+keystore.properties
+*.jks
+*.keystore
+*.p12
+
+# Machine-specific SDK paths
+local.properties
+
+# Gradle / Android build output
+.gradle/
+build/
+captures/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
