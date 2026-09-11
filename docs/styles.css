@@ -748,7 +748,7 @@ h2 {
 }
 
 .cta-section img {
-  filter: brightness(4);
+  height: auto;
 }
 
 .cta-section .eyebrow {
