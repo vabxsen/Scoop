@@ -26,7 +26,6 @@
 <div align="center">
 <div>
 <img src="docs/screenshots/home.jpg" width="30%" />
-<img src="docs/screenshots/image-download.png" width="30%" />
 <img src="docs/screenshots/configure-download.jpg" width="30%" />
 <img src="docs/screenshots/downloads.jpg" width="30%" />
 <img src="docs/screenshots/appearance.jpg" width="30%" />
