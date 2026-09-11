@@ -208,6 +208,7 @@ h1 {
 
 .button:focus-visible,
 .header-cta:focus-visible,
+.demo-toggle:focus-visible,
 a:focus-visible,
 video:focus-visible {
   outline: 3px solid #2268d8;
@@ -260,20 +261,96 @@ video:focus-visible {
 .phone-frame {
   position: relative;
   z-index: 2;
-  overflow: hidden;
   width: min(100%, 340px);
   margin-inline: auto;
-  border: 9px solid var(--ink);
-  border-radius: 44px;
-  background: var(--ink);
+  padding: 10px;
+  border-radius: 46px;
+  background: linear-gradient(155deg, #34343a 0%, #151517 42%, #101012 68%, #2b2b31 100%);
+  box-shadow:
+    0 1px 2px rgba(20, 19, 16, 0.4),
+    0 34px 70px -28px rgba(20, 19, 16, 0.62),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.09);
 }
 
-.phone-frame video {
+.phone-frame::before,
+.phone-frame::after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #3a3a40, #17171a);
+}
+
+.phone-frame::before {
+  top: 21%;
+  left: -3px;
+  height: 66px;
+}
+
+.phone-frame::after {
+  top: 31%;
+  right: -3px;
+  height: 46px;
+}
+
+.phone-screen {
+  position: relative;
+  overflow: hidden;
+  border-radius: 37px;
+  background: #f7f4ef;
+}
+
+.phone-screen video {
   width: 100%;
   aspect-ratio: 9 / 20;
-  border-radius: 34px;
-  background: #f7f4ef;
   object-fit: cover;
+}
+
+.demo-toggle {
+  position: absolute;
+  right: -21px;
+  bottom: 28px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 10px 24px -10px rgba(20, 19, 16, 0.7);
+  transition:
+    transform 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.demo-toggle:hover {
+  border-color: var(--signal);
+  background: var(--signal);
+  transform: scale(1.06);
+}
+
+.demo-toggle:active {
+  transform: scale(0.96);
+}
+
+.demo-toggle svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
+.demo-toggle .icon-play,
+.demo-toggle.is-paused .icon-pause {
+  display: none;
+}
+
+.demo-toggle.is-paused .icon-play {
+  display: block;
 }
 
 .orbit {

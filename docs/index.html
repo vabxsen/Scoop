@@ -62,17 +62,36 @@
           <div class="orbit orbit-one" aria-hidden="true"></div>
           <div class="orbit orbit-two" aria-hidden="true"></div>
           <div class="phone-frame">
-            <video
-              controls
-              muted
-              playsinline
-              preload="metadata"
-              poster="screenshots/home.jpg"
-              aria-label="Scoop image download demonstration video"
+            <div class="phone-screen">
+              <video
+                id="demo-video"
+                autoplay
+                loop
+                muted
+                playsinline
+                preload="auto"
+                poster="screenshots/home.jpg"
+                aria-label="Scoop image download demonstration video"
+              >
+                <source src="scoop-demo.mp4" type="video/mp4" />
+                Your browser does not support embedded video.
+              </video>
+            </div>
+            <button
+              type="button"
+              class="demo-toggle"
+              id="demo-toggle"
+              aria-controls="demo-video"
+              aria-label="Pause demo"
             >
-              <source src="scoop-demo.mp4" type="video/mp4" />
-              Your browser does not support embedded video.
-            </video>
+              <svg class="icon-pause" viewBox="0 0 16 16" aria-hidden="true">
+                <rect x="3" y="2" width="3.6" height="12" rx="1.2" />
+                <rect x="9.4" y="2" width="3.6" height="12" rx="1.2" />
+              </svg>
+              <svg class="icon-play" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M4.5 2.6a1 1 0 0 1 1.52-.85l7 5.4a1 1 0 0 1 0 1.7l-7 5.4a1 1 0 0 1-1.52-.85Z" />
+              </svg>
+            </button>
           </div>
           <p class="visual-caption">A real download recorded on an Android emulator.</p>
         </div>
