@@ -15,6 +15,12 @@ val keystoreProperties =
         if (keystorePropertiesFile.exists()) keystorePropertiesFile.inputStream().use { load(it) }
     }
 
+val supportedAbis = setOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+val requestedAbi = providers.gradleProperty("scoopAbi").orNull
+require(requestedAbi == null || requestedAbi in supportedAbis) {
+    "Unsupported -PscoopAbi=$requestedAbi. Use one of: ${supportedAbis.sorted().joinToString()}"
+}
+
 android {
     namespace = "com.scoop.app"
     compileSdk = 35
@@ -28,6 +34,15 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
+
+        // A specific ABI can be selected for local/CI builds with -PscoopAbi=<abi>.
+        // Debug builds remain universal when the property is omitted.
+        requestedAbi?.let { abi ->
+            ndk {
+                abiFilters.clear()
+                abiFilters += abi
+            }
+        }
     }
 
     signingConfigs {
@@ -57,13 +72,13 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            // yt-dlp/ffmpeg/aria2c/python native libs are bundled per-ABI and dominate the APK
-            // size. x86/x86_64 only matter for emulators; virtually every real Android phone in
-            // use today is arm64-v8a. Debug keeps every ABI so this still installs on the x86_64
-            // emulator used for local testing.
-            ndk {
-                abiFilters.clear()
-                abiFilters += "arm64-v8a"
+            // Native media runtimes dominate the APK, so the normal release stays arm64-only.
+            // Maintainers can publish separate installable variants with -PscoopAbi=<abi>.
+            if (requestedAbi == null) {
+                ndk {
+                    abiFilters.clear()
+                    abiFilters += "arm64-v8a"
+                }
             }
         }
         debug {

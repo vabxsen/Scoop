@@ -1,0 +1,5 @@
+* Added public image and gallery downloads with preview and selection.
+* Added image settings and Pictures/Scoop storage support.
+* Improved Instagram public-post extraction and session handling.
+* Fixed notification manifest and request-header issues.
+* Removed unwanted light-theme action-button shadows.

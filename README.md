@@ -16,7 +16,7 @@
   ![Platform](https://img.shields.io/badge/platform-Android-3DDC84)
   ![Min SDK](https://img.shields.io/badge/minSdk-24-informational)
 
-  [Download the latest release](../../releases/latest) · [Report a bug](../../issues/new?template=bug_report.yml) · [Request a feature](../../issues/new?template=feature_request.yml)
+  [Website](https://vabxsen.github.io/Scoop/) · [Download the latest release](../../releases/latest) · [Report a bug](../../issues/new?template=bug_report.yml) · [Request a feature](../../issues/new?template=feature_request.yml)
 </div>
 
 ---
@@ -26,6 +26,7 @@
 <div align="center">
 <div>
 <img src="docs/screenshots/home.jpg" width="30%" />
+<img src="docs/screenshots/image-download.png" width="30%" />
 <img src="docs/screenshots/configure-download.jpg" width="30%" />
 <img src="docs/screenshots/downloads.jpg" width="30%" />
 <img src="docs/screenshots/appearance.jpg" width="30%" />
@@ -140,6 +141,20 @@ cd android
 
 The debug APK lands in `android/app/build/outputs/apk/debug/`.
 
+To build for one CPU architecture, pass `-PscoopAbi` with `arm64-v8a`, `armeabi-v7a`,
+`x86_64`, or `x86`. The normal release remains arm64-v8a when the property is omitted.
+
+```bash
+./gradlew :app:assembleDebug -PscoopAbi=x86_64
+```
+
+Maintainers with the release keystore can build the signed arm64, 32-bit ARM, and x86_64 APKs in
+one pass from PowerShell:
+
+```powershell
+.\scripts\build_release_variants.ps1
+```
+
 ## 🧰 Tech stack
 
 Kotlin, Jetpack Compose, Material 3, Koin (DI), Room (download history), MMKV (preferences).
@@ -158,6 +173,9 @@ Because Scoop links against this GPL-family native stack, **Scoop itself is lice
 GNU General Public License v3.0** — see [`LICENSE`](LICENSE).
 
 The image feature also bundles gallery-dl and its Python dependencies as a separate process, and uses jsoup for HTML discovery. Versions, licenses and source links are listed in [image dependency notices](THIRD_PARTY_IMAGE_NOTICES.md).
+
+The current [F-Droid compatibility audit](docs/F-DROID-AUDIT.md) records the resolved dependency
+licenses, binary-build blockers, and work required before submitting Scoop to the main repository.
 
 ## 🤝 Contributing
 

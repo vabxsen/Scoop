@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f6f2" />
+    <meta
+      name="description"
+      content="Scoop is a free, local-first image, video and audio downloader for Android. No account, backend, ads or analytics."
+    />
+    <meta property="og:title" content="Scoop — media downloads, kept local" />
+    <meta
+      property="og:description"
+      content="Save images, video and audio on Android without an account, backend, ads or analytics."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="screenshots/home.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>Scoop — local-first media downloader for Android</title>
+    <link rel="icon" href="logo-light.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Scoop home">
+        <img src="logo-light.png" alt="" width="42" height="42" />
+        <span>Scoop</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#features">Features</a>
+        <a href="#privacy">Privacy</a>
+        <a href="https://github.com/vabxsen/Scoop">GitHub</a>
+      </nav>
+      <a class="header-cta" href="https://github.com/vabxsen/Scoop/releases/latest">Download APK</a>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top">
+        <div class="hero-copy">
+          <p class="eyebrow">Open source · Android 7+</p>
+          <h1>Save media. Keep it local.</h1>
+          <p class="hero-summary">
+            Download images, video and audio on Android without an account, backend, ads or analytics.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="https://github.com/vabxsen/Scoop/releases/latest">Download Scoop</a>
+            <a class="button button-secondary" href="https://github.com/vabxsen/Scoop">View source</a>
+          </div>
+          <ul class="trust-list" aria-label="Scoop principles">
+            <li>No account</li>
+            <li>No backend</li>
+            <li>No ads</li>
+          </ul>
+        </div>
+
+        <div class="hero-visual" aria-label="Scoop image download demonstration">
+          <div class="orbit orbit-one" aria-hidden="true"></div>
+          <div class="orbit orbit-two" aria-hidden="true"></div>
+          <div class="phone-frame">
+            <video
+              controls
+              muted
+              playsinline
+              preload="metadata"
+              poster="screenshots/home.jpg"
+              aria-label="Scoop image download demonstration video"
+            >
+              <source src="scoop-demo.mp4" type="video/mp4" />
+              Your browser does not support embedded video.
+            </video>
+          </div>
+          <p class="visual-caption">A real download recorded on an Android emulator.</p>
+        </div>
+      </section>
+
+      <section class="signal-strip" aria-label="Product details">
+        <p><strong>Local-first</strong><span>Media goes from the source to your device.</span></p>
+        <p><strong>Format-aware</strong><span>Choose images, video, audio and quality.</span></p>
+        <p><strong>GPL-3.0</strong><span>Inspect, learn from and contribute to the code.</span></p>
+      </section>
+
+      <section class="feature-section" id="features">
+        <div class="section-heading">
+          <p class="eyebrow">One link. Your choice.</p>
+          <h2>Built for the download you actually want.</h2>
+          <p>Scoop previews what it finds before anything is saved.</p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature feature-large">
+            <div>
+              <p class="feature-number">01</p>
+              <h3>Image collections, without recompression</h3>
+              <p>
+                Preview a public page or gallery, select individual images or save the complete
+                set. Direct image links keep their original bytes and format.
+              </p>
+            </div>
+            <img src="screenshots/image-download.png" alt="Scoop image picker showing an original PNG selected for download" loading="lazy" />
+          </article>
+
+          <article class="feature">
+            <p class="feature-number">02</p>
+            <h3>Video and audio, configured per download</h3>
+            <p>Choose quality, container, audio format, subtitles and thumbnail options.</p>
+          </article>
+
+          <article class="feature feature-dark">
+            <p class="feature-number">03</p>
+            <h3>A queue that keeps moving</h3>
+            <p>Track progress, retry failures and manage completed files from one history.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="steps-section" id="privacy">
+        <div class="section-heading">
+          <p class="eyebrow">Simple by design</p>
+          <h2>Paste. Preview. Save.</h2>
+        </div>
+        <ol class="steps">
+          <li><span>1</span><div><h3>Share or paste a link</h3><p>Send a URL to Scoop from another app, or paste it on the home screen.</p></div></li>
+          <li><span>2</span><div><h3>Review the result</h3><p>Pick images, video or audio and configure only the options you need.</p></div></li>
+          <li><span>3</span><div><h3>Save it locally</h3><p>Downloads run on your device and appear in Scoop’s queue and history.</p></div></li>
+        </ol>
+      </section>
+
+      <section class="privacy-section">
+        <div>
+          <p class="eyebrow">Your phone does the work</p>
+          <h2>No account. No server in the middle.</h2>
+        </div>
+        <div class="privacy-copy">
+          <p>
+            Scoop contains no advertising or analytics SDK. A network request leaves your phone
+            only when it is needed to inspect or download the link you provided.
+          </p>
+          <a href="https://github.com/vabxsen/Scoop/blob/main/PRIVACY.md">Read the privacy details</a>
+        </div>
+      </section>
+
+      <section class="cta-section">
+        <img src="logo-dark.png" alt="" width="120" height="120" />
+        <div>
+          <p class="eyebrow">Free and open source</p>
+          <h2>Take control of what you save.</h2>
+        </div>
+        <a class="button button-inverse" href="https://github.com/vabxsen/Scoop/releases/latest">Get the APK</a>
+      </section>
+
+      <p class="support-note">
+        Website support varies. Private or restricted posts, expired links and some JavaScript-only
+        pages may be inaccessible. Download only media you have permission to save.
+      </p>
+    </main>
+
+    <footer>
+      <a class="brand" href="#top" aria-label="Back to top">
+        <img src="logo-light.png" alt="" width="34" height="34" />
+        <span>Scoop</span>
+      </a>
+      <p>Built by <a href="https://github.com/vabxsen">Vaibhav Sen</a>. Licensed under GPL-3.0.</p>
+      <p>© <span id="year">2026</span></p>
+    </footer>
+  </body>
+</html>

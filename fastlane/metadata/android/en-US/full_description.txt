@@ -1,0 +1,15 @@
+Scoop downloads images, video and audio directly to your Android device.
+
+Features:
+* Paste a link, share one from another app, or open a supported link with Scoop
+* Preview titles, thumbnails and available media before downloading
+* Select individual images or save a complete public gallery
+* Download video or audio-only with configurable quality and formats
+* Choose subtitle, thumbnail and playlist options
+* Track active downloads and manage completed files from local history
+* Choose Wi-Fi-only behavior, retry policy, speed limits and save folders
+* Use light, dark, system and dynamic-color themes
+
+Scoop has no account, backend, advertising or analytics. Extraction and download work happen on the device. Network requests are made only to inspect or download links supplied by the user and to perform user-controlled update checks.
+
+Website support varies. Private or restricted posts, expired links and some JavaScript-only pages may be inaccessible. Download only media you have permission to save.

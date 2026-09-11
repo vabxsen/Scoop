@@ -1,0 +1,36 @@
+name: Android ABI checks
+
+on:
+  pull_request:
+    paths:
+      - "android/**"
+      - ".github/workflows/android-abi-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-debug-apk:
+    name: Debug APK (${{ matrix.abi }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a, x86_64]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build installable debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon :app:assembleDebug -PscoopAbi=${{ matrix.abi }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Scoop-debug-${{ matrix.abi }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
