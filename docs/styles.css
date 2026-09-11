@@ -452,6 +452,171 @@ h2 {
   line-height: 1.55;
 }
 
+.configurator {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.config-panel,
+.config-out {
+  padding: clamp(26px, 3.4vw, 40px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: #f1f0eb;
+}
+
+.config-lede {
+  max-width: 46ch;
+  margin-bottom: 30px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.config-url {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 4px;
+}
+
+.config-group {
+  margin: 0 0 22px;
+  padding: 0;
+  border: 0;
+}
+
+.config-group:last-child {
+  margin-bottom: 0;
+}
+
+.config-group legend {
+  margin-bottom: 11px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-row input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chip {
+  padding: 9px 15px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 0.16s ease,
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.chip:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.chip:active {
+  transform: scale(0.97);
+}
+
+.chip-row input:checked + .chip {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.chip-row input:focus-visible + .chip {
+  outline: 3px solid #2268d8;
+  outline-offset: 3px;
+}
+
+.config-stack {
+  display: none;
+}
+
+.configurator:has(#cfg-mode-images:checked) [data-mode-panel="images"],
+.configurator:has(#cfg-mode-video:checked) [data-mode-panel="video"],
+.configurator:has(#cfg-mode-audio:checked) [data-mode-panel="audio"] {
+  display: block;
+}
+
+.config-out {
+  display: flex;
+  flex-direction: column;
+  background: var(--ink);
+  color: #fff;
+}
+
+.config-out-eyebrow {
+  margin: 0 0 10px;
+  color: #8d8d88;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.config-out-file {
+  margin: 0 0 6px;
+  font-size: clamp(1.3rem, 2.1vw, 1.85rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  word-break: break-all;
+}
+
+.config-out-path {
+  margin: 0 0 30px;
+  color: #c8c8c4;
+  font-size: 0.86rem;
+}
+
+.config-out-code {
+  overflow-x: auto;
+  margin: 0 0 auto;
+  padding: 16px 18px;
+  border: 1px solid #34343a;
+  border-radius: 16px;
+  background: #141416;
+  color: var(--signal);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.85;
+  white-space: pre-wrap;
+}
+
+.config-out-note {
+  max-width: 40ch;
+  margin: 26px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid #34343a;
+  color: #8d8d88;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
 .feature-grid {
   display: grid;
   grid-template-columns: 1.25fr 0.75fr;
@@ -651,6 +816,7 @@ footer p {
 
   .signal-strip,
   .section-heading,
+  .configurator,
   .feature-grid,
   .privacy-section {
     grid-template-columns: 1fr;

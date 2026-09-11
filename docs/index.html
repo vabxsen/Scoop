@@ -110,6 +110,119 @@
           <p>Scoop previews what it finds before anything is saved.</p>
         </div>
 
+        <div class="configurator" id="configurator">
+          <div class="config-panel">
+            <p class="config-lede">
+              <span class="config-url">example.com/album/sunset</span>
+              is in the box. Pick what Scoop should do with it.
+            </p>
+
+            <fieldset class="config-group">
+              <legend>Download</legend>
+              <div class="chip-row">
+                <input type="radio" name="cfg-mode" id="cfg-mode-images" data-mode="images" checked />
+                <label class="chip" for="cfg-mode-images">Images</label>
+                <input type="radio" name="cfg-mode" id="cfg-mode-video" data-mode="video" />
+                <label class="chip" for="cfg-mode-video">Video</label>
+                <input type="radio" name="cfg-mode" id="cfg-mode-audio" data-mode="audio" />
+                <label class="chip" for="cfg-mode-audio">Audio</label>
+              </div>
+            </fieldset>
+
+            <div class="config-stack" data-mode-panel="images">
+              <fieldset class="config-group">
+                <legend>Selection</legend>
+                <div class="chip-row">
+                  <input type="radio" name="cfg-scope" id="cfg-scope-all" data-value="all" checked />
+                  <label class="chip" for="cfg-scope-all">All 24 found</label>
+                  <input type="radio" name="cfg-scope" id="cfg-scope-picked" data-value="picked" />
+                  <label class="chip" for="cfg-scope-picked">Hand-picked</label>
+                </div>
+              </fieldset>
+            </div>
+
+            <div class="config-stack" data-mode-panel="video">
+              <fieldset class="config-group">
+                <legend>Quality</legend>
+                <div class="chip-row">
+                  <input type="radio" name="cfg-vq" id="cfg-vq-best" data-value="best" checked />
+                  <label class="chip" for="cfg-vq-best">Highest</label>
+                  <input type="radio" name="cfg-vq" id="cfg-vq-1080" data-value="1080" />
+                  <label class="chip" for="cfg-vq-1080">1080p</label>
+                  <input type="radio" name="cfg-vq" id="cfg-vq-720" data-value="720" />
+                  <label class="chip" for="cfg-vq-720">720p</label>
+                  <input type="radio" name="cfg-vq" id="cfg-vq-low" data-value="low" />
+                  <label class="chip" for="cfg-vq-low">Smallest</label>
+                </div>
+              </fieldset>
+              <fieldset class="config-group">
+                <legend>Container</legend>
+                <div class="chip-row">
+                  <input type="radio" name="cfg-container" id="cfg-container-mp4" data-value="mp4" checked />
+                  <label class="chip" for="cfg-container-mp4">MP4</label>
+                  <input type="radio" name="cfg-container" id="cfg-container-mkv" data-value="mkv" />
+                  <label class="chip" for="cfg-container-mkv">MKV</label>
+                  <input type="radio" name="cfg-container" id="cfg-container-webm" data-value="webm" />
+                  <label class="chip" for="cfg-container-webm">WEBM</label>
+                </div>
+              </fieldset>
+              <fieldset class="config-group">
+                <legend>Embed</legend>
+                <div class="chip-row">
+                  <input type="checkbox" id="cfg-subs" data-flag="--embed-subs" />
+                  <label class="chip" for="cfg-subs">Subtitles</label>
+                  <input type="checkbox" id="cfg-vthumb" data-flag="--embed-thumbnail" />
+                  <label class="chip" for="cfg-vthumb">Thumbnail</label>
+                </div>
+              </fieldset>
+            </div>
+
+            <div class="config-stack" data-mode-panel="audio">
+              <fieldset class="config-group">
+                <legend>Format</legend>
+                <div class="chip-row">
+                  <input type="radio" name="cfg-af" id="cfg-af-m4a" data-value="m4a" checked />
+                  <label class="chip" for="cfg-af-m4a">M4A</label>
+                  <input type="radio" name="cfg-af" id="cfg-af-mp3" data-value="mp3" />
+                  <label class="chip" for="cfg-af-mp3">MP3</label>
+                  <input type="radio" name="cfg-af" id="cfg-af-opus" data-value="opus" />
+                  <label class="chip" for="cfg-af-opus">Opus</label>
+                </div>
+              </fieldset>
+              <fieldset class="config-group">
+                <legend>Bitrate</legend>
+                <div class="chip-row">
+                  <input type="radio" name="cfg-aq" id="cfg-aq-best" data-value="0" checked />
+                  <label class="chip" for="cfg-aq-best">Best</label>
+                  <input type="radio" name="cfg-aq" id="cfg-aq-192" data-value="192K" />
+                  <label class="chip" for="cfg-aq-192">192 kbps</label>
+                  <input type="radio" name="cfg-aq" id="cfg-aq-128" data-value="128K" />
+                  <label class="chip" for="cfg-aq-128">128 kbps</label>
+                </div>
+              </fieldset>
+              <fieldset class="config-group">
+                <legend>Embed</legend>
+                <div class="chip-row">
+                  <input type="checkbox" id="cfg-cover" data-flag="--embed-thumbnail" checked />
+                  <label class="chip" for="cfg-cover">Cover art</label>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+
+          <aside class="config-out" aria-live="polite">
+            <p class="config-out-eyebrow">Saves as</p>
+            <p class="config-out-file" id="cfg-file">sunset-01.png</p>
+            <p class="config-out-path" id="cfg-path">Pictures/Scoop</p>
+            <p class="config-out-eyebrow">What Scoop runs</p>
+            <pre class="config-out-code" id="cfg-plan"></pre>
+            <p class="config-out-note">
+              Scoop shows you the plan before anything is saved — and the custom command field
+              lets you add your own yt-dlp arguments on top.
+            </p>
+          </aside>
+        </div>
+
         <div class="feature-grid">
           <article class="feature feature-large">
             <div>
