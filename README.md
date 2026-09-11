@@ -9,7 +9,7 @@
 
   **A free, local-first image, video & audio downloader for Android.**
 
-  No account. No backend. No ads. Just paste a link and download.
+  No Scoop account. No backend. No ads. Just paste a link and download.
 
   [![Latest release](https://img.shields.io/github/v/release/vabxsen/Scoop?label=release)](../../releases/latest)
   [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
@@ -41,7 +41,7 @@
 
 Scoop resolves a pasted or shared video link, lets you configure exactly how you want it saved,
 and downloads it straight to your device through a bundled [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-runtime — no server in the middle, no sign-in, nothing leaving your phone beyond the request
+runtime — no server in the middle, no Scoop account, nothing leaving your phone beyond the request
 needed to fetch the media itself.
 
 ## 📖 Features
@@ -71,6 +71,7 @@ needed to fetch the media itself.
 ### Image downloader
 - **Direct image links**, including extensionless URLs, with original bytes and format preserved without resizing or recompression.
 - **Public image galleries and webpages** — discover photos from supported gallery sites, with an HTML image picker as a fallback.
+- **Instagram photos** — download accessible post images, with optional Instagram sign-in when a post requires an authenticated session.
 - **Preview and select** — paste or share a link, choose **Images**, then download individual pictures, a selection, or all results through the existing queue.
 - **Image settings** — open **Settings > Images**, below Downloads, to choose whether gallery images start selected and access the save-folder settings.
 - **Save and manage** — images save to **Pictures/Scoop** on Android 10+, or your chosen custom folder. Open, share or delete completed images from history; existing incognito and retry controls apply.

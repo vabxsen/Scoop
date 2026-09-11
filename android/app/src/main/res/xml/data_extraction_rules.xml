@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
-    <cloud-backup><exclude domain="root" path="app_webview" /></cloud-backup>
-    <device-transfer><exclude domain="root" path="app_webview" /></device-transfer>
+    <cloud-backup>
+        <exclude domain="root" path="app_webview" />
+        <exclude domain="database" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="app_webview" />
+        <exclude domain="database" path="." />
+    </device-transfer>
 </data-extraction-rules>

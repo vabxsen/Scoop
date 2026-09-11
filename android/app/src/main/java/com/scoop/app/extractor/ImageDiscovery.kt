@@ -3,8 +3,8 @@ package com.scoop.app.extractor
 import android.graphics.BitmapFactory
 import com.scoop.app.core.model.ImageCandidate
 import com.scoop.app.core.model.ImageCollection
+import com.scoop.app.core.network.SecureUrl
 import kotlinx.coroutines.CancellationException
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.ByteArrayOutputStream
@@ -58,7 +58,7 @@ class ImageDiscovery(client: OkHttpClient, private val gallery: GalleryImageExtr
     }
 
     private fun request(url: String): Request {
-        val parsed = url.toHttpUrlOrNull() ?: throw IOException("Paste a valid http or https link.")
+        val parsed = SecureUrl.parse(url) ?: throw IOException("Paste a valid https link.")
         return Request.Builder().url(parsed).header("User-Agent", IMAGE_USER_AGENT).build()
     }
 }

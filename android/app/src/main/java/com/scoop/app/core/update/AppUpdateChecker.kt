@@ -1,9 +1,11 @@
 package com.scoop.app.core.update
 
 import android.content.Context
+import android.os.Build
 import com.scoop.app.R
 import java.io.File
 import java.io.IOException
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
@@ -31,8 +33,9 @@ class AppUpdateChecker(private val context: Context, private val client: OkHttpC
                     val release = json.decodeFromString<GithubRelease>(body)
                     val currentVersion = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0"
                     if (!isNewer(release.tagName, currentVersion)) return@withContext UpdateAvailability.UpToDate
+                    val assetIndex = selectCompatibleApkAssetIndex(release.assets.map(GithubAsset::name), Build.SUPPORTED_ABIS.toList())
                     val apkAsset =
-                        release.assets.firstOrNull { it.name.endsWith(".apk") }
+                        assetIndex?.let(release.assets::getOrNull)
                             ?: return@withContext UpdateAvailability.Error(context.getString(R.string.update_error_no_asset))
                     UpdateAvailability.Available(version = release.tagName, downloadUrl = apkAsset.downloadUrl)
                 }
@@ -105,5 +108,30 @@ class AppUpdateChecker(private val context: Context, private val client: OkHttpC
     companion object {
         private const val REPO = "vabxsen/Scoop"
         private const val DOWNLOAD_BUFFER_BYTES = 8 * 1024
+    }
+}
+
+/**
+ * Chooses the first APK that matches the device ABI order. A lone APK without an ABI in its name
+ * preserves compatibility with older releases that published only Scoop.apk.
+ */
+internal fun selectCompatibleApkAssetIndex(assetNames: List<String>, supportedAbis: List<String>): Int? {
+    val apkIndices = assetNames.indices.filter { assetNames[it].endsWith(".apk", ignoreCase = true) }
+    for (supportedAbi in supportedAbis) {
+        val normalizedAbi = supportedAbi.lowercase(Locale.ROOT)
+        apkIndices.firstOrNull { abiFromAssetName(assetNames[it]) == normalizedAbi }?.let { return it }
+    }
+    apkIndices.firstOrNull { assetNames[it].lowercase(Locale.ROOT).contains("universal") }?.let { return it }
+    return apkIndices.singleOrNull()?.takeIf { abiFromAssetName(assetNames[it]) == null }
+}
+
+private fun abiFromAssetName(name: String): String? {
+    val lowerName = name.lowercase(Locale.ROOT)
+    return when {
+        "arm64-v8a" in lowerName -> "arm64-v8a"
+        "armeabi-v7a" in lowerName -> "armeabi-v7a"
+        "x86_64" in lowerName -> "x86_64"
+        Regex("(^|[^a-z0-9_])x86($|[^a-z0-9_])").containsMatchIn(lowerName) -> "x86"
+        else -> null
     }
 }

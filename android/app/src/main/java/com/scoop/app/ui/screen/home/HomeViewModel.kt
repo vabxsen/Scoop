@@ -13,6 +13,7 @@ import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.MediaFormat
 import com.scoop.app.core.model.MediaInfo
 import com.scoop.app.core.model.PlaylistInfo
+import com.scoop.app.core.network.SecureUrl
 import com.scoop.app.downloader.DownloadManager
 import com.scoop.app.extractor.MediaExtractor
 import com.scoop.app.util.PrefKeys
@@ -25,7 +26,6 @@ import com.scoop.app.core.model.ImageCollection
 import com.scoop.app.extractor.ImageDiscovery
 import com.scoop.app.extractor.InstagramSession
 import com.scoop.app.extractor.InstagramSignInRequiredException
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 sealed interface ConfigureUiState {
     data object Hidden : ConfigureUiState
@@ -164,8 +164,8 @@ class HomeViewModel(
         val target = Regex("https?://[^\\s<>]+", RegexOption.IGNORE_CASE).find(url.trim())?.value
             ?.trimEnd('.', ',', ')', ']') ?: url.trim()
         if (target.isEmpty()) return
-        if (target.toHttpUrlOrNull() == null) {
-            configureState = ConfigureUiState.Error("Paste a valid http or https link.")
+        if (SecureUrl.parse(target) == null) {
+            configureState = ConfigureUiState.Error("Paste a valid https link.")
             return
         }
         analysisJob?.cancel()
