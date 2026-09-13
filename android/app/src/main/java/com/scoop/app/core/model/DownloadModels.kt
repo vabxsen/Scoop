@@ -1,5 +1,8 @@
 package com.scoop.app.core.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class DownloadKind {
     VIDEO,
     AUDIO_ONLY,
@@ -7,6 +10,7 @@ enum class DownloadKind {
 }
 
 /** What the user asked to have downloaded, independent of how the queue executes it. */
+@Serializable
 data class DownloadRequest(
     val url: String,
     val kind: DownloadKind,
@@ -25,9 +29,12 @@ data class DownloadRequest(
      * later flag here override an earlier default one (argparse last-wins). */
     val customArgs: String? = null,
     val image: ImageCandidate? = null,
+    /** Captured when the request is enqueued so changing incognito later cannot alter it. */
+    val saveToHistory: Boolean = true,
 )
 
 /** One item in the download queue: the fixed request plus display info captured at enqueue time. */
+@Serializable
 data class DownloadTask(
     val id: String,
     val request: DownloadRequest,

@@ -28,12 +28,20 @@ object DownloadPaths {
 
     /** Persists [treeUri] as the custom save folder, taking a permanent grant so it survives reboots. */
     fun setCustomFolder(context: Context, treeUri: Uri) {
+        val previous = customFolderUri(context)
         context.contentResolver.takePersistableUriPermission(
             treeUri,
             Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
         )
-        clearCustomFolder(context, releasePermission = false)
         PreferenceUtil.putString(PrefKeys.CUSTOM_SAVE_FOLDER_URI, treeUri.toString())
+        if (previous != null && previous != treeUri) {
+            runCatching {
+                context.contentResolver.releasePersistableUriPermission(
+                    previous,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            }
+        }
     }
 
     /** Reverts to the default Movies/Scoop and Music/Scoop locations. */
@@ -74,13 +82,16 @@ object DownloadPaths {
             index++
         }
 
+        var newFile: DocumentFile? = null
         return try {
-            val newFile = folder.createFile(mimeType, candidateName) ?: return null
-            context.contentResolver.openOutputStream(newFile.uri)?.use { out -> source.inputStream().use { it.copyTo(out) } }
-                ?: throw IOException("Could not open output stream for ${newFile.uri}")
+            val created = folder.createFile(mimeType, candidateName) ?: return null
+            newFile = created
+            context.contentResolver.openOutputStream(created.uri)?.use { out -> source.inputStream().use { it.copyTo(out) } }
+                ?: throw IOException("Could not open output stream for ${created.uri}")
             source.delete()
-            newFile.uri.toString()
+            created.uri.toString()
         } catch (e: Exception) {
+            runCatching { newFile?.delete() }
             null
         }
     }
@@ -95,8 +106,10 @@ object DownloadPaths {
         } ?: context.filesDir).apply { mkdirs() }
 
     /** Human-readable form of the save location for display only (e.g. Settings), not a real filesystem path. */
-    fun displayLabel(kind: DownloadKind): String =
-        when (kind) {
+    fun displayLabel(context: Context, kind: DownloadKind): String =
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            "Private app storage (${outputDir(context, kind).name})"
+        } else when (kind) {
             DownloadKind.VIDEO -> "Movies/Scoop"
             DownloadKind.AUDIO_ONLY -> "Music/Scoop"
             DownloadKind.IMAGE -> "Pictures/Scoop"

@@ -2,20 +2,26 @@ package com.scoop.app.extractor
 
 import com.scoop.app.core.model.ImageCandidate
 import com.scoop.app.core.model.ImageCollection
+import com.scoop.app.core.network.SecureUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.HttpUrl
 import org.jsoup.Jsoup
 
 object WebImageParser {
     const val MAX_IMAGES = 200
 
-    fun parse(html: String, pageUrl: String): ImageCollection {
+    fun parse(html: String, pageUrl: String, urlParser: (String) -> HttpUrl? = SecureUrl::parse): ImageCollection {
         val document = Jsoup.parse(html, pageUrl)
         val images = linkedMapOf<String, ImageCandidate>()
         fun add(raw: String, title: String = "Image") {
             if (images.size >= MAX_IMAGES || raw.isBlank()) return
             val absolute = document.baseUri().toHttpUrlOrNull()?.resolve(raw.trim()) ?: return
-            val url = absolute.toString()
-            images.putIfAbsent(url, ImageCandidate(url, title.ifBlank { "Image" }.take(200), headers = mapOf("Referer" to pageUrl, "User-Agent" to IMAGE_USER_AGENT)))
+            val url = urlParser(absolute.toString())?.toString() ?: return
+            val headers = buildMap {
+                put("User-Agent", IMAGE_USER_AGENT)
+                SecureUrl.referrerFor(pageUrl, url)?.let { put("Referer", it) }
+            }
+            images.putIfAbsent(url, ImageCandidate(url, title.ifBlank { "Image" }.take(200), headers = headers))
         }
         document.select("meta[property=og:image], meta[property=og:image:secure_url], meta[name=twitter:image], meta[name=twitter:image:src]")
             .forEach { add(it.attr("content"), document.title()) }

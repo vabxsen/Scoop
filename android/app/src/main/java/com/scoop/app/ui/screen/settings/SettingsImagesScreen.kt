@@ -39,10 +39,10 @@ fun SettingsImagesScreen(
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    var saveFolder by remember { mutableStateOf(DownloadPaths.displayLabel(DownloadKind.IMAGE)) }
+    var saveFolder by remember { mutableStateOf(DownloadPaths.displayLabel(context, DownloadKind.IMAGE)) }
     LifecycleResumeEffect(context) {
         saveFolder = DownloadPaths.customFolderUri(context)?.let { DownloadPaths.customFolderLabel(context, it) }
-            ?: DownloadPaths.displayLabel(DownloadKind.IMAGE)
+            ?: DownloadPaths.displayLabel(context, DownloadKind.IMAGE)
         onPauseOrDispose { }
     }
 

@@ -74,7 +74,7 @@ enum class BatteryPauseThreshold(val label: String, val percent: Int?) {
     BELOW_25("Below 25%", 25),
 }
 
-/** Auto-deletes completed downloads (history entry + file) older than this many days. Null means never. */
+/** Auto-removes completed history entries older than this many days. Downloaded files are kept. */
 enum class HistoryRetention(val label: String, val days: Int?) {
     OFF("Off", null),
     DAYS_7("After 7 days", 7),

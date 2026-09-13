@@ -19,6 +19,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.scoop.app.R
 import com.scoop.app.core.model.DownloadKind
@@ -30,6 +31,7 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsStorageScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinViewModel()) {
+    val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     val folderPickerLauncher =
@@ -38,8 +40,8 @@ fun SettingsStorageScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koi
         }
 
     val customFolderLabel = viewModel.customSaveFolderLabel
-    val videoLocationLabel = customFolderLabel ?: DownloadPaths.displayLabel(DownloadKind.VIDEO)
-    val audioLocationLabel = customFolderLabel ?: DownloadPaths.displayLabel(DownloadKind.AUDIO_ONLY)
+    val videoLocationLabel = customFolderLabel ?: DownloadPaths.displayLabel(context, DownloadKind.VIDEO)
+    val audioLocationLabel = customFolderLabel ?: DownloadPaths.displayLabel(context, DownloadKind.AUDIO_ONLY)
 
     Scaffold(
         topBar = {
@@ -85,7 +87,7 @@ fun SettingsStorageScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koi
                 SettingHubRow(
                     title = stringResource(R.string.settings_image_location),
                     subtitle = listOf(viewModel.imageStorageLabel ?: stringResource(R.string.settings_storage_used_empty),
-                        customFolderLabel ?: DownloadPaths.displayLabel(DownloadKind.IMAGE)).joinToString(" · "),
+                        customFolderLabel ?: DownloadPaths.displayLabel(context, DownloadKind.IMAGE)).joinToString(" · "),
                     leadingIcon = Icons.Filled.Folder,
                 )
             }

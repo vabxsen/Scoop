@@ -1,16 +1,22 @@
 package com.scoop.app.di
 
 import androidx.room.Room
+import coil.ImageLoader
+import coil.decode.SvgDecoder
 import com.scoop.app.core.database.AppDatabase
 import com.scoop.app.core.media.MediaEngineReadiness
+import com.scoop.app.core.network.PublicHttpsNetworkInterceptor
+import com.scoop.app.core.network.PublicNetworkDns
 import com.scoop.app.core.update.AppUpdateChecker
 import com.scoop.app.downloader.DownloadManager
 import com.scoop.app.downloader.DownloadManagerImpl
+import com.scoop.app.downloader.DownloadQueueStore
 import com.scoop.app.extractor.GalleryImageExtractor
 import com.scoop.app.extractor.ImageDiscovery
 import com.scoop.app.downloader.ImageDownloader
 import com.scoop.app.extractor.MediaExtractor
 import com.scoop.app.extractor.YtDlpMediaExtractor
+import com.scoop.app.extractor.forImages
 import com.scoop.app.ui.screen.downloaddetails.DownloadDetailsViewModel
 import com.scoop.app.ui.screen.downloads.DownloadsViewModel
 import com.scoop.app.ui.screen.home.HomeViewModel
@@ -22,7 +28,18 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val appModule = module {
-    single { OkHttpClient() }
+    single {
+        OkHttpClient.Builder()
+            .dns(PublicNetworkDns)
+            .addNetworkInterceptor(PublicHttpsNetworkInterceptor)
+            .build()
+    }
+    single {
+        ImageLoader.Builder(androidContext())
+            .okHttpClient(get<OkHttpClient>().forImages())
+            .components { add(SvgDecoder.Factory()) }
+            .build()
+    }
     single { AppUpdateChecker(context = androidContext(), client = get()) }
     single { MediaEngineReadiness(context = androidContext()) }
 
@@ -38,9 +55,17 @@ val appModule = module {
             .build()
     }
     single { get<AppDatabase>().downloadHistoryDao() }
+    single { DownloadQueueStore(androidContext()) }
 
     single<DownloadManager> {
-        DownloadManagerImpl(extractor = get(), appContext = androidContext(), downloadHistoryDao = get(), mediaEngineReadiness = get(), imageDownloader = get())
+        DownloadManagerImpl(
+            extractor = get(),
+            appContext = androidContext(),
+            downloadHistoryDao = get(),
+            mediaEngineReadiness = get(),
+            imageDownloader = get(),
+            queueStore = get(),
+        )
     }
 
     single { ThemePreferences() }
@@ -55,7 +80,6 @@ val appModule = module {
             downloadHistoryDao = get(),
             updateChecker = get(),
             downloadManager = get(),
-            mediaEngineReadiness = get(),
         )
     }
 }

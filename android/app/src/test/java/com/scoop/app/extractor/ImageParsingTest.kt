@@ -31,4 +31,13 @@ class ImageParsingTest {
         assertEquals(200, result.images.size)
         assertTrue(result.notice!!.contains("200"))
     }
+
+    @Test fun pageDiscoveryDropsLocalCandidatesAndSanitizesCrossOriginReferrers() {
+        val result = WebImageParser.parse(
+            """<img src="https://cdn.example/image.jpg"><img src="https://127.0.0.1/private.jpg"><img src="http://example.org/plain.jpg">""",
+            "https://source.example/private/page?token=secret#section",
+        )
+        assertEquals(listOf("https://cdn.example/image.jpg"), result.images.map { it.url })
+        assertEquals("https://source.example/", result.images.single().headers["Referer"])
+    }
 }

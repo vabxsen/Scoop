@@ -1,6 +1,6 @@
 # Image downloads
 
-Scoop supports direct HTTP(S) image links, public image galleries supported by the
+Scoop supports direct HTTPS image links, public image galleries supported by the
 bundled gallery-dl extractors, and images declared in ordinary HTML pages.
 
 ## Use
@@ -12,7 +12,7 @@ bundled gallery-dl extractors, and images declared in ordinary HTML pages.
 - Inspect the preview, select individual images or select all, and download.
 - Images keep their original bytes and format. Completed images appear in the
   existing queue/history with an Image label and can be opened, shared or deleted.
-- Android 10+ saves to **Pictures/Scoop** through MediaStore. A custom save folder
+- Android 10+ saves to **Pictures/Scoop** through MediaStore; Android 7–9 uses app-private storage. A custom save folder
   takes precedence. Older Android versions retain Scoop's app-specific fallback.
 - Single-image downloads respect **Configure before download**. Multiple-image
   collections always ask for a selection. Incognito suppresses persistent history.
@@ -56,7 +56,8 @@ Some formats can be saved but cannot be previewed by a particular Android versio
   a startup/stop race exposed by very small image downloads.
 
 No database migration is required: history already stores download kinds as text.
-Image request headers remain in memory; persisted image thumbnails use the local
+Image request headers remain in memory. The durable queue strips Cookie and Authorization
+headers and requires authenticated images to be analyzed again after restart; persisted image thumbnails use the local
 saved URI instead of storing a temporary remote image URL.
 
 ## Updating gallery-dl

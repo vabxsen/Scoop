@@ -59,8 +59,8 @@ needed to fetch the media itself.
   keep going in the background, with a configurable limit on how many run concurrently.
 
 ### Quality & format
-- **Highest quality / Low quality** — a one-tap choice per download. Highest always resolves to
-  the true best format yt-dlp can find for that specific video; Low picks the smallest available.
+- **Highest / preferred cap / Low quality** — selectors always retain an audio stream, and the
+  configured 1080p/720p/480p default is applied to both individual and playlist downloads.
 - Configurable **default video quality, video container, audio format, and audio quality** in
   Settings, for videos you don't want to hand-pick every time.
 - **Embed subtitles** — burns in whatever subtitle tracks the source has (manual or
@@ -87,14 +87,15 @@ needed to fetch the media itself.
   date.
 - **Swipe to delete** with an undo window, safe to navigate away from mid-swipe.
 - Per-download detail view with retry, cancel, and file actions.
-- **Bulk clear** of history with one confirmation.
+- **Bulk clear** of history and files with one confirmation; automatic retention clears history
+  records only and keeps the downloaded media.
 
 ### Reliability & network behavior
 - **Wi-Fi-only downloads** toggle, so nothing eats your mobile data unless you say so.
 - **Auto-retry policy** for downloads that fail transiently.
 - **Download speed limiting** and a **battery-pause threshold** so background downloads don't
   drain your phone.
-- Configurable **history retention**.
+- Configurable **history retention that keeps downloaded files**.
 
 ### Storage
 - Choose your own **save folder** via Android's Storage Access Framework, or use Scoop's default
@@ -121,7 +122,7 @@ needed to fetch the media itself.
 4. **Configure the download** — video or audio-only, Highest/Low quality (or your configured
    defaults), and optional subtitle/thumbnail embedding.
 5. **Start the download** and track its progress from the live queue.
-6. **Find your file** in the Downloads tab, or in your device's Movies/Scoop or Music/Scoop
+6. **Find your file** in the Downloads tab, or on Android 10+ in your device's Movies/Scoop or Music/Scoop
    folder (or wherever you configured Scoop to save to).
 
 ## ⬇️ Installation

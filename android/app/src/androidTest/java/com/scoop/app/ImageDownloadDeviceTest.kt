@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import okhttp3.OkHttpClient
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,12 +47,12 @@ class ImageDownloadDeviceTest {
 
     @Test fun extensionlessRedirectedImageDownloadsOriginalBytesToGallery() = runBlocking {
         ImageServer().use { server ->
-            val discovery = ImageDiscovery(OkHttpClient(), gallery)
+            val discovery = ImageDiscovery(OkHttpClient(), gallery) { it.toHttpUrlOrNull() }
             val collection = discovery.directImage(server.url("/redirect"))!!
             assertEquals("image/png", collection.images.single().mimeType)
             assertEquals(8, collection.images.single().width)
             assertNull(discovery.directImage(server.url("/fake.png")))
-            val downloader = ImageDownloader(context, OkHttpClient())
+            val downloader = ImageDownloader(context, OkHttpClient()) { it.toHttpUrlOrNull() }
             val saved = mutableListOf<String>()
             try {
                 repeat(2) {
@@ -73,11 +74,11 @@ class ImageDownloadDeviceTest {
 
     @Test fun webpageFallbackReturnsSelectableImagesAndRejectsFakeImageDownload() = runBlocking {
         ImageServer().use { server ->
-            val collection = ImageDiscovery(OkHttpClient(), gallery).discover(server.url("/page"))
+            val collection = ImageDiscovery(OkHttpClient(), gallery) { it.toHttpUrlOrNull() }.discover(server.url("/page"))
             assertEquals(2, collection.images.size)
             assertTrue(collection.images.all { it.headers["Referer"] == server.url("/page") })
             val bad = task(server.url("/page"), ImageCandidate(server.url("/fake.png")))
-            val failure = runCatching { ImageDownloader(context, OkHttpClient()).download(bad) {} }.exceptionOrNull()
+            val failure = runCatching { ImageDownloader(context, OkHttpClient()) { it.toHttpUrlOrNull() }.download(bad) {} }.exceptionOrNull()
             assertNotNull(failure)
             assertTrue(failure!!.message!!.contains("instead of an image"))
         }
@@ -86,7 +87,7 @@ class ImageDownloadDeviceTest {
     @Test fun cancellationRemovesPartialImage() = runBlocking {
         ImageServer().use { server ->
             val item = task(server.url("/slow"), ImageCandidate(server.url("/slow")))
-            val job = launch { ImageDownloader(context, OkHttpClient()).download(item) {} }
+            val job = launch { ImageDownloader(context, OkHttpClient()) { it.toHttpUrlOrNull() }.download(item) {} }
             delay(300)
             job.cancelAndJoin()
             delay(300)

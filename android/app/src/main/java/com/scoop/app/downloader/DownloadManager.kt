@@ -6,9 +6,10 @@ import com.scoop.app.core.model.DownloadRequest
 import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.DownloadTask
 
-/** Owns the in-memory download queue. UI observes [tasks] directly; it's a Compose snapshot map. */
+/** Owns the durable download queue. UI observes [tasks] directly; it's a Compose snapshot map. */
 interface DownloadManager {
     val tasks: SnapshotStateMap<DownloadTask, DownloadStatus>
+    val isInitialized: Boolean
 
     /** Ids currently swiped-away and pending a real delete once [requestDelete]'s undo window
      * elapses. UI filters these out of the visible list and shows the undo snackbar while any
@@ -23,6 +24,9 @@ interface DownloadManager {
 
     /** Re-evaluates queued downloads after admission or concurrency settings change. */
     fun refreshQueue()
+
+    /** Resumes persisted or gated work from a user-visible activity or the foreground service. */
+    fun resumePendingDownloads()
 
     /** Explicit user action: deletes the completed file on disk (if any) and removes the task. */
     suspend fun deleteTaskAndFile(taskId: String)
@@ -42,7 +46,7 @@ interface DownloadManager {
     /** Cancels every pending delete from [requestDelete], if any haven't already fired. */
     fun undoAllDeletes()
 
-    /** Deletes completed downloads (history entry + file) older than [days] - the auto-clear sweep. */
+    /** Removes completed history entries older than [days], while keeping downloaded files. */
     suspend fun clearHistoryOlderThan(days: Int)
 
     /** Explicit user action: cancels every in-flight download and deletes every task, history

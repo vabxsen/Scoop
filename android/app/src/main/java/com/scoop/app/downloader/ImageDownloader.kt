@@ -4,6 +4,7 @@ import android.content.Context
 import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.DownloadSpeedLimit
 import com.scoop.app.core.model.DownloadTask
+import com.scoop.app.core.network.SecureUrl
 import com.scoop.app.extractor.IMAGE_USER_AGENT
 import com.scoop.app.extractor.ImageFormats
 import com.scoop.app.extractor.readImageResponse
@@ -13,12 +14,17 @@ import com.scoop.app.util.PreferenceUtil
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import okhttp3.OkHttpClient
+import okhttp3.HttpUrl
 import okhttp3.Request
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
-class ImageDownloader(private val context: Context, client: OkHttpClient) {
+class ImageDownloader(
+    private val context: Context,
+    client: OkHttpClient,
+    private val urlParser: (String) -> HttpUrl? = SecureUrl::parse,
+) {
     private val http = client.forImages().newBuilder()
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
@@ -26,7 +32,8 @@ class ImageDownloader(private val context: Context, client: OkHttpClient) {
     suspend fun download(task: DownloadTask, onProgress: (Float) -> Unit): String {
         val image = task.request.image ?: throw IOException("Image details are missing. Analyze the original link again.")
         val jobContext = currentCoroutineContext()
-        val request = Request.Builder().url(image.url).header("User-Agent", IMAGE_USER_AGENT).apply {
+        val safeUrl = urlParser(image.url) ?: throw IOException("This image uses an unsafe or non-HTTPS address.")
+        val request = Request.Builder().url(safeUrl).header("User-Agent", IMAGE_USER_AGENT).apply {
             image.headers.filterKeys { it.lowercase() in setOf("user-agent", "referer", "origin", "cookie", "accept", "authorization") }
                 .forEach { (name, value) -> header(name, value) }
         }.build()

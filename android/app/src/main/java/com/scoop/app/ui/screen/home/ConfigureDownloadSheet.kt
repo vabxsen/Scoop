@@ -261,6 +261,18 @@ private fun ConfigureForm(viewModel: HomeViewModel, onDismiss: () -> Unit) {
                     },
             )
             FilterChip(
+                selected = viewModel.formatMode == FormatMode.PREFERRED,
+                onClick = { viewModel.selectFormatMode(FormatMode.PREFERRED) },
+                label = { Text("Up to ${viewModel.preferredVideoHeight ?: 720}p") },
+                leadingIcon =
+                    if (viewModel.formatMode == FormatMode.PREFERRED) {
+                        { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize)) }
+                    } else {
+                        null
+                    },
+                enabled = viewModel.selectedKind == DownloadKind.VIDEO && viewModel.preferredVideoHeight != null,
+            )
+            FilterChip(
                 selected = viewModel.formatMode == FormatMode.LOW,
                 onClick = { viewModel.selectFormatMode(FormatMode.LOW) },
                 label = { Text(stringResource(R.string.option_low_quality)) },

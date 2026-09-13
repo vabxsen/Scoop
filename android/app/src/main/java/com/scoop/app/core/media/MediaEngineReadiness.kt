@@ -1,7 +1,6 @@
 package com.scoop.app.core.media
 
 import android.content.Context
-import android.util.Log
 import com.yausername.aria2c.Aria2c
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
@@ -9,8 +8,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-
-private const val TAG = "MediaEngineReadiness"
 
 /**
  * YoutubeDL/FFmpeg/Aria2c.init() extract bundled native binaries to disk and must complete before
@@ -34,10 +31,6 @@ class MediaEngineReadiness(private val context: Context) {
                 ready.completeExceptionally(t)
                 return@launch
             }
-
-            runCatching { YoutubeDL.getInstance().updateYoutubeDL(context) }
-                .onSuccess { Log.i(TAG, "yt-dlp update check: $it") }
-                .onFailure { Log.w(TAG, "yt-dlp self-update failed, continuing with the bundled version", it) }
         }
     }
 

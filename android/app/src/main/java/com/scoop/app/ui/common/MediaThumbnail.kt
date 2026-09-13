@@ -14,16 +14,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.ImageLoader
+import org.koin.compose.koinInject
 
 /** A rounded, letterboxed media thumbnail with a consistent fallback for missing/failed images. */
 @Composable
 fun MediaThumbnail(url: String?, modifier: Modifier = Modifier, cornerRadius: androidx.compose.ui.unit.Dp = 12.dp) {
+    val imageLoader = koinInject<ImageLoader>()
     Box(
         modifier = modifier.clip(RoundedCornerShape(cornerRadius)).background(MaterialTheme.colorScheme.surfaceContainerHigh),
         contentAlignment = Alignment.Center,
     ) {
         if (!url.isNullOrBlank()) {
-            AsyncImage(model = url, contentDescription = null, modifier = Modifier.fillMaxSize())
+            AsyncImage(model = url, imageLoader = imageLoader, contentDescription = null, modifier = Modifier.fillMaxSize())
         } else {
             Icon(
                 Icons.Outlined.Movie,

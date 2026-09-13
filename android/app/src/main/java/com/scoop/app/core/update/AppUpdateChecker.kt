@@ -1,10 +1,15 @@
 package com.scoop.app.core.update
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
+import androidx.core.content.pm.PackageInfoCompat
 import com.scoop.app.R
+import com.scoop.app.core.network.SecureUrl
 import java.io.File
 import java.io.IOException
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -29,7 +34,12 @@ class AppUpdateChecker(private val context: Context, private val client: OkHttpC
             try {
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@withContext UpdateAvailability.Error(genericError)
-                    val body = response.body?.string() ?: return@withContext UpdateAvailability.Error(genericError)
+                    val responseBody = response.body ?: return@withContext UpdateAvailability.Error(genericError)
+                    if (responseBody.contentLength() > MAX_RELEASE_JSON_BYTES) return@withContext UpdateAvailability.Error(genericError)
+                    val body = responseBody.byteStream().use { input ->
+                        readBounded(input, MAX_RELEASE_JSON_BYTES)?.toString(Charsets.UTF_8)
+                            ?: return@withContext UpdateAvailability.Error(genericError)
+                    }
                     val release = json.decodeFromString<GithubRelease>(body)
                     val currentVersion = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "0"
                     if (!isNewer(release.tagName, currentVersion)) return@withContext UpdateAvailability.UpToDate
@@ -55,31 +65,88 @@ class AppUpdateChecker(private val context: Context, private val client: OkHttpC
      */
     fun clearStaleDownload() {
         File(context.cacheDir, "update.apk").delete()
+        File(context.cacheDir, "update.apk.part").delete()
     }
 
     suspend fun downloadApk(url: String, onProgress: (Float) -> Unit): File =
         withContext(Dispatchers.IO) {
-            val request = Request.Builder().url(url).build()
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw IOException("Download failed (${response.code})")
-                val responseBody = response.body ?: throw IOException("Empty download body")
-                val total = responseBody.contentLength()
-                val outFile = File(context.cacheDir, "update.apk")
-                responseBody.byteStream().use { input ->
-                    outFile.outputStream().use { output ->
-                        val buffer = ByteArray(DOWNLOAD_BUFFER_BYTES)
-                        var totalRead = 0L
-                        var bytesRead: Int
-                        while (input.read(buffer).also { bytesRead = it } != -1) {
-                            output.write(buffer, 0, bytesRead)
-                            totalRead += bytesRead
-                            if (total > 0) onProgress(totalRead.toFloat() / total)
+            val parsed = SecureUrl.parse(url) ?: throw IOException("Invalid update URL")
+            val request = Request.Builder().url(parsed).build()
+            val partial = File(context.cacheDir, "update.apk.part")
+            val outFile = File(context.cacheDir, "update.apk")
+            partial.delete()
+            outFile.delete()
+            try {
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) throw IOException("Download failed (${response.code})")
+                    val responseBody = response.body ?: throw IOException("Empty download body")
+                    val total = responseBody.contentLength()
+                    if (total > MAX_APK_BYTES) throw IOException("Update is too large")
+                    responseBody.byteStream().use { input ->
+                        partial.outputStream().use { output ->
+                            val buffer = ByteArray(DOWNLOAD_BUFFER_BYTES)
+                            var totalRead = 0L
+                            var bytesRead: Int
+                            while (input.read(buffer).also { bytesRead = it } != -1) {
+                                totalRead += bytesRead
+                                if (totalRead > MAX_APK_BYTES) throw IOException("Update is too large")
+                                output.write(buffer, 0, bytesRead)
+                                if (total > 0) onProgress(totalRead.toFloat() / total)
+                            }
                         }
                     }
                 }
+                verifyDownloadedApk(partial)
+                outFile.delete()
+                if (!partial.renameTo(outFile)) throw IOException("Could not finalize update")
                 outFile
+            } catch (error: Throwable) {
+                partial.delete()
+                throw error
             }
         }
+
+    private fun readBounded(input: InputStream, limit: Int): ByteArray? {
+        val output = ByteArrayOutputStream()
+        val buffer = ByteArray(8 * 1024)
+        while (true) {
+            val count = input.read(buffer)
+            if (count == -1) return output.toByteArray()
+            if (output.size() + count > limit) return null
+            output.write(buffer, 0, count)
+        }
+    }
+
+    private fun verifyDownloadedApk(apk: File) {
+        val magic = apk.inputStream().use { input -> ByteArray(4).also { if (input.read(it) != it.size) throw IOException("Invalid APK") } }
+        if (!magic.contentEquals(byteArrayOf(0x50, 0x4b, 0x03, 0x04))) throw IOException("Invalid APK")
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
+        val archive = context.packageManager.getPackageArchiveInfo(apk.absolutePath, flags) ?: throw IOException("Invalid APK package")
+        val installed = context.packageManager.getPackageInfo(context.packageName, flags)
+        if (archive.packageName != context.packageName) throw IOException("Update package does not match")
+        if (PackageInfoCompat.getLongVersionCode(archive) <= PackageInfoCompat.getLongVersionCode(installed)) throw IOException("Update version is not newer")
+        val signatureMatches =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val archiveSigning = archive.signingInfo ?: throw IOException("Update signature is missing")
+                val installedSigning = installed.signingInfo ?: throw IOException("Installed signature is missing")
+                if (archiveSigning.hasMultipleSigners() || installedSigning.hasMultipleSigners()) {
+                    sameSignerSet(archiveSigning.apkContentsSigners.map { it.toByteArray() }, installedSigning.apkContentsSigners.map { it.toByteArray() })
+                } else {
+                    val installedCurrent = installedSigning.apkContentsSigners.singleOrNull()?.toByteArray()
+                    installedCurrent != null && archiveSigning.signingCertificateHistory.any { it.toByteArray().contentEquals(installedCurrent) }
+                }
+            } else {
+                sameSignerSet(signerBytes(archive), signerBytes(installed))
+            }
+        if (!signatureMatches) throw IOException("Update signature does not match")
+    }
+
+    private fun sameSignerSet(first: List<ByteArray>, second: List<ByteArray>): Boolean =
+        first.isNotEmpty() && first.size == second.size && first.all { candidate -> second.any { it.contentEquals(candidate) } }
+
+    @Suppress("DEPRECATION")
+    private fun signerBytes(info: android.content.pm.PackageInfo): List<ByteArray> =
+        info.signatures.orEmpty().map { it.toByteArray() }
 
     private fun isNewer(remoteTag: String, currentVersion: String): Boolean {
         val remoteParts = remoteTag.removePrefix("v").substringBefore('-').split('.').mapNotNull { it.toIntOrNull() }
@@ -108,6 +175,8 @@ class AppUpdateChecker(private val context: Context, private val client: OkHttpC
     companion object {
         private const val REPO = "vabxsen/Scoop"
         private const val DOWNLOAD_BUFFER_BYTES = 8 * 1024
+        private const val MAX_APK_BYTES = 200L * 1024 * 1024
+        private const val MAX_RELEASE_JSON_BYTES = 1024 * 1024
     }
 }
 

@@ -40,7 +40,8 @@ class GallerySessionTest(unittest.TestCase):
     def test_real_extractor_cookie_jar_only_sends_session_to_secure_instagram(self):
         bridge.apply_instagram_session('https://www.instagram.com/p/test/', {'sessionid': 'local-test'})
         source = bridge.extractor.find('https://www.instagram.com/p/test/')
-        bridge.initialize_source(source)
+        bridge.initialize_source(source, 'https://www.instagram.com/p/test/', 'http://127.0.0.1:12345')
+        self.assertFalse(source.session.trust_env)
         def cookie(url):
             return source.session.prepare_request(bridge.requests.Request('GET', url)).headers.get('Cookie', '')
         self.assertIn('sessionid=local-test', cookie('https://www.instagram.com/api/v1/media/test/info/'))
@@ -54,7 +55,7 @@ class GallerySessionTest(unittest.TestCase):
         self.assertEqual(bridge.error_code(ValueError('sensitive')), 'ValueError')
 
 class GalleryHeadersTest(unittest.TestCase):
-    def test_existing_referer_is_preserved_regardless_of_case(self):
+    def test_referer_is_sanitized_regardless_of_input_case(self):
         page = 'https://example.com/gallery'
         image_url = 'https://example.com/image.jpg'
         for key in ('Referer', 'referer', 'REFERER', 'rEfErEr', None):
@@ -73,21 +74,29 @@ class GalleryHeadersTest(unittest.TestCase):
                             '_http_headers': {key: 'https://example.com/original'} if key else {},
                         })
 
-                with patch.object(bridge.extractor, 'find', return_value=Source()):
-                    headers = bridge.extract(page)['images'][0]['headers']
+                with patch.object(bridge.extractor, 'find', return_value=Source()), \
+                        patch.object(bridge.socket, 'getaddrinfo', return_value=[(2, 1, 6, '', ('93.184.216.34', 443))]):
+                    headers = bridge.extract(page, 'http://127.0.0.1:12345')['images'][0]['headers']
                 referers = [value for name, value in headers.items() if name.lower() == 'referer']
-                self.assertEqual(referers, ['https://example.com/original' if key else page])
+                self.assertEqual(referers, [page])
+
+    def test_private_and_cleartext_urls_are_rejected(self):
+        with patch.object(bridge.socket, 'getaddrinfo', return_value=[(2, 1, 6, '', ('127.0.0.1', 443))]):
+            self.assertFalse(bridge.public_https('https://example.com/image.jpg'))
+        self.assertFalse(bridge.public_https('http://example.com/image.jpg'))
 
 
 class GalleryInputLimitTest(unittest.TestCase):
     def test_input_at_limit_is_accepted_and_larger_input_is_rejected(self):
         for size in (16383, 16384, 16385):
             with self.subTest(size=size):
-                payload = '{}' + ' ' * (size - 2)
+                base = json.dumps({'url': 'https://example.com/', 'cookies': {}, 'proxy': 'http://127.0.0.1:12345'})
+                payload = base + ' ' * (size - len(base))
                 output = io.StringIO()
-                with patch.object(sys, 'argv', [str(spec.origin), 'https://example.com/']), \
+                with patch.object(sys, 'argv', [str(spec.origin), '--stdin']), \
                         patch.object(sys, 'stdin', io.StringIO(payload)), \
                         patch.object(bridge.extractor, 'find', return_value=None) as find, \
+                        patch.object(bridge.socket, 'getaddrinfo', return_value=[(2, 1, 6, '', ('93.184.216.34', 443))]), \
                         contextlib.redirect_stdout(output):
                     if size > 16384:
                         with self.assertRaises(SystemExit) as failure:

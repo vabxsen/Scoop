@@ -5,10 +5,16 @@ import com.scoop.app.core.model.MediaFormat
 import com.scoop.app.core.model.MediaInfo
 import com.scoop.app.core.model.PlaylistEntryInfo
 import com.scoop.app.core.model.PlaylistInfo
+import com.scoop.app.core.network.SecureUrl
+import com.scoop.app.core.network.PublicHttpsProxy
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlin.math.roundToInt
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
@@ -30,6 +36,7 @@ class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness
     override suspend fun analyze(url: String): Result<MediaInfo> =
         withContext(Dispatchers.IO) {
             runCatching {
+                requireNotNull(SecureUrl.parse(url)) { "Only public HTTPS links are allowed" }
                 mediaEngineReadiness.awaitReady()
                 val request =
                     YoutubeDLRequest(url).apply {
@@ -40,40 +47,64 @@ class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness
                         addOption("--socket-timeout", "10")
                         addOption("--extractor-args", YOUTUBE_PLAYER_CLIENT_ARG)
                     }
-                val response = YoutubeDL.getInstance().execute(request, "analyze:$url", null)
-                json.decodeFromString<YtDlpVideoJson>(response.out).toMediaInfo(url)
+                val output = executeBounded(request, ANALYZE_TIMEOUT_MS)
+                require(output.length <= MAX_METADATA_CHARS) { "Metadata response was too large" }
+                json.decodeFromString<YtDlpVideoJson>(output).toMediaInfo(url)
             }
         }
 
     override suspend fun getPlaylist(url: String): Result<PlaylistInfo> =
         withContext(Dispatchers.IO) {
             runCatching {
+                requireNotNull(SecureUrl.parse(url)) { "Only public HTTPS links are allowed" }
                 mediaEngineReadiness.awaitReady()
                 val request =
                     YoutubeDLRequest(url).apply {
                         addOption("--dump-single-json")
                         addOption("--flat-playlist")
                         addOption("--yes-playlist")
+                        addOption("--playlist-end", MAX_PLAYLIST_ENTRIES.toString())
                         addOption("--no-warnings")
                         addOption("--extractor-args", YOUTUBE_PLAYER_CLIENT_ARG)
                     }
-                val response = YoutubeDL.getInstance().execute(request, "playlist:$url", null)
-                json.decodeFromString<YtDlpPlaylistJson>(response.out).toPlaylistInfo(url)
+                val output = executeBounded(request, PLAYLIST_TIMEOUT_MS)
+                require(output.length <= MAX_METADATA_CHARS) { "Playlist response was too large" }
+                json.decodeFromString<YtDlpPlaylistJson>(output).toPlaylistInfo(url)
+            }
+    }
+
+    private suspend fun executeBounded(request: YoutubeDLRequest, timeoutMs: Long): String = coroutineScope {
+        val processId = UUID.randomUUID().toString()
+        PublicHttpsProxy().use { proxy ->
+            request.addOption("--proxy", proxy.url)
+            val execution = async(Dispatchers.IO) { YoutubeDL.getInstance().execute(request, processId, null).out }
+            try {
+                withTimeout(timeoutMs) { execution.await() }
+            } catch (error: kotlinx.coroutines.TimeoutCancellationException) {
+                YoutubeDL.destroyProcessById(processId)
+                execution.cancel()
+                throw error
             }
         }
+    }
 
 }
 
+private const val MAX_PLAYLIST_ENTRIES = 200
+private const val MAX_METADATA_CHARS = 2 * 1024 * 1024
+private const val ANALYZE_TIMEOUT_MS = 60_000L
+private const val PLAYLIST_TIMEOUT_MS = 90_000L
+
 private fun YtDlpVideoJson.toMediaInfo(sourceUrl: String): MediaInfo {
-    val rawFormats = requestedFormats ?: formats ?: emptyList()
+    val rawFormats = formats ?: requestedFormats ?: emptyList()
     return MediaInfo(
         id = id,
-        sourceUrl = originalUrl ?: webpageUrl ?: sourceUrl,
+        sourceUrl = listOfNotNull(originalUrl, webpageUrl, sourceUrl).firstOrNull { SecureUrl.parse(it) != null } ?: sourceUrl,
         title = title,
         uploader = uploader ?: channel,
         durationSeconds = duration?.roundToInt(),
         uploadDate = uploadDate,
-        thumbnailUrl = thumbnail,
+        thumbnailUrl = thumbnail?.takeIf { SecureUrl.parse(it) != null },
         description = description,
         formats = rawFormats.map { it.toMediaFormat() },
     )
@@ -100,14 +131,15 @@ private fun YtDlpPlaylistJson.toPlaylistInfo(sourceUrl: String): PlaylistInfo =
         title = title,
         uploader = uploader,
         entries =
-            entries.orEmpty().map {
+            entries.orEmpty().asSequence().take(MAX_PLAYLIST_ENTRIES).mapNotNull {
+                val safeUrl = it.url?.takeIf { candidate -> SecureUrl.parse(candidate) != null } ?: return@mapNotNull null
                 PlaylistEntryInfo(
                     id = it.id,
-                    url = it.url,
+                    url = safeUrl,
                     title = it.title,
                     uploader = it.uploader,
                     durationSeconds = it.duration?.roundToInt(),
-                    thumbnailUrl = it.thumbnail,
+                    thumbnailUrl = it.thumbnail?.takeIf { candidate -> SecureUrl.parse(candidate) != null },
                 )
-            },
+            }.toList(),
     )

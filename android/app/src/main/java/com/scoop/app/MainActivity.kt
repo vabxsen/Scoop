@@ -18,9 +18,12 @@ import androidx.compose.ui.Modifier
 import com.scoop.app.ui.navigation.ScoopNavHost
 import com.scoop.app.ui.theme.ScoopTheme
 import com.scoop.app.util.ThemePreferences
+import com.scoop.app.downloader.DownloadManager
+import org.koin.android.ext.android.inject
 import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {
+    private val downloadManager: DownloadManager by inject()
     private var sharedUrl by mutableStateOf<String?>(null)
     private var shareSequence by mutableIntStateOf(0)
 
@@ -55,6 +58,11 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         sharedUrl = intent.extractSharedUrl()
         shareSequence++
+    }
+
+    override fun onStart() {
+        super.onStart()
+        downloadManager.resumePendingDownloads()
     }
 
     private fun Intent.extractSharedUrl(): String? =

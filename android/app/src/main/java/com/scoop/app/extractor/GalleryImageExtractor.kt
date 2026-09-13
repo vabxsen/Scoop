@@ -1,10 +1,11 @@
 package com.scoop.app.extractor
 
 import android.content.Context
-import android.os.Build
 import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.core.model.ImageCandidate
 import com.scoop.app.core.model.ImageCollection
+import com.scoop.app.core.network.SecureUrl
+import com.scoop.app.core.network.PublicHttpsProxy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -29,12 +30,16 @@ class GalleryImageExtractor(private val context: Context, private val readiness:
         val limited: Boolean = false,
     )
 
+    @Serializable
+    private data class GalleryInput(val url: String, val cookies: Map<String, String>, val proxy: String)
+
     suspend fun discover(url: String): ImageCollection {
         val cookies = InstagramSession.cookiesFor(url)
         val output = try { execute(url, cookies) } catch (e: TimeoutCancellationException) {
             throw IOException("The gallery took too long to respond.", e)
         }
-        val result = json.decodeFromString<GalleryResult>(output)
+        val decoded = json.decodeFromString<GalleryResult>(output)
+        val result = decoded.copy(images = decoded.images.filter { SecureUrl.parse(it.url) != null }.take(WebImageParser.MAX_IMAGES))
         if (result.error == "authentication_required" && InstagramSession.isPost(url)) throw InstagramSignInRequiredException()
         if (result.error != null) throw IOException("This site could not provide images. It may require a login or restrict downloads.")
         val title = url.toHttpUrlOrNull()?.let { "${it.host} · ${it.pathSegments.lastOrNull { part -> part.isNotBlank() }.orEmpty()}" } ?: "Images"
@@ -53,14 +58,10 @@ class GalleryImageExtractor(private val context: Context, private val readiness:
             val pythonHome = File(context.noBackupFilesDir, "youtubedl-android/packages/python/usr")
             val executable = File(context.applicationInfo.nativeLibraryDir, "libpython.so")
             if (!executable.isFile || !pythonHome.isDirectory) throw IOException("The image gallery runtime is unavailable on this device.")
-            val errorFile = File.createTempFile("gallery-", ".log", context.cacheDir)
-            try {
-                suspendCancellableCoroutine { continuation ->
-                    val process = ProcessBuilder(executable.absolutePath, File(runtime, "extract.py").absolutePath, argument)
+            PublicHttpsProxy().use { proxy -> suspendCancellableCoroutine { continuation ->
+                    val processArgument = if (argument == "--version") argument else "--stdin"
+                    val process = ProcessBuilder(executable.absolutePath, File(runtime, "extract.py").absolutePath, processArgument)
                         .directory(runtime)
-                        .apply {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) redirectError(errorFile)
-                        }
                         .apply {
                             environment().apply {
                                 put("PYTHONHOME", pythonHome.absolutePath)
@@ -72,15 +73,12 @@ class GalleryImageExtractor(private val context: Context, private val readiness:
                                 put("TMPDIR", context.cacheDir.absolutePath)
                             }
                         }.start()
-                    // Android 7 cannot redirect stderr to a file. Drain its pipe separately
-                    // so extractor diagnostics cannot block stdout or corrupt the JSON result.
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                        kotlin.concurrent.thread(isDaemon = true, name = "gallery-stderr") {
-                            runCatching {
-                                process.errorStream.use { stream ->
-                                    val buffer = ByteArray(8192)
-                                    while (stream.read(buffer) != -1) { /* Discard diagnostics. */ }
-                                }
+                    // Drain and discard diagnostics without ever writing URLs to a temporary log.
+                    kotlin.concurrent.thread(isDaemon = true, name = "gallery-stderr") {
+                        runCatching {
+                            process.errorStream.use { stream ->
+                                val buffer = ByteArray(8192)
+                                while (stream.read(buffer) != -1) { /* Discard diagnostics. */ }
                             }
                         }
                     }
@@ -88,7 +86,7 @@ class GalleryImageExtractor(private val context: Context, private val readiness:
                     try {
                         // Pipe the session to this child only; never put cookies in arguments or files.
                         process.outputStream.bufferedWriter(Charsets.UTF_8).use { input ->
-                            if (argument != "--version") input.write(json.encodeToString(cookies))
+                            if (argument != "--version") input.write(json.encodeToString(GalleryInput(argument, cookies, proxy.url)))
                         }
                         val output = process.inputStream.use { stream ->
                             val bytes = stream.readBytesBounded(2 * 1024 * 1024)
@@ -105,10 +103,7 @@ class GalleryImageExtractor(private val context: Context, private val readiness:
                     } finally {
                         process.destroy()
                     }
-                }
-            } finally {
-                errorFile.delete()
-            }
+            } }
         }
     }
 
@@ -116,22 +111,24 @@ class GalleryImageExtractor(private val context: Context, private val readiness:
     private fun prepareRuntime(): File {
         val directory = File(context.noBackupFilesDir, "gallery-dl-1.32.11-v3")
         val marker = File(directory, ".ready")
-        if (marker.isFile) return directory
-        directory.mkdirs()
-        ZipInputStream(context.assets.open("gallery/runtime.zip")).use { zip ->
-            while (true) {
-                val entry = zip.nextEntry ?: break
-                val target = File(directory, entry.name)
-                check(target.canonicalPath.startsWith(directory.canonicalPath + File.separator))
-                if (!entry.isDirectory) {
-                    target.parentFile?.mkdirs()
-                    target.outputStream().use { zip.copyTo(it) }
+        if (!marker.isFile) {
+            directory.mkdirs()
+            ZipInputStream(context.assets.open("gallery/runtime.zip")).use { zip ->
+                while (true) {
+                    val entry = zip.nextEntry ?: break
+                    val target = File(directory, entry.name)
+                    check(target.canonicalPath.startsWith(directory.canonicalPath + File.separator))
+                    if (!entry.isDirectory) {
+                        target.parentFile?.mkdirs()
+                        target.outputStream().use { zip.copyTo(it) }
+                    }
+                    zip.closeEntry()
                 }
-                zip.closeEntry()
             }
+            marker.writeText("1.32.11")
         }
+        // Refresh app-owned bridge code after upgrades even when the third-party runtime exists.
         context.assets.open("gallery/extract.py").use { source -> File(directory, "extract.py").outputStream().use { source.copyTo(it) } }
-        marker.writeText("1.32.11")
         return directory
     }
 }

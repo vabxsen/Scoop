@@ -10,8 +10,8 @@ Audited version: `1.2.7` (`versionCode` 28)
 
 Scoop's own code and declared Kotlin/Android dependencies are under free-software-compatible
 licenses. The current release is **not ready for the main F-Droid repository** because it packages
-prebuilt Python, FFmpeg and aria2c native artifacts and can update executable components outside
-the app-store review flow.
+prebuilt Python, FFmpeg and aria2c native artifacts. Runtime self-updates have been disabled;
+the remaining APK updater still needs to be omitted from an F-Droid flavor.
 
 The Fastlane metadata in this repository is ready for an eventual F-Droid submission. A submission
 should wait until the blockers below have been addressed and the resulting build has been tested.
@@ -47,10 +47,9 @@ analytics SDK was found in the release runtime graph.
    `assets/gallery/runtime.zip` is reproducibly generated from hash-pinned wheels, but F-Droid's
    scanner can still treat the archive as a binary blob. Package source through an approved
    `srclib`/prebuild process and recreate the archive in the build recipe.
-3. **Disable executable self-updates in the F-Droid flavor.** `MediaEngineReadiness` currently asks
-   youtubedl-android to update yt-dlp at startup. F-Droid must receive yt-dlp updates through a new
-   reviewed application build.
-4. **Remove the APK self-updater from the F-Droid flavor.** That flavor should omit
+3. **Executable self-updates are disabled.** `MediaEngineReadiness` loads only the bundled yt-dlp;
+   updates now arrive through a reviewed, signed application build.
+4. **Remove the APK self-updater from the F-Droid flavor.** That flavor should still omit
    `REQUEST_INSTALL_PACKAGES`, its update UI and APK-download code. F-Droid will provide updates.
 5. **Verify the isolated build.** Run `fdroid lint`, build the proposed metadata in F-Droid's
    container, compare source and output, then execute Scoop's unit and connected-device tests on

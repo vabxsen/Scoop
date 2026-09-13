@@ -23,7 +23,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Run unit tests
         working-directory: android
-        run: ./gradlew --no-daemon :app:testDebugUnitTest
+        run: ./gradlew --no-daemon :app:lintDebug :app:testDebugUnitTest
 
   build-release-apk:
     name: Release APK (${{ matrix.abi }})

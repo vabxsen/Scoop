@@ -65,13 +65,13 @@
 
     <string name="playlist_untitled">Playlist</string>
     <string name="playlist_entry_count">%d videos</string>
-    <string name="playlist_auto_only_note">Playlist downloads always use the best available quality — per-video format selection isn\'t available.</string>
+    <string name="playlist_auto_only_note">Playlist downloads use your selected quality for every entry.</string>
     <string name="action_select_all">Select all</string>
     <string name="action_select_none">Select none</string>
     <string name="action_download_count">Download %d</string>
 
     <string name="settings_misc_title">General</string>
-    <string name="settings_misc_subtitle">yt-dlp updates, download prompts, incognito</string>
+    <string name="settings_misc_subtitle">Download prompts, thumbnails, incognito</string>
     <string name="settings_general_title">Look &amp; feel</string>
     <string name="settings_general_subtitle">Dark theme, accent color, dynamic color</string>
     <string name="settings_downloads_title">Downloads</string>
@@ -127,14 +127,8 @@
     <string name="settings_video_location">Video downloads</string>
     <string name="settings_audio_location">Audio downloads</string>
     <string name="settings_save_folder">Save folder</string>
-    <string name="settings_save_folder_default">Default (Movies/Scoop, Music/Scoop, Pictures/Scoop)</string>
+    <string name="settings_save_folder_default">Shared media folders on Android 10+; private app storage on older Android</string>
 
-    <string name="settings_update_ytdlp">Update yt-dlp</string>
-    <string name="settings_update_ytdlp_subtitle">Check for and install the latest yt-dlp version</string>
-    <string name="settings_update_ytdlp_checking">Checking for updates…</string>
-    <string name="settings_update_ytdlp_up_to_date">yt-dlp is already up to date</string>
-    <string name="settings_update_ytdlp_done">yt-dlp was updated to the latest version</string>
-    <string name="settings_update_ytdlp_error">Couldn\'t update yt-dlp. Try again later.</string>
     <string name="settings_configure_before_download">Configure before download</string>
     <string name="settings_configure_before_download_subtitle">Review quality and options before every download starts</string>
     <string name="settings_save_thumbnail_file">Save thumbnails</string>
@@ -147,7 +141,8 @@
     <string name="settings_auto_retry">Auto-retry failed downloads</string>
     <string name="settings_speed_limit">Download speed limit</string>
     <string name="settings_battery_pause">Pause on low battery</string>
-    <string name="settings_history_retention">Auto-clear download history</string>
+    <string name="settings_history_retention">Auto-clear history (keeps files)</string>
+    <string name="file_unavailable">This file is no longer available</string>
 
     <string name="about_version_format">Version %1$s</string>
     <string name="about_source">Source code</string>

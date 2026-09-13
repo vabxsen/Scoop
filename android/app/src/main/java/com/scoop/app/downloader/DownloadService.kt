@@ -25,10 +25,12 @@ class DownloadService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val downloads: DownloadManager by inject()
     private var monitor: Job? = null
+    private var latestStartId: Int = 0
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        latestStartId = startId
         val notification =
             NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_notification)
@@ -40,12 +42,23 @@ class DownloadService : Service() {
         if (monitor == null) {
             monitor = scope.launch {
                 snapshotFlow {
-                    downloads.tasks.values.any { it is DownloadStatus.Analyzing || it is DownloadStatus.Downloading }
+                    !downloads.isInitialized || downloads.tasks.values.any {
+                        it is DownloadStatus.Queued || it is DownloadStatus.Analyzing ||
+                            it is DownloadStatus.Downloading || it is DownloadStatus.Processing
+                    }
                 }.collect { active ->
-                    if (!active) stopSelf()
+                    if (!active) {
+                        val observedStartId = latestStartId
+                        val stillInactive = downloads.isInitialized && downloads.tasks.values.none {
+                            it is DownloadStatus.Queued || it is DownloadStatus.Analyzing ||
+                                it is DownloadStatus.Downloading || it is DownloadStatus.Processing
+                        }
+                        if (stillInactive) stopSelfResult(observedStartId)
+                    }
                 }
             }
         }
+        downloads.resumePendingDownloads()
         return START_STICKY
     }
 

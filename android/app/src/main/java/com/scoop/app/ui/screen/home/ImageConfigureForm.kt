@@ -25,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,22 +42,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.ImageLoader
-import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.scoop.app.R
 import com.scoop.app.core.model.ImageCollection
 import com.scoop.app.ui.theme.Spacing
-import com.scoop.app.extractor.forImages
-import okhttp3.OkHttpClient
+import org.koin.compose.koinInject
 
 @Composable
 fun ImageConfigureForm(viewModel: HomeViewModel, collection: ImageCollection, onDismiss: () -> Unit, onOpenDownloads: () -> Unit) {
     val selected = viewModel.selectedImageUrls
     val context = LocalContext.current
-    val imageLoader = remember(context) {
-        ImageLoader.Builder(context).okHttpClient(OkHttpClient().forImages()).components { add(SvgDecoder.Factory()) }.build()
-    }
-    DisposableEffect(imageLoader) { onDispose { imageLoader.shutdown() } }
+    val imageLoader = koinInject<ImageLoader>()
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         Text(collection.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Text(stringResource(R.string.image_original_quality), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

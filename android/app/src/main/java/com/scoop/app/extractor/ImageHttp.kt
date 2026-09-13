@@ -18,7 +18,14 @@ fun OkHttpClient.forImages(): OkHttpClient = newBuilder().addNetworkInterceptor 
     val origin = chain.call().request().url
     val target = request.url
     val sameOrigin = origin.host == target.host && origin.scheme == target.scheme && origin.port == target.port
-    chain.proceed(if (sameOrigin) request else request.newBuilder().removeHeader("Cookie").removeHeader("Authorization").build())
+    chain.proceed(
+        if (sameOrigin) request else request.newBuilder()
+            .removeHeader("Cookie")
+            .removeHeader("Authorization")
+            .removeHeader("Referer")
+            .removeHeader("Origin")
+            .build()
+    )
 }.build()
 
 /** Cancellation closes the socket even while reading a response body. */

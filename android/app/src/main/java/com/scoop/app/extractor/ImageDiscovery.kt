@@ -6,14 +6,19 @@ import com.scoop.app.core.model.ImageCollection
 import com.scoop.app.core.network.SecureUrl
 import kotlinx.coroutines.CancellationException
 import okhttp3.OkHttpClient
+import okhttp3.HttpUrl
 import okhttp3.Request
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
-class ImageDiscovery(client: OkHttpClient, private val gallery: GalleryImageExtractor) {
-    private val http = client.newBuilder().callTimeout(20, TimeUnit.SECONDS).build()
+class ImageDiscovery(
+    client: OkHttpClient,
+    private val gallery: GalleryImageExtractor,
+    private val urlParser: (String) -> HttpUrl? = SecureUrl::parse,
+) {
+    private val http = client.forImages().newBuilder().callTimeout(20, TimeUnit.SECONDS).build()
 
     /** Header/signature inspection only; closes the response before downloading the image. */
     suspend fun directImage(url: String): ImageCollection? = http.readImageResponse(request(url)) { response ->
@@ -51,14 +56,14 @@ class ImageDiscovery(client: OkHttpClient, private val gallery: GalleryImageExtr
                 throw IOException("This link is not an image or an accessible webpage.")
             }
             val html = body.byteStream().readBytesBounded(2 * 1024 * 1024).toString(type?.charset(Charsets.UTF_8) ?: Charsets.UTF_8)
-            WebImageParser.parse(html, response.request.url.toString())
+            WebImageParser.parse(html, response.request.url.toString(), urlParser)
         }
         if (page.images.isEmpty()) throw IOException("No accessible images were found. This page may need a login, load images with JavaScript, or be unsupported.", failure)
         return page
     }
 
     private fun request(url: String): Request {
-        val parsed = SecureUrl.parse(url) ?: throw IOException("Paste a valid https link.")
+        val parsed = urlParser(url) ?: throw IOException("Paste a valid public https link.")
         return Request.Builder().url(parsed).header("User-Agent", IMAGE_USER_AGENT).build()
     }
 }

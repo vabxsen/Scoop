@@ -36,14 +36,14 @@ class QueueAuditDeviceTest {
         "Scoop audit fixture", null, System.currentTimeMillis() - ageDays * 86_400_000L,
     ).also { manager.tasks[it] = DownloadStatus.Completed(file.absolutePath) }
 
-    @Test fun retentionRemovesFileDatabaseAndVisibleTask() = runBlocking {
+    @Test fun retentionRemovesDatabaseAndVisibleTaskButKeepsFile() = runBlocking {
         requireEmptyTestQueue()
         val file = File.createTempFile("retention-audit", ".png", context.cacheDir)
         val task = fixture(file, 10)
         try {
             history.upsert(DownloadedItem(task.id, task.request.url, task.title, file.absolutePath, null, "IMAGE", task.createdAt))
             manager.clearHistoryOlderThan(7)
-            assertFalse(file.exists())
+            assertTrue("History retention must not delete the user's media", file.exists())
             assertTrue(history.getAll().none { it.id == task.id })
             assertFalse("Expired task must disappear without restarting", manager.tasks.containsKey(task))
         } finally { manager.deleteTaskAndFile(task.id); file.delete() }

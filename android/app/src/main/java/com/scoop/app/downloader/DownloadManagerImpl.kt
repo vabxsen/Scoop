@@ -13,7 +13,9 @@ import android.net.Network
 import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.core.app.NotificationCompat
@@ -26,10 +28,13 @@ import com.scoop.app.core.model.AudioQuality
 import com.scoop.app.core.model.AutoRetryPolicy
 import com.scoop.app.core.model.DefaultVideoContainer
 import com.scoop.app.core.model.DownloadKind
+import com.scoop.app.core.model.FormatSelector
 import com.scoop.app.core.model.DownloadRequest
 import com.scoop.app.core.model.DownloadSpeedLimit
 import com.scoop.app.core.model.DownloadStatus
 import com.scoop.app.core.model.DownloadTask
+import com.scoop.app.core.network.SecureUrl
+import com.scoop.app.core.network.PublicHttpsProxy
 import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.extractor.MediaExtractor
 import com.scoop.app.extractor.YOUTUBE_PLAYER_CLIENT_ARG
@@ -42,6 +47,8 @@ import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -52,10 +59,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 private const val DEFAULT_MAX_CONCURRENCY = 3
 private const val RETRY_BACKOFF_BASE_MS = 8_000L
@@ -68,36 +76,26 @@ class DownloadManagerImpl(
     private val downloadHistoryDao: DownloadHistoryDao,
     private val mediaEngineReadiness: MediaEngineReadiness,
     private val imageDownloader: ImageDownloader,
+    private val queueStore: DownloadQueueStore,
 ) : DownloadManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    private val jobs = mutableMapOf<String, Job>()
+    private val jobs = ConcurrentHashMap<String, Job>()
     @Volatile private var clearingAll = false
-    private val retryAttempts = mutableMapOf<String, Int>()
-    private val pendingDeleteJobs = mutableMapOf<String, Job>()
+    private val retryAttempts = ConcurrentHashMap<String, Int>()
+    private val pendingDeleteJobs = ConcurrentHashMap<String, Job>()
+    @Volatile private var executionAuthorized = false
+    private val queueWriteRevision = AtomicLong()
+    private val queueWriteMutex = Mutex()
 
     override val tasks: SnapshotStateMap<DownloadTask, DownloadStatus> = mutableStateMapOf()
+    override var isInitialized by mutableStateOf(false)
+        private set
     override val pendingDeleteIds: SnapshotStateList<String> = mutableStateListOf()
 
     init {
         DownloadPaths.sweepStaleTempWorkspaces(appContext)
-        hydrateFromHistory()
-
-        val stateFlow = snapshotFlow { tasks.toMap() }
-        // Runs on every state change so a freshly queued task is picked up even when the
-        // concurrently-running count itself hasn't moved (e.g. going from 0 running to 0 running
-        // because the new task is still Queued).
-        scope.launch { stateFlow.collect { dispatchNext() } }
-        scope.launch {
-            stateFlow
-                .map { it.values.count { s -> s is DownloadStatus.Analyzing || s is DownloadStatus.Downloading } }
-                .distinctUntilChanged()
-                .collect { runningCount ->
-                    // The service stops itself after entering foreground. Stopping it here can
-                    // race its startup when a small image finishes immediately.
-                    if (runningCount > 0) DownloadService.start(appContext)
-                }
-        }
+        initializeState()
 
         // Re-check the queue whenever the network changes so downloads held back by Wi-Fi-only
         // resume automatically the moment Wi-Fi becomes available, instead of staying stuck until
@@ -130,12 +128,28 @@ class DownloadManagerImpl(
         )
     }
 
-    /** The task map is purely in-memory, so a fresh process starts with an empty Downloads screen
-     * unless past completions are re-loaded from the Room history table here. */
-    private fun hydrateFromHistory() {
+    private fun initializeState() {
         scope.launch {
-            val items = withContext(Dispatchers.IO) { downloadHistoryDao.getAll() }
+            val (savedQueue, items) = withContext(Dispatchers.IO) {
+                val retention =
+                    com.scoop.app.core.model.HistoryRetention.entries.firstOrNull {
+                        it.name == PreferenceUtil.getString(PrefKeys.HISTORY_RETENTION, com.scoop.app.core.model.HistoryRetention.OFF.name)
+                    } ?: com.scoop.app.core.model.HistoryRetention.OFF
+                retention.days?.let { clearHistoryRecordsOlderThan(it) }
+                queueStore.read() to downloadHistoryDao.getAll()
+            }
+            savedQueue.forEach { entry ->
+                val task = entry.task
+                retryAttempts[task.id] = entry.retryAttempt
+                tasks[task] =
+                    if (entry.requiresReanalysis) {
+                        DownloadStatus.Failed("This authenticated image must be analyzed again after the app restarted")
+                    } else {
+                        DownloadStatus.Queued
+                    }
+            }
             items.forEach { item ->
+                if (tasks.keys.any { it.id == item.id }) return@forEach
                 val kind = DownloadKind.entries.firstOrNull { it.name == item.kind } ?: return@forEach
                 val task =
                     DownloadTask(
@@ -147,12 +161,19 @@ class DownloadManagerImpl(
                     )
                 tasks[task] = DownloadStatus.Completed(item.filePath)
             }
+            isInitialized = true
+            if (executionAuthorized) resumePendingDownloads()
         }
     }
 
     override fun enqueue(request: DownloadRequest, title: String, thumbnailUrl: String?): DownloadTask {
-        val task = DownloadTask(id = UUID.randomUUID().toString(), request = request, title = title, thumbnailUrl = thumbnailUrl)
+        val capturedRequest = request.copy(saveToHistory = !PreferenceUtil.getBoolean(PrefKeys.INCOGNITO, false))
+        val task = DownloadTask(id = UUID.randomUUID().toString(), request = capturedRequest, title = title, thumbnailUrl = thumbnailUrl)
         tasks[task] = DownloadStatus.Queued
+        runBlocking { persistQueueNow() }
+        executionAuthorized = true
+        DownloadService.start(appContext)
+        dispatchNext()
         return task
     }
 
@@ -162,10 +183,20 @@ class DownloadManagerImpl(
         jobs.remove(taskId)?.cancel()
         retryAttempts.remove(taskId)
         tasks[task] = DownloadStatus.Cancelled
+        runBlocking { persistQueueNow() }
         return true
     }
 
     override fun refreshQueue() = dispatchNext()
+
+    override fun resumePendingDownloads() {
+        executionAuthorized = true
+        val hasActive = tasks.values.any { it is DownloadStatus.Analyzing || it is DownloadStatus.Downloading || it is DownloadStatus.Processing }
+        if (!hasActive && tasks.values.any { it is DownloadStatus.Queued }) {
+            DownloadService.start(appContext)
+        }
+        dispatchNext()
+    }
 
     override fun retry(taskId: String) {
         val task = tasks.keys.find { it.id == taskId } ?: return
@@ -175,6 +206,8 @@ class DownloadManagerImpl(
             // budget rather than inheriting whatever the automatic attempts already used up.
             retryAttempts.remove(taskId)
             tasks[task] = DownloadStatus.Queued
+            runBlocking { persistQueueNow() }
+            resumePendingDownloads()
         }
     }
 
@@ -189,6 +222,7 @@ class DownloadManagerImpl(
         if (task != null) {
             cancel(taskId)
             tasks.remove(task)
+            persistQueueNow()
         }
     }
 
@@ -216,16 +250,17 @@ class DownloadManagerImpl(
     }
 
     override suspend fun clearHistoryOlderThan(days: Int) {
-        val cutoff = System.currentTimeMillis() - days * 24L * 60 * 60 * 1000
-        val expiredIds = withContext(Dispatchers.IO) {
-            downloadHistoryDao.getOlderThan(cutoff).map { item ->
-                item.filePath?.let { deleteFile(it) }
-                downloadHistoryDao.deleteById(item.id)
-                item.id
-            }.toSet()
-        }
+        val expiredIds = withContext(Dispatchers.IO) { clearHistoryRecordsOlderThan(days) }
         expiredIds.forEach(::undoDelete)
         tasks.keys.toList().filter { it.id in expiredIds }.forEach { tasks.remove(it) }
+    }
+
+    private suspend fun clearHistoryRecordsOlderThan(days: Int): Set<String> {
+        val cutoff = System.currentTimeMillis() - days * 24L * 60 * 60 * 1000
+        return downloadHistoryDao.getOlderThan(cutoff).map { item ->
+            downloadHistoryDao.deleteById(item.id)
+            item.id
+        }.toSet()
     }
 
     override suspend fun clearAll() {
@@ -245,6 +280,10 @@ class DownloadManagerImpl(
                 downloadHistoryDao.deleteAll()
             }
             tasks.clear()
+            queueWriteRevision.incrementAndGet()
+            withContext(Dispatchers.IO) {
+                queueWriteMutex.withLock { queueStore.write(emptyList()) }
+            }
         } finally {
             clearingAll = false
         }
@@ -260,7 +299,7 @@ class DownloadManagerImpl(
 
     @Synchronized
     private fun dispatchNext() {
-        if (clearingAll) return
+        if (clearingAll || !executionAuthorized) return
         val maxConcurrency = PreferenceUtil.getInt(PrefKeys.MAX_CONCURRENT_DOWNLOADS, DEFAULT_MAX_CONCURRENCY)
         val runningCount = tasks.values.count { it is DownloadStatus.Analyzing || it is DownloadStatus.Downloading }
         if (runningCount >= maxConcurrency) return
@@ -270,13 +309,18 @@ class DownloadManagerImpl(
     }
 
     private fun runTask(task: DownloadTask) {
+        if (SecureUrl.parse(task.request.url) == null) {
+            tasks[task] = DownloadStatus.Failed("Only public HTTPS links can be downloaded")
+            runBlocking { persistQueueNow() }
+            return
+        }
         if (task.request.kind == DownloadKind.IMAGE) {
             runImageTask(task)
             return
         }
         tasks[task] = DownloadStatus.Analyzing
-        jobs[task.id] =
-            scope.launch {
+        val job = scope.launch {
+            try {
                 extractor
                     .analyze(task.request.url)
                     .onSuccess { info ->
@@ -285,11 +329,10 @@ class DownloadManagerImpl(
                             .onSuccess { filePath ->
                                 if (filePath != null) {
                                     retryAttempts.remove(task.id)
-                                    tasks[task] = DownloadStatus.Completed(filePath)
                                     // Incognito means "disable download history" - the completed task
                                     // still shows in this session's live queue via the in-memory `tasks`
                                     // map above, it just never gets persisted to survive a restart.
-                                    if (!PreferenceUtil.getBoolean(PrefKeys.INCOGNITO, false)) {
+                                    if (task.request.saveToHistory) {
                                         downloadHistoryDao.upsert(
                                             DownloadedItem(
                                                 id = task.id,
@@ -303,6 +346,8 @@ class DownloadManagerImpl(
                                             )
                                         )
                                     }
+                                    persistQueueNow(queueSnapshot().filterNot { it.task.id == task.id })
+                                    tasks[task] = DownloadStatus.Completed(filePath)
                                     notifyDownloadComplete(task, filePath)
                                 } else {
                                     // A yt-dlp run that "succeeds" without a resolvable output path
@@ -314,8 +359,14 @@ class DownloadManagerImpl(
                             .onFailure { error -> handleFailure(task, error.message ?: "Download failed", error) }
                     }
                     .onFailure { error -> handleFailure(task, error.message ?: "Analysis failed", error) }
-                jobs.remove(task.id)
+            } finally {
+                if (jobs[task.id] == coroutineContext[Job]) jobs.remove(task.id)
+                persistQueueNow()
+                dispatchNext()
             }
+        }
+        jobs[task.id] = job
+        dispatchNext()
     }
 
     private fun runImageTask(task: DownloadTask) {
@@ -327,13 +378,14 @@ class DownloadManagerImpl(
                 }
                 if (tasks[task] is DownloadStatus.Cancelled) return@launch
                 retryAttempts.remove(task.id)
-                if (!PreferenceUtil.getBoolean(PrefKeys.INCOGNITO, false)) {
+                if (task.request.saveToHistory) {
                     downloadHistoryDao.upsert(DownloadedItem(
                         id = task.id, sourceUrl = task.request.url, title = task.title,
                         filePath = path, thumbnailUrl = path, kind = DownloadKind.IMAGE.name,
                         createdAt = task.createdAt, playlistTitle = task.request.playlistTitle,
                     ))
                 }
+                persistQueueNow(queueSnapshot().filterNot { it.task.id == task.id })
                 tasks[task] = DownloadStatus.Completed(path)
                 notifyDownloadComplete(task, path)
             } catch (e: CancellationException) {
@@ -342,8 +394,11 @@ class DownloadManagerImpl(
                 handleFailure(task, e.message ?: "Image download failed", e)
             } finally {
                 if (jobs[task.id] == coroutineContext[Job]) jobs.remove(task.id)
+                persistQueueNow()
+                dispatchNext()
             }
         }
+        dispatchNext()
     }
 
     /** On failure, auto-retries with a linear backoff (attempt N waits N * 8s) up to the
@@ -357,19 +412,48 @@ class DownloadManagerImpl(
         val attempt = (retryAttempts[task.id] ?: 0) + 1
         if (attempt <= policy.maxAttempts) {
             retryAttempts[task.id] = attempt
+            persistQueue()
             delay(RETRY_BACKOFF_BASE_MS * attempt)
             tasks[task] = DownloadStatus.Queued
         } else {
             retryAttempts.remove(task.id)
             tasks[task] = DownloadStatus.Failed(message, error)
+            persistQueueNow()
+        }
+    }
+
+    private fun persistQueue() {
+        val entries = queueSnapshot()
+        val revision = queueWriteRevision.incrementAndGet()
+        scope.launch(Dispatchers.IO) {
+            queueWriteMutex.withLock {
+                if (revision == queueWriteRevision.get()) runCatching { queueStore.write(entries) }
+            }
+        }
+    }
+
+    private fun queueSnapshot(): List<PersistedQueueEntry> =
+        tasks.entries.mapNotNull { (task, status) ->
+            if (status !is DownloadStatus.Queued && status !is DownloadStatus.Analyzing && status !is DownloadStatus.Downloading && status !is DownloadStatus.Processing) return@mapNotNull null
+            if (!task.request.saveToHistory) return@mapNotNull null
+            task.toPersistedQueueEntry(retryAttempts[task.id] ?: 0)
+        }
+
+    private suspend fun persistQueueNow(entries: List<PersistedQueueEntry> = queueSnapshot()) {
+        val revision = queueWriteRevision.incrementAndGet()
+        withContext(Dispatchers.IO) {
+            queueWriteMutex.withLock {
+                if (revision == queueWriteRevision.get()) queueStore.write(entries)
+            }
         }
     }
 
     private suspend fun executeDownload(task: DownloadTask): Result<String?> =
         withContext(Dispatchers.IO) {
-            runCatching {
+            val tempDir = DownloadPaths.tempWorkspace(appContext, task.id)
+            try {
+                runCatching {
                 mediaEngineReadiness.awaitReady()
-                val tempDir = DownloadPaths.tempWorkspace(appContext, task.id)
 
                 val request =
                     YoutubeDLRequest(task.request.url).apply {
@@ -387,7 +471,7 @@ class DownloadManagerImpl(
                         when (task.request.kind) {
                             DownloadKind.IMAGE -> error("Images use the image downloader")
                             DownloadKind.VIDEO -> {
-                                addOption("-f", task.request.formatId ?: "bestvideo*+bestaudio/best")
+                                addOption("-f", task.request.formatId ?: FormatSelector.video())
                                 val container = PreferenceUtil.getString(PrefKeys.DEFAULT_VIDEO_CONTAINER, DefaultVideoContainer.MP4.name)
                                 val containerValue = DefaultVideoContainer.entries.firstOrNull { it.name == container }?.ytDlpValue ?: "mp4"
                                 addOption("--merge-output-format", containerValue)
@@ -402,7 +486,7 @@ class DownloadManagerImpl(
                                 }
                             }
                             DownloadKind.AUDIO_ONLY -> {
-                                addOption("-f", task.request.formatId ?: "bestaudio/best")
+                                addOption("-f", task.request.formatId ?: FormatSelector.audio())
                                 addOption("-x")
                                 addOption("--audio-format", task.request.audioContainer ?: "mp3")
                                 val quality = PreferenceUtil.getString(PrefKeys.AUDIO_QUALITY, AudioQuality.BEST.name)
@@ -415,7 +499,10 @@ class DownloadManagerImpl(
                         task.request.customArgs?.let { addCommands(tokenizeShellArgs(it)) }
                     }
 
-                val response =
+                val response = PublicHttpsProxy().use { proxy ->
+                    // Appended after custom arguments so an advanced option cannot replace the
+                    // enforcing transport.
+                    request.addOption("--proxy", proxy.url)
                     YoutubeDL.getInstance().execute(request, task.id) { progress, eta, _ ->
                         val current = tasks[task] as? DownloadStatus.Downloading ?: DownloadStatus.Downloading()
                         // yt-dlp reports progress far more often than the UI needs - writing every
@@ -429,6 +516,7 @@ class DownloadManagerImpl(
                             tasks[task] = current.copy(progress = roundedProgress, etaSeconds = roundedEta)
                         }
                     }
+                }
 
                 // `--print after_move:filepath` writes the final resolved path as its own stdout
                 // line, independent of the progress-line regex the callback above matches against
@@ -468,9 +556,10 @@ class DownloadManagerImpl(
                         }
                         location
                     }
-                DownloadPaths.clearTempWorkspace(appContext, task.id)
-
                 savedLocation
+                }
+            } finally {
+                DownloadPaths.clearTempWorkspace(appContext, task.id)
             }
         }
 
@@ -482,7 +571,7 @@ class DownloadManagerImpl(
         ) {
             return
         }
-        val openIntent = FileShareUtils.openFileIntent(appContext, filePath)
+        val openIntent = FileShareUtils.openFileIntent(appContext, filePath) ?: return
         val pendingIntent =
             PendingIntent.getActivity(appContext, task.id.hashCode(), openIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification =
