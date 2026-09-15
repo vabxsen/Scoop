@@ -47,7 +47,7 @@ class AppUpdateChecker(private val context: Context, private val client: OkHttpC
                     val apkAsset =
                         assetIndex?.let(release.assets::getOrNull)
                             ?: return@withContext UpdateAvailability.Error(context.getString(R.string.update_error_no_asset))
-                    UpdateAvailability.Available(version = release.tagName, downloadUrl = apkAsset.downloadUrl)
+                    UpdateAvailability.Available(downloadUrl = apkAsset.downloadUrl)
                 }
             } catch (e: Exception) {
                 UpdateAvailability.Error(genericError)

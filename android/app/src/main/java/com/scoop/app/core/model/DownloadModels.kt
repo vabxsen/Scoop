@@ -57,7 +57,7 @@ sealed interface DownloadStatus {
 
     data class Completed(val filePath: String?) : DownloadStatus
 
-    data class Failed(val message: String, val throwable: Throwable? = null) : DownloadStatus
+    data class Failed(val message: String) : DownloadStatus
 
     data object Cancelled : DownloadStatus
 }

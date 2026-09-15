@@ -1,7 +1,6 @@
 package com.scoop.app.core.media
 
 import android.content.Context
-import com.yausername.aria2c.Aria2c
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import kotlinx.coroutines.CompletableDeferred
@@ -10,7 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
- * YoutubeDL/FFmpeg/Aria2c.init() extract bundled native binaries to disk and must complete before
+ * YoutubeDL/FFmpeg init extracts bundled native binaries to disk and must complete before
  * any YoutubeDL.getInstance() call, or the library throws "instance not initialized". Startup
  * kicks this off on a background coroutine so it doesn't block the UI - extractor/download code
  * must await [awaitReady] rather than assume init already finished by the time it runs, or a
@@ -24,7 +23,6 @@ class MediaEngineReadiness(private val context: Context) {
             try {
                 YoutubeDL.init(context)
                 FFmpeg.init(context)
-                Aria2c.init(context)
                 ready.complete(Unit)
             } catch (t: Throwable) {
                 // Extraction/download calls will surface a clear error once they await readiness.

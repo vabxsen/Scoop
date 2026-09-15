@@ -10,7 +10,7 @@ Audited version: `1.2.7` (`versionCode` 28)
 
 Scoop's own code and declared Kotlin/Android dependencies are under free-software-compatible
 licenses. The current release is **not ready for the main F-Droid repository** because it packages
-prebuilt Python, FFmpeg and aria2c native artifacts. Runtime self-updates have been disabled;
+prebuilt Python and FFmpeg native artifacts. Runtime self-updates have been disabled;
 the remaining APK updater still needs to be omitted from an F-Droid flavor.
 
 The Fastlane metadata in this repository is ready for an eventual F-Droid submission. A submission
@@ -29,7 +29,6 @@ should wait until the blockers below have been addressed and the resulting build
 | MMKV | 1.3.12 | BSD-3-Clause | Compatible, but includes native code |
 | youtubedl-android library | 0.17.3 | GPL-3.0 | License-compatible; bundled binaries need source-build handling |
 | youtubedl-android FFmpeg | 0.17.3 | GPL/LGPL stack | License-compatible; prebuilt AAR is a blocker |
-| youtubedl-android aria2c | 0.17.3 | GPL-2.0 stack | License-compatible; prebuilt AAR is a blocker |
 | gallery-dl | 1.32.11 | GPL-2.0-only | Runs as a separate process; source and notices are bundled |
 | Requests and gallery Python dependencies | See `android/scripts/gallery-packages.json` | Apache/MIT/BSD/MPL | Compatible; vendored archive needs reproducible source handling |
 | desugar_jdk_libs | 2.1.5 | GPL-2.0 with Classpath Exception | Compatible |
@@ -40,7 +39,7 @@ analytics SDK was found in the release runtime graph.
 
 ## Blocking work
 
-1. **Build native media tools from source.** The `library`, `ffmpeg` and `aria2c` Maven artifacts
+1. **Build native media tools from source.** The `library` and `ffmpeg` Maven artifacts
    contain prebuilt Python/native payloads. F-Droid builds should reproduce these from tagged source
    or use separately accepted reproducible binaries with pinned signing/build metadata.
 2. **Regenerate the gallery runtime during the F-Droid build.** The checked-in
@@ -57,12 +56,12 @@ analytics SDK was found in the release runtime graph.
 
 ## Distribution notes
 
-The standard arm64 release is about 41 MB. Its compressed size is dominated by FFmpeg (~17 MB),
-Python/yt-dlp (~11.5 MB) and aria2c (~4.7 MB). IzzyOnDroid normally caps one APK at 30 MB. Removing
-enough data to meet that threshold would remove media capabilities; a safe reduction requires
-custom source-built, feature-scoped native packages. Scoop should keep its full feature set and
-target main F-Droid first, or request an IzzyOnDroid size exception after reproducible builds are in
-place.
+The standard arm64 release is about 36.3 MB. Its compressed size is dominated by FFmpeg (~17 MB)
+and Python/yt-dlp (~11.5 MB). IzzyOnDroid normally caps one APK at 30 MB. With the unused aria2c
+runtime removed, further reductions large enough to meet that threshold would remove media
+capabilities; a safe reduction requires custom source-built, feature-scoped native packages. Scoop
+should keep its full feature set and target main F-Droid first, or request an IzzyOnDroid size
+exception after reproducible builds are in place.
 
 Additional ABI builds can be produced independently without making one universal APK larger. See
 `android/scripts/build_release_variants.ps1`.

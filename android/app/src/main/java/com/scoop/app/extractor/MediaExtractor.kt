@@ -10,7 +10,5 @@ import com.scoop.app.core.model.PlaylistInfo
 interface MediaExtractor {
     suspend fun analyze(url: String): Result<MediaInfo>
 
-    suspend fun getFormats(url: String): Result<MediaInfo> = analyze(url)
-
     suspend fun getPlaylist(url: String): Result<PlaylistInfo>
 }

@@ -168,7 +168,6 @@ Scoop depends on `io.github.junkfood02.youtubedl-android` (a maintained fork of
 
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) (Unlicense) — the extraction/download engine
 - [FFmpeg](https://ffmpeg.org/) (LGPL/GPL depending on build) — media muxing/transcoding
-- [aria2](https://aria2.github.io/) (GPLv2) — optional multi-connection download backend
 
 Because Scoop links against this GPL-family native stack, **Scoop itself is licensed under the
 GNU General Public License v3.0** — see [`LICENSE`](LICENSE).

@@ -19,8 +19,6 @@ class DownloadDetailsViewModel(private val downloadManager: DownloadManager, pri
 
     fun retry(taskId: String) = downloadManager.retry(taskId)
 
-    fun cancel(taskId: String) = downloadManager.cancel(taskId)
-
     fun delete(taskId: String, onDeleted: () -> Unit) {
         viewModelScope.launch {
             downloadManager.deleteTaskAndFile(taskId)

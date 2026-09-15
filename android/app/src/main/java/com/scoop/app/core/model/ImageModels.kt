@@ -9,7 +9,6 @@ data class ImageCandidate(
     val mimeType: String? = null,
     val width: Int = 0,
     val height: Int = 0,
-    val sizeBytes: Long? = null,
     // Kept only in memory; some public image hosts require a referer or session cookie.
     val headers: Map<String, String> = emptyMap(),
 )

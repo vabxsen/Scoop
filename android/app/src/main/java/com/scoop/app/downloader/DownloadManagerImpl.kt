@@ -417,7 +417,7 @@ class DownloadManagerImpl(
             tasks[task] = DownloadStatus.Queued
         } else {
             retryAttempts.remove(task.id)
-            tasks[task] = DownloadStatus.Failed(message, error)
+            tasks[task] = DownloadStatus.Failed(message)
             persistQueueNow()
         }
     }

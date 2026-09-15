@@ -30,7 +30,7 @@ class ImageDiscovery(
         val resolved = response.request.url
         ImageCollection(url, resolved.pathSegments.lastOrNull().orEmpty().ifBlank { "Image" }, listOf(
             ImageCandidate(resolved.toString(), resolved.pathSegments.lastOrNull().orEmpty().ifBlank { "Image" }, type,
-                options.outWidth.coerceAtLeast(0), options.outHeight.coerceAtLeast(0), response.body.contentLength().takeIf { it >= 0 },
+                options.outWidth.coerceAtLeast(0), options.outHeight.coerceAtLeast(0),
                 mapOf("User-Agent" to IMAGE_USER_AGENT)),
         ))
     }

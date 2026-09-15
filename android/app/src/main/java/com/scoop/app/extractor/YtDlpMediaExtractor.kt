@@ -1,7 +1,6 @@
 package com.scoop.app.extractor
 
 import com.scoop.app.core.media.MediaEngineReadiness
-import com.scoop.app.core.model.MediaFormat
 import com.scoop.app.core.model.MediaInfo
 import com.scoop.app.core.model.PlaylistEntryInfo
 import com.scoop.app.core.model.PlaylistInfo
@@ -69,7 +68,7 @@ class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness
                     }
                 val output = executeBounded(request, PLAYLIST_TIMEOUT_MS)
                 require(output.length <= MAX_METADATA_CHARS) { "Playlist response was too large" }
-                json.decodeFromString<YtDlpPlaylistJson>(output).toPlaylistInfo(url)
+                json.decodeFromString<YtDlpPlaylistJson>(output).toPlaylistInfo()
             }
     }
 
@@ -96,48 +95,22 @@ private const val ANALYZE_TIMEOUT_MS = 60_000L
 private const val PLAYLIST_TIMEOUT_MS = 90_000L
 
 private fun YtDlpVideoJson.toMediaInfo(sourceUrl: String): MediaInfo {
-    val rawFormats = formats ?: requestedFormats ?: emptyList()
     return MediaInfo(
-        id = id,
         sourceUrl = listOfNotNull(originalUrl, webpageUrl, sourceUrl).firstOrNull { SecureUrl.parse(it) != null } ?: sourceUrl,
         title = title,
-        uploader = uploader ?: channel,
-        durationSeconds = duration?.roundToInt(),
-        uploadDate = uploadDate,
         thumbnailUrl = thumbnail?.takeIf { SecureUrl.parse(it) != null },
-        description = description,
-        formats = rawFormats.map { it.toMediaFormat() },
     )
 }
 
-private fun YtDlpFormatJson.toMediaFormat(): MediaFormat =
-    MediaFormat(
-        formatId = formatId ?: "",
-        container = ext,
-        formatNote = formatNote,
-        videoCodec = vcodec,
-        audioCodec = acodec,
-        width = width?.roundToInt(),
-        height = height?.roundToInt(),
-        fps = fps?.roundToInt(),
-        audioBitrateKbps = abr,
-        totalBitrateKbps = tbr,
-        fileSizeBytes = (filesize ?: fileSizeApprox)?.toLong(),
-    )
-
-private fun YtDlpPlaylistJson.toPlaylistInfo(sourceUrl: String): PlaylistInfo =
+private fun YtDlpPlaylistJson.toPlaylistInfo(): PlaylistInfo =
     PlaylistInfo(
-        sourceUrl = sourceUrl,
         title = title,
-        uploader = uploader,
         entries =
             entries.orEmpty().asSequence().take(MAX_PLAYLIST_ENTRIES).mapNotNull {
                 val safeUrl = it.url?.takeIf { candidate -> SecureUrl.parse(candidate) != null } ?: return@mapNotNull null
                 PlaylistEntryInfo(
-                    id = it.id,
                     url = safeUrl,
                     title = it.title,
-                    uploader = it.uploader,
                     durationSeconds = it.duration?.roundToInt(),
                     thumbnailUrl = it.thumbnail?.takeIf { candidate -> SecureUrl.parse(candidate) != null },
                 )

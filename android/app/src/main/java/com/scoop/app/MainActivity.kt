@@ -68,7 +68,6 @@ class MainActivity : ComponentActivity() {
     private fun Intent.extractSharedUrl(): String? =
         when (action) {
             Intent.ACTION_SEND -> getStringExtra(Intent.EXTRA_TEXT)
-            Intent.ACTION_VIEW -> data?.toString()
             else -> null
         }
 }

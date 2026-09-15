@@ -74,9 +74,5 @@ class DownloadService : Service() {
         fun start(context: Context) {
             ContextCompat.startForegroundService(context, Intent(context, DownloadService::class.java))
         }
-
-        fun stop(context: Context) {
-            context.stopService(Intent(context, DownloadService::class.java))
-        }
     }
 }

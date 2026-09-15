@@ -2,7 +2,7 @@ package com.scoop.app.core.update
 
 /** Result of asking GitHub for the latest release. */
 sealed interface UpdateAvailability {
-    data class Available(val version: String, val downloadUrl: String) : UpdateAvailability
+    data class Available(val downloadUrl: String) : UpdateAvailability
 
     data object UpToDate : UpdateAvailability
 
