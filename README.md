@@ -128,7 +128,9 @@ needed to fetch the media itself.
 ## ⬇️ Installation
 
 Grab the latest signed APK from the [Releases page](../../releases/latest), open it, and allow
-"install unknown apps" for your browser or file manager when prompted. Scoop is arm64-v8a only.
+"install unknown apps" for your browser or file manager when prompted. Choose
+`Scoop-arm64-v8a.apk` for most modern phones or `Scoop-armeabi-v7a.apk` for 32-bit ARM devices;
+the legacy `Scoop.apk` download is also ARM64.
 
 ## 🛠️ Building from source
 
