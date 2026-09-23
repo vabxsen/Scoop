@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <!-- Local HTTP fixtures for instrumentation only; release remains HTTPS-only.
+         Production URL/DNS checks are unchanged, including in debug builds. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain>127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

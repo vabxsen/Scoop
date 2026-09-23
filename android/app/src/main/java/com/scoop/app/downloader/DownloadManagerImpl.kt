@@ -37,7 +37,6 @@ import com.scoop.app.core.network.SecureUrl
 import com.scoop.app.core.network.PublicHttpsProxy
 import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.extractor.MediaExtractor
-import com.scoop.app.extractor.YOUTUBE_PLAYER_CLIENT_ARG
 import com.scoop.app.util.DownloadGate
 import com.scoop.app.util.FileShareUtils
 import com.scoop.app.util.PrefKeys
@@ -461,7 +460,6 @@ class DownloadManagerImpl(
                         addOption("--no-playlist")
                         addOption("-o", File(tempDir, "%(title)s.%(ext)s").absolutePath)
                         addOption("--print", "after_move:filepath")
-                        addOption("--extractor-args", YOUTUBE_PLAYER_CLIENT_ARG)
                         val speedLimit =
                             DownloadSpeedLimit.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.DOWNLOAD_SPEED_LIMIT, DownloadSpeedLimit.UNLIMITED.name) }
                                 ?.ytDlpValue

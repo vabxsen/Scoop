@@ -10,22 +10,15 @@ import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlin.math.roundToInt
 import java.util.UUID
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-
-/**
- * Forces yt-dlp's "android" YouTube player client instead of its default "web" one. YouTube's web
- * client increasingly returns "Sign in to confirm you're not a bot" for unauthenticated requests,
- * which normally requires passing cookies - the android client isn't subject to that same
- * bot-check, so this keeps YouTube working without needing the cookie-import flow the app doesn't
- * have. Applied to every yt-dlp invocation (analyze, playlist, and the actual download) since any
- * one of them can hit the same wall independently.
- */
-const val YOUTUBE_PLAYER_CLIENT_ARG = "youtube:player_client=android"
 
 /** Extracts media metadata by shelling out to the bundled yt-dlp runtime and parsing its JSON. */
 class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness) : MediaExtractor {
@@ -44,12 +37,11 @@ class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness
                         addOption("--no-warnings")
                         addOption("-R", "1")
                         addOption("--socket-timeout", "10")
-                        addOption("--extractor-args", YOUTUBE_PLAYER_CLIENT_ARG)
                     }
                 val output = executeBounded(request, ANALYZE_TIMEOUT_MS)
                 require(output.length <= MAX_METADATA_CHARS) { "Metadata response was too large" }
                 json.decodeFromString<YtDlpVideoJson>(output).toMediaInfo(url)
-            }
+            }.onFailure { if (it is CancellationException) throw it }
         }
 
     override suspend fun getPlaylist(url: String): Result<PlaylistInfo> =
@@ -64,12 +56,11 @@ class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness
                         addOption("--yes-playlist")
                         addOption("--playlist-end", MAX_PLAYLIST_ENTRIES.toString())
                         addOption("--no-warnings")
-                        addOption("--extractor-args", YOUTUBE_PLAYER_CLIENT_ARG)
                     }
                 val output = executeBounded(request, PLAYLIST_TIMEOUT_MS)
                 require(output.length <= MAX_METADATA_CHARS) { "Playlist response was too large" }
                 json.decodeFromString<YtDlpPlaylistJson>(output).toPlaylistInfo()
-            }
+            }.onFailure { if (it is CancellationException) throw it }
     }
 
     private suspend fun executeBounded(request: YoutubeDLRequest, timeoutMs: Long): String = coroutineScope {
@@ -79,10 +70,11 @@ class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness
             val execution = async(Dispatchers.IO) { YoutubeDL.getInstance().execute(request, processId, null).out }
             try {
                 withTimeout(timeoutMs) { execution.await() }
-            } catch (error: kotlinx.coroutines.TimeoutCancellationException) {
+            } catch (error: TimeoutCancellationException) {
+                throw IOException("Video analysis timed out. Check your connection and try again.", error)
+            } finally {
                 YoutubeDL.destroyProcessById(processId)
                 execution.cancel()
-                throw error
             }
         }
     }

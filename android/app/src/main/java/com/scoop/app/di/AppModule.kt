@@ -70,7 +70,7 @@ val appModule = module {
 
     single { ThemePreferences() }
 
-    viewModel { HomeViewModel(extractor = get(), downloadManager = get(), imageDiscovery = get()) }
+    viewModel { HomeViewModel(extractor = get(), downloadManager = get(), imageDiscovery = get<ImageDiscovery>()) }
     viewModel { DownloadsViewModel(downloadManager = get()) }
     viewModel { DownloadDetailsViewModel(downloadManager = get(), downloadHistoryDao = get()) }
     viewModel {

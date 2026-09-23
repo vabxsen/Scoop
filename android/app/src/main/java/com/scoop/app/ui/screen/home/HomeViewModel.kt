@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 import com.scoop.app.core.model.ImageCollection
-import com.scoop.app.extractor.ImageDiscovery
+import com.scoop.app.extractor.ImageSource
 import com.scoop.app.extractor.InstagramSession
 import com.scoop.app.extractor.InstagramSignInRequiredException
 
@@ -53,7 +53,7 @@ enum class FormatMode {
 class HomeViewModel(
     private val extractor: MediaExtractor,
     private val downloadManager: DownloadManager,
-    private val imageDiscovery: ImageDiscovery,
+    private val imageDiscovery: ImageSource,
 ) : ViewModel() {
     private var analysisJob: Job? = null
     private var pendingInstagramSignIn = false
@@ -204,6 +204,7 @@ class HomeViewModel(
                         configureState = ConfigureUiState.PlaylistLoaded(info)
                     }
                     .onFailure {
+                        if (it is CancellationException) throw it
                         Log.e(TAG, "getPlaylist failed for ${SecureUrl.redactedForLog(target)} (${it::class.java.simpleName})")
                         configureState = ConfigureUiState.Error(it.message ?: "Unknown error")
                     }
@@ -226,12 +227,13 @@ class HomeViewModel(
                     }
                     .onFailure {
                         if (it is CancellationException) throw it
-                        try { showImages(imageDiscovery.discover(target)) }
-                        catch (e: CancellationException) { throw e }
-                        catch (imageFailure: Exception) {
-                            configureState = if (imageFailure is InstagramSignInRequiredException) imageError(imageFailure)
-                                else ConfigureUiState.Error(it.message ?: "No downloadable media or images found")
-                        }
+                        // Respect the selected mode: webpage thumbnails are not a video fallback.
+                        Log.e(TAG, "analyze failed for ${SecureUrl.redactedForLog(target)} (${it::class.java.simpleName})")
+                        val detail = it.message?.lineSequence()?.lastOrNull { line -> line.isNotBlank() }?.take(600)
+                        configureState = ConfigureUiState.Error(
+                            "Could not load video or audio. " + (detail ?: "Please try again.") +
+                                "\nTo download pictures instead, select Images on the home screen.",
+                        )
                     }
             }
         }

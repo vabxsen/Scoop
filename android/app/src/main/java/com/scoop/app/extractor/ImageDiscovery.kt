@@ -13,15 +13,20 @@ import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
 
+interface ImageSource {
+    suspend fun directImage(url: String): ImageCollection?
+    suspend fun discover(url: String): ImageCollection
+}
+
 class ImageDiscovery(
     client: OkHttpClient,
     private val gallery: GalleryImageExtractor,
     private val urlParser: (String) -> HttpUrl? = SecureUrl::parse,
-) {
+) : ImageSource {
     private val http = client.forImages().newBuilder().callTimeout(20, TimeUnit.SECONDS).build()
 
     /** Header/signature inspection only; closes the response before downloading the image. */
-    suspend fun directImage(url: String): ImageCollection? = http.readImageResponse(request(url)) { response ->
+    override suspend fun directImage(url: String): ImageCollection? = http.readImageResponse(request(url)) { response ->
         if (!response.isSuccessful) return@readImageResponse null
         val prefix = response.peekBody(64 * 1024).bytes()
         val type = ImageFormats.detect(prefix) ?: return@readImageResponse null
@@ -35,7 +40,7 @@ class ImageDiscovery(
         ))
     }
 
-    suspend fun discover(url: String): ImageCollection {
+    override suspend fun discover(url: String): ImageCollection {
         // Login-page icons and avatars are not the photos from an Instagram post.
         // Preserve the extractor's authentication error instead of offering those as a gallery.
         if (InstagramSession.isPost(url)) {

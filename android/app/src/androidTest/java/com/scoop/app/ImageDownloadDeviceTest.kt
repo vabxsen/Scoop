@@ -76,7 +76,8 @@ class ImageDownloadDeviceTest {
         ImageServer().use { server ->
             val collection = ImageDiscovery(OkHttpClient(), gallery) { it.toHttpUrlOrNull() }.discover(server.url("/page"))
             assertEquals(2, collection.images.size)
-            assertTrue(collection.images.all { it.headers["Referer"] == server.url("/page") })
+            // The fixture is HTTP; the production referrer policy deliberately omits it.
+            assertTrue(collection.images.all { "Referer" !in it.headers })
             val bad = task(server.url("/page"), ImageCandidate(server.url("/fake.png")))
             val failure = runCatching { ImageDownloader(context, OkHttpClient()) { it.toHttpUrlOrNull() }.download(bad) {} }.exceptionOrNull()
             assertNotNull(failure)

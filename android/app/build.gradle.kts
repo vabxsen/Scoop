@@ -29,8 +29,8 @@ android {
         applicationId = "com.scoop.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 31
-        versionName = "1.3.0"
+        versionCode = providers.gradleProperty("scoopVersionCode").orNull?.toInt() ?: 31
+        versionName = providers.gradleProperty("scoopVersionName").orNull ?: "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -151,4 +151,5 @@ dependencies {
 
     testImplementation(libs.junit4)
     androidTestImplementation(libs.androidx.test.ext)
+    androidTestImplementation("androidx.test:runner:1.5.0")
 }

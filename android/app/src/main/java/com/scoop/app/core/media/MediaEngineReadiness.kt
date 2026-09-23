@@ -21,6 +21,7 @@ class MediaEngineReadiness(private val context: Context) {
     fun startInitializing(scope: CoroutineScope) {
         scope.launch(Dispatchers.IO) {
             try {
+                BundledYtDlp.install(context)
                 YoutubeDL.init(context)
                 FFmpeg.init(context)
                 ready.complete(Unit)

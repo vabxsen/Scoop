@@ -54,7 +54,7 @@ class GalleryImageExtractor(private val context: Context, private val readiness:
         readiness.awaitReady()
         withContext(Dispatchers.IO) {
             val runtime = prepareRuntime()
-            // Paths are part of the pinned youtubedl-android 0.17.3 layout; no reflection.
+            // Paths are part of the pinned youtubedl-android 0.18.1 layout; no reflection.
             val pythonHome = File(context.noBackupFilesDir, "youtubedl-android/packages/python/usr")
             val executable = File(context.applicationInfo.nativeLibraryDir, "libpython.so")
             if (!executable.isFile || !pythonHome.isDirectory) throw IOException("The image gallery runtime is unavailable on this device.")
