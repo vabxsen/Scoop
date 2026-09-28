@@ -83,7 +83,7 @@
     <string name="settings_permissions_title">Permissions</string>
     <string name="settings_permissions_subtitle">What Scoop can access on your device</string>
     <string name="settings_about_title">About</string>
-    <string name="settings_about_subtitle">Version, source code, attribution</string>
+    <string name="settings_about_subtitle">Version, privacy, source code</string>
 
     <string name="permission_notifications_title">Notifications</string>
     <string name="permission_notifications_subtitle">Show progress and completion notifications for downloads and updates</string>
@@ -145,6 +145,9 @@
     <string name="file_unavailable">This file is no longer available</string>
 
     <string name="about_version_format">Version %1$s</string>
+    <string name="about_privacy_policy">Privacy Policy</string>
+    <string name="about_privacy_policy_subtitle">How Scoop handles your data</string>
+    <string name="privacy_policy_url" translatable="false">https://vabxsen.github.io/Scoop/privacy/</string>
     <string name="about_source">Source code</string>
     <string name="about_source_subtitle">View Scoop on GitHub</string>
     <string name="about_report_issue">Report an issue</string>

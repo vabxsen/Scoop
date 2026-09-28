@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f6f2" />
+    <meta name="description" content="Scoop's privacy policy: how the Android app handles links, downloads, Instagram sessions and local data." />
+    <title>Privacy Policy — Scoop</title>
+    <link rel="canonical" href="https://vabxsen.github.io/Scoop/privacy/" />
+    <link rel="icon" href="../logo-light.png" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to policy</a>
+
+    <header class="site-header">
+      <a class="brand" href="../" aria-label="Scoop home">
+        <img src="../logo-light.png" alt="" width="42" height="42" />
+        <span>Scoop</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="../">Home</a>
+        <a href="https://github.com/vabxsen/Scoop">Source code</a>
+      </nav>
+      <a class="header-cta" href="../">Back to Scoop</a>
+    </header>
+
+    <main class="policy-main" id="main">
+      <section class="policy-hero" aria-labelledby="policy-title">
+        <p class="eyebrow">Scoop · Android</p>
+        <h1 id="policy-title">Privacy Policy</h1>
+        <p class="policy-intro">Scoop is designed to save media on your device without a Scoop account, backend, advertising or analytics.</p>
+        <p class="policy-meta">Last updated <time datetime="2026-09-28">28 September 2026</time> · Published by Vaibhav Sen</p>
+      </section>
+
+      <div class="policy-layout">
+        <aside class="policy-toc" aria-label="On this page">
+          <p>On this page</p>
+          <nav aria-label="Policy sections">
+            <a href="#overview">Overview</a>
+            <a href="#network">Links and network access</a>
+            <a href="#instagram">Instagram sign-in</a>
+            <a href="#storage">Storage and deletion</a>
+            <a href="#updates">App updates</a>
+            <a href="#contact">Privacy questions</a>
+          </nav>
+        </aside>
+
+        <article class="policy-content">
+          <section id="overview">
+            <h2>Overview</h2>
+            <p>Scoop does not require a Scoop account and has no Scoop server. It does not include ads or analytics, collect usage telemetry, or sell personal data. URL analysis and downloads happen on your device.</p>
+            <p>The GitHub build uses a bundled media runtime for supported sites. The Google Play edition accepts direct video and audio file links instead. Both editions can inspect supported image links and galleries.</p>
+          </section>
+
+          <section id="network">
+            <h2>Links and network access</h2>
+            <p>When you paste or share a URL, Scoop contacts the public HTTPS destination needed to inspect or download it. The destination website receives the network request and may process information such as your IP address under its own privacy practices. Scoop does not send the URL to a Scoop backend.</p>
+            <p>Only download media that you own or have permission to save. Site availability, access restrictions and the content returned by a URL are controlled by the destination website.</p>
+          </section>
+
+          <section id="instagram">
+            <h2>Optional Instagram sign-in</h2>
+            <p>For image posts that require authentication, Scoop can open Instagram's HTTPS sign-in page in an app-local WebView. Your password is entered on Instagram's page; Scoop does not read password fields or add a JavaScript bridge. Instagram handles its own sign-in, verification and website data.</p>
+            <p>Session cookies stay in Android WebView's private cookie store on your device and are excluded from cloud backup and device transfer. Selected cookies are passed in memory to the local gallery extractor only for Instagram post links, then sent to Instagram to authenticate those requests. They are not saved in command-line arguments, preferences, download history or Scoop logs.</p>
+            <p>Use <strong>Disconnect</strong> on Scoop's Instagram sign-in screen to clear its WebView cookies and site storage. Signing in does not grant access to private, deleted, restricted or rate-limited posts.</p>
+          </section>
+
+          <section id="storage">
+            <h2>Storage, retention and deletion</h2>
+            <p>Downloaded media and download history are stored on your device. On Android 10 and newer, the default destinations are the shared <strong>Movies/Scoop</strong>, <strong>Music/Scoop</strong> and <strong>Pictures/Scoop</strong> collections. On Android 7–9, Scoop uses app-private storage. A folder you select in Settings → Storage overrides the default.</p>
+            <p>Automatic history retention removes history records only; it does not delete downloaded media. Explicit <strong>Delete</strong> and <strong>Clear all</strong> actions delete files as shown in the app. Pending requests may be stored in app-private, no-backup storage for queue recovery; cookies and authorization headers are removed before that journal is written. Incognito jobs are not written to it.</p>
+            <p>You can remove saved files and history using Scoop's download controls. Uninstalling the app removes app-private data, while files in shared or user-chosen folders may remain on your device.</p>
+          </section>
+
+          <section id="updates">
+            <h2>App updates</h2>
+            <p>GitHub builds can contact Scoop's GitHub Releases feed when you request an update and accept only signed Scoop APK releases. The Play edition updates through Google Play and does not install APK updates itself. The bundled yt-dlp runtime does not self-update independently.</p>
+          </section>
+
+          <section id="contact">
+            <h2>Privacy questions</h2>
+            <p>Scoop is developed by Vaibhav Sen. You can contact the developer through the <a href="https://github.com/vabxsen/Scoop/issues/new">Scoop issue form</a>. GitHub issues are public; please do not include passwords, session cookies or other sensitive personal information.</p>
+          </section>
+        </article>
+      </div>
+    </main>
+
+    <footer>
+      <a class="brand" href="../" aria-label="Scoop home">
+        <img src="../logo-light.png" alt="" width="34" height="34" />
+        <span>Scoop</span>
+      </a>
+      <p>Built by <a href="https://github.com/vabxsen">Vaibhav Sen</a>. Licensed under GPL-3.0.</p>
+      <p>© 2026 Scoop</p>
+    </footer>
+  </body>
+</html>
