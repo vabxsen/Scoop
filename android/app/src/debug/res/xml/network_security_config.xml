@@ -4,6 +4,6 @@
     <!-- Local HTTP fixtures for instrumentation only; release remains HTTPS-only.
          Production URL/DNS checks are unchanged, including in debug builds. -->
     <domain-config cleartextTrafficPermitted="true">
-        <domain>127.0.0.1</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
     </domain-config>
 </network-security-config>
