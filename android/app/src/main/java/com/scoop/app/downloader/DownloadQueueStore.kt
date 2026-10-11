@@ -19,7 +19,7 @@ data class PersistedQueueEntry(
 internal fun DownloadTask.toPersistedQueueEntry(retryAttempt: Int): PersistedQueueEntry {
     val headers = request.image?.headers.orEmpty()
     val sourceHasSecret = request.url.toHttpUrlOrNull()?.queryParameterNames.orEmpty().any { name ->
-        name.contains(Regex("(?i)(token|signature|credential|password|passwd|auth|api[_-]?key|x-amz-|expires)"))
+        name.contains(Regex("(?i)(token|signature|credential|password|passwd|auth(?!or)|api[_-]?key|x-amz-|expires)"))
     }
     val sensitive = request.customArgs != null || sourceHasSecret ||
         headers.keys.any { it.equals("Cookie", true) || it.equals("Authorization", true) } ||

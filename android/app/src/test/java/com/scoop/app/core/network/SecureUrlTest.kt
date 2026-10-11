@@ -78,6 +78,15 @@ class SecureUrlTest {
         assertEquals(2, persisted.retryAttempt)
     }
 
+    @Test fun durableQueueKeepsLinksWithoutSecretParameters() {
+        fun persisted(url: String) =
+            DownloadTask(id = "task", request = DownloadRequest(url = url, kind = DownloadKind.VIDEO), title = "Video", thumbnailUrl = null)
+                .toPersistedQueueEntry(0)
+        assertEquals(false, persisted("https://example.com/watch?v=1&author=someone").requiresReanalysis)
+        assertEquals(true, persisted("https://example.com/watch?v=1&auth=secret").requiresReanalysis)
+        assertEquals(true, persisted("https://example.com/watch?v=1&access_token=secret").requiresReanalysis)
+    }
+
     @Test fun subprocessProxyRejectsPrivateConnectTargets() {
         PublicHttpsProxy().use { proxy ->
             val endpoint = URI(proxy.url)

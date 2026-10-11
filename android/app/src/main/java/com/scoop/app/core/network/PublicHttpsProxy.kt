@@ -2,12 +2,16 @@ package com.scoop.app.core.network
 
 import java.io.BufferedInputStream
 import java.io.IOException
+import java.io.InputStream
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
+import java.net.SocketTimeoutException
 import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Loopback CONNECT proxy for bundled Python tools. It resolves once through [PublicNetworkDns]
@@ -59,9 +63,12 @@ class PublicHttpsProxy : AutoCloseable {
                 flush()
             }
             val remote = requireNotNull(upstream)
-            val reverse = workers.submit { runCatching { remote.getInputStream().copyTo(client.getOutputStream()) } }
-            runCatching { input.copyTo(remote.getOutputStream()) }
-            reverse.cancel(true)
+            // A download is one-directional for long stretches (the client only reads), so the
+            // read timeout must not end the tunnel while the other direction is still moving.
+            val lastActivity = AtomicLong(System.nanoTime())
+            val reverse = workers.submit { relay(remote.getInputStream(), client, lastActivity) }
+            relay(input, remote, lastActivity)
+            runCatching { reverse.get() }
         } catch (_: Exception) {
             runCatching {
                 client.getOutputStream().apply {
@@ -73,6 +80,29 @@ class PublicHttpsProxy : AutoCloseable {
             upstream?.let { sockets.remove(it); runCatching { it.close() } }
             sockets.remove(client)
             runCatching { client.close() }
+        }
+    }
+
+    /** Copies [from] into [target] until EOF, an error, or both directions idle for [IO_TIMEOUT_MS],
+     * then half-closes [target] so the peer sees the end of this direction. */
+    private fun relay(from: InputStream, target: Socket, lastActivity: AtomicLong) {
+        try {
+            val output = target.getOutputStream()
+            val buffer = ByteArray(RELAY_BUFFER_BYTES)
+            while (true) {
+                val count =
+                    try {
+                        from.read(buffer)
+                    } catch (_: SocketTimeoutException) {
+                        if (System.nanoTime() - lastActivity.get() >= IO_TIMEOUT_NANOS) break else continue
+                    }
+                if (count == -1) break
+                lastActivity.set(System.nanoTime())
+                output.write(buffer, 0, count)
+            }
+        } catch (_: IOException) {
+        } finally {
+            runCatching { target.shutdownOutput() }
         }
     }
 
@@ -108,5 +138,7 @@ class PublicHttpsProxy : AutoCloseable {
         private const val MAX_HEADER_BYTES = 16 * 1024
         private const val CONNECT_TIMEOUT_MS = 15_000
         private const val IO_TIMEOUT_MS = 30_000
+        private val IO_TIMEOUT_NANOS = TimeUnit.MILLISECONDS.toNanos(IO_TIMEOUT_MS.toLong())
+        private const val RELAY_BUFFER_BYTES = 16 * 1024
     }
 }

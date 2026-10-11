@@ -59,7 +59,6 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -67,6 +66,7 @@ import kotlinx.coroutines.sync.withLock
 private const val DEFAULT_MAX_CONCURRENCY = 3
 private const val RETRY_BACKOFF_BASE_MS = 8_000L
 private const val DELETE_UNDO_WINDOW_MS = 2_000L
+private const val LINK_NOT_KEPT_MESSAGE = "This link wasn't kept after the app restarted, to protect private details in it. Paste it again to download."
 private val THUMBNAIL_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp")
 
 class DownloadManagerImpl(
@@ -142,7 +142,7 @@ class DownloadManagerImpl(
                 retryAttempts[task.id] = entry.retryAttempt
                 tasks[task] =
                     if (entry.requiresReanalysis) {
-                        DownloadStatus.Failed("This authenticated image must be analyzed again after the app restarted")
+                        DownloadStatus.Failed(LINK_NOT_KEPT_MESSAGE)
                     } else {
                         DownloadStatus.Queued
                     }
@@ -169,7 +169,7 @@ class DownloadManagerImpl(
         val capturedRequest = request.copy(saveToHistory = !PreferenceUtil.getBoolean(PrefKeys.INCOGNITO, false))
         val task = DownloadTask(id = UUID.randomUUID().toString(), request = capturedRequest, title = title, thumbnailUrl = thumbnailUrl)
         tasks[task] = DownloadStatus.Queued
-        runBlocking { persistQueueNow() }
+        persistQueue()
         executionAuthorized = true
         DownloadService.start(appContext)
         dispatchNext()
@@ -182,7 +182,7 @@ class DownloadManagerImpl(
         jobs.remove(taskId)?.cancel()
         retryAttempts.remove(taskId)
         tasks[task] = DownloadStatus.Cancelled
-        runBlocking { persistQueueNow() }
+        persistQueue()
         return true
     }
 
@@ -205,7 +205,7 @@ class DownloadManagerImpl(
             // budget rather than inheriting whatever the automatic attempts already used up.
             retryAttempts.remove(taskId)
             tasks[task] = DownloadStatus.Queued
-            runBlocking { persistQueueNow() }
+            persistQueue()
             resumePendingDownloads()
         }
     }
@@ -309,8 +309,10 @@ class DownloadManagerImpl(
 
     private fun runTask(task: DownloadTask) {
         if (SecureUrl.parse(task.request.url) == null) {
-            tasks[task] = DownloadStatus.Failed("Only public HTTPS links can be downloaded")
-            runBlocking { persistQueueNow() }
+            // A blank URL is a restored task whose sensitive link was deliberately not persisted.
+            val message = if (task.request.url.isEmpty()) LINK_NOT_KEPT_MESSAGE else "Only public HTTPS links can be downloaded"
+            tasks[task] = DownloadStatus.Failed(message)
+            persistQueue()
             return
         }
         if (task.request.kind == DownloadKind.IMAGE) {
@@ -460,6 +462,9 @@ class DownloadManagerImpl(
                         addOption("--no-playlist")
                         addOption("-o", File(tempDir, "%(title)s.%(ext)s").absolutePath)
                         addOption("--print", "after_move:filepath")
+                        // --print implies --quiet, which also suppresses the progress lines the
+                        // execute() callback below parses - re-enable them explicitly.
+                        addOption("--progress")
                         val speedLimit =
                             DownloadSpeedLimit.entries.firstOrNull { it.name == PreferenceUtil.getString(PrefKeys.DOWNLOAD_SPEED_LIMIT, DownloadSpeedLimit.UNLIMITED.name) }
                                 ?.ytDlpValue
@@ -547,10 +552,14 @@ class DownloadManagerImpl(
                                         desiredName = sourceFile.name,
                                     )
                                     .absolutePath
+                        // Thumbnails are images: MediaStore rejects image MIME types in the Video
+                        // and Audio collections, so they always go to the Pictures collection.
                         thumbnailFile?.let { thumb ->
-                            DownloadPaths.saveToCustomFolder(appContext, thumb, thumb.name)
-                                ?: DownloadPaths.publishToMediaStore(appContext, task.request.kind, thumb, thumb.name)
-                                ?: DownloadPaths.moveWithDedup(thumb, DownloadPaths.outputDir(appContext, task.request.kind), thumb.name).absolutePath
+                            runCatching {
+                                DownloadPaths.saveToCustomFolder(appContext, thumb, thumb.name)
+                                    ?: DownloadPaths.publishToMediaStore(appContext, DownloadKind.IMAGE, thumb, thumb.name)
+                                    ?: DownloadPaths.moveWithDedup(thumb, DownloadPaths.outputDir(appContext, DownloadKind.IMAGE), thumb.name)
+                            }
                         }
                         location
                     }
