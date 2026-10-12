@@ -82,6 +82,8 @@ class DownloadManagerImpl(
     private val jobs = ConcurrentHashMap<String, Job>()
     @Volatile private var clearingAll = false
     private val retryAttempts = ConcurrentHashMap<String, Int>()
+    /** Earliest wall-clock time an auto-retrying task may be dispatched again. */
+    private val retryNotBefore = ConcurrentHashMap<String, Long>()
     private val pendingDeleteJobs = ConcurrentHashMap<String, Job>()
     @Volatile private var executionAuthorized = false
     private val queueWriteRevision = AtomicLong()
@@ -181,6 +183,7 @@ class DownloadManagerImpl(
         YoutubeDL.destroyProcessById(taskId)
         jobs.remove(taskId)?.cancel()
         retryAttempts.remove(taskId)
+        retryNotBefore.remove(taskId)
         tasks[task] = DownloadStatus.Cancelled
         persistQueue()
         // The cancelled job's own finally can't hand off: its suspend persist throws on the
@@ -207,6 +210,7 @@ class DownloadManagerImpl(
             // A manual retry is the user explicitly asking again, so it gets a fresh auto-retry
             // budget rather than inheriting whatever the automatic attempts already used up.
             retryAttempts.remove(taskId)
+            retryNotBefore.remove(taskId)
             tasks[task] = DownloadStatus.Queued
             persistQueue()
             resumePendingDownloads()
@@ -275,6 +279,7 @@ class DownloadManagerImpl(
             activeJobs.joinAll()
             jobs.clear()
             retryAttempts.clear()
+            retryNotBefore.clear()
             val sessionFiles = tasks.values.filterIsInstance<DownloadStatus.Completed>().mapNotNull { it.filePath }
             withContext(Dispatchers.IO) {
                 val savedFiles = downloadHistoryDao.getAll().mapNotNull { it.filePath }
@@ -315,7 +320,12 @@ class DownloadManagerImpl(
         val runningCount = tasks.values.count { it is DownloadStatus.Analyzing || it is DownloadStatus.Downloading }
         if (runningCount >= maxConcurrency) return
         if (DownloadGate.blockedReason(appContext) != null) return
-        val (task, _) = tasks.entries.firstOrNull { it.value is DownloadStatus.Queued } ?: return
+        val now = System.currentTimeMillis()
+        val (task, _) =
+            tasks.entries.firstOrNull { (task, status) ->
+                status is DownloadStatus.Queued && (retryNotBefore[task.id] ?: 0L) <= now
+            } ?: return
+        retryNotBefore.remove(task.id)
         runTask(task)
     }
 
@@ -422,10 +432,17 @@ class DownloadManagerImpl(
                 ?: AutoRetryPolicy.OFF
         val attempt = (retryAttempts[task.id] ?: 0) + 1
         if (attempt <= policy.maxAttempts) {
+            // Wait out the backoff as Queued rather than inside this job: holding the old
+            // Downloading status looked frozen in the UI and kept a concurrency slot busy.
+            val backoffMs = RETRY_BACKOFF_BASE_MS * attempt
             retryAttempts[task.id] = attempt
-            persistQueue()
-            delay(RETRY_BACKOFF_BASE_MS * attempt)
+            retryNotBefore[task.id] = System.currentTimeMillis() + backoffMs
             tasks[task] = DownloadStatus.Queued
+            persistQueue()
+            scope.launch {
+                delay(backoffMs)
+                dispatchNext()
+            }
         } else {
             retryAttempts.remove(task.id)
             tasks[task] = DownloadStatus.Failed(message)
