@@ -184,6 +184,9 @@ class DownloadManagerImpl(
         retryAttempts.remove(taskId)
         tasks[task] = DownloadStatus.Cancelled
         runBlocking { persistQueueNow() }
+        // The cancelled job's own finally can't hand off: its suspend persist throws on the
+        // already-cancelled coroutine before reaching dispatchNext(). Free the slot here.
+        dispatchNext()
         return true
     }
 
