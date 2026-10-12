@@ -59,7 +59,17 @@ class PublicHttpsProxy : AutoCloseable {
                 flush()
             }
             val remote = requireNotNull(upstream)
-            val reverse = workers.submit { runCatching { remote.getInputStream().copyTo(client.getOutputStream()) } }
+            // The timeout above only bounds the handshake. Once tunnelled, one direction is
+            // legitimately idle for the whole transfer (a single large GET sends nothing after
+            // its request), so a read timeout here would sever long downloads mid-file. yt-dlp's
+            // own socket timeout still catches a stalled server, and close() ends the tunnel.
+            client.soTimeout = 0
+            remote.soTimeout = 0
+            val reverse = workers.submit {
+                runCatching { remote.getInputStream().copyTo(client.getOutputStream()) }
+                // Relay the server's close so the client sees EOF instead of a silent tunnel.
+                runCatching { client.shutdownOutput() }
+            }
             runCatching { input.copyTo(remote.getOutputStream()) }
             reverse.cancel(true)
         } catch (_: Exception) {
