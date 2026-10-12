@@ -47,8 +47,8 @@ needed to fetch the media itself.
 ## 📖 Features
 
 ### Downloading
-- **Paste or share a link** from any app — Scoop registers as a share target and as a link
-  handler, so you can send a URL straight to it or open supported links directly with Scoop.
+- **Paste or share a link** from any app — Scoop registers as a share target, so you can send
+  a URL straight to it from your browser or any app's share menu.
 - **Analyze before downloading**: see the title, uploader, duration, and thumbnail before
   committing to anything.
 - **Video or audio-only**, chosen per download.
@@ -116,8 +116,7 @@ needed to fetch the media itself.
 ## 🚀 Usage
 
 1. **Get a link** to a video or audio page from your browser or another app.
-2. **Send it to Scoop** — share it directly to Scoop, or open the link and let Scoop handle it
-   (it registers as a link handler for `https` links), or paste it into Scoop yourself.
+2. **Send it to Scoop** — share it directly to Scoop, or paste it into Scoop yourself.
 3. **Review what Scoop found** — title, uploader, duration, and thumbnail.
 4. **Configure the download** — video or audio-only, Highest/Low quality (or your configured
    defaults), and optional subtitle/thumbnail embedding.
