@@ -37,7 +37,10 @@ class MainActivity : ComponentActivity() {
             window.isNavigationBarContrastEnforced = false
         }
 
-        sharedUrl = intent.extractSharedUrl()
+        // Only a fresh launch consumes the share. On recreation (rotation, dark-mode switch) the
+        // launch intent is still attached, and re-reading it would bounce the user back to Home
+        // and refill the link box; HomeViewModel already survives with its own state.
+        sharedUrl = if (savedInstanceState == null) intent.extractSharedUrl() else null
 
         setContent {
             val themePreferences = koinInject<ThemePreferences>()
