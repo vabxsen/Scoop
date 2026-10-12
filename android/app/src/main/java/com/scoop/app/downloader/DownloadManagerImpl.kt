@@ -11,6 +11,7 @@ import android.os.Build
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.getValue
@@ -290,7 +291,16 @@ class DownloadManagerImpl(
 
     private fun deleteFile(filePath: String) {
         if (filePath.startsWith("content://")) {
-            runCatching { appContext.contentResolver.delete(Uri.parse(filePath), null, null) }
+            val uri = Uri.parse(filePath)
+            runCatching {
+                // Custom-folder (SAF) documents reject ContentResolver.delete outright - only
+                // MediaStore items support it - so they need the DocumentsContract API instead.
+                if (DocumentsContract.isDocumentUri(appContext, uri)) {
+                    DocumentsContract.deleteDocument(appContext.contentResolver, uri)
+                } else {
+                    appContext.contentResolver.delete(uri, null, null)
+                }
+            }
         } else {
             File(filePath).delete()
         }
