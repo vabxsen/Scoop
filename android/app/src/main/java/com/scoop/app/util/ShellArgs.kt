@@ -8,6 +8,9 @@ fun tokenizeShellArgs(input: String): List<String> {
     val tokens = mutableListOf<String>()
     val current = StringBuilder()
     var quote: Char? = null
+    // Tracks a token that has started but may still be empty, so `--referer ""` keeps its
+    // empty value instead of silently dropping it and shifting the following arguments.
+    var inToken = false
     for (c in input) {
         when {
             quote != null ->
@@ -16,15 +19,22 @@ fun tokenizeShellArgs(input: String): List<String> {
                 } else {
                     current.append(c)
                 }
-            c == '"' || c == '\'' -> quote = c
+            c == '"' || c == '\'' -> {
+                quote = c
+                inToken = true
+            }
             c.isWhitespace() ->
-                if (current.isNotEmpty()) {
+                if (inToken) {
                     tokens += current.toString()
                     current.clear()
+                    inToken = false
                 }
-            else -> current.append(c)
+            else -> {
+                current.append(c)
+                inToken = true
+            }
         }
     }
-    if (current.isNotEmpty()) tokens += current.toString()
+    if (inToken) tokens += current.toString()
     return tokens
 }
