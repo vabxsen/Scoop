@@ -60,7 +60,6 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -170,7 +169,7 @@ class DownloadManagerImpl(
         val capturedRequest = request.copy(saveToHistory = !PreferenceUtil.getBoolean(PrefKeys.INCOGNITO, false))
         val task = DownloadTask(id = UUID.randomUUID().toString(), request = capturedRequest, title = title, thumbnailUrl = thumbnailUrl)
         tasks[task] = DownloadStatus.Queued
-        runBlocking { persistQueueNow() }
+        persistQueue()
         executionAuthorized = true
         DownloadService.start(appContext)
         dispatchNext()
@@ -183,7 +182,7 @@ class DownloadManagerImpl(
         jobs.remove(taskId)?.cancel()
         retryAttempts.remove(taskId)
         tasks[task] = DownloadStatus.Cancelled
-        runBlocking { persistQueueNow() }
+        persistQueue()
         // The cancelled job's own finally can't hand off: its suspend persist throws on the
         // already-cancelled coroutine before reaching dispatchNext(). Free the slot here.
         dispatchNext()
@@ -209,7 +208,7 @@ class DownloadManagerImpl(
             // budget rather than inheriting whatever the automatic attempts already used up.
             retryAttempts.remove(taskId)
             tasks[task] = DownloadStatus.Queued
-            runBlocking { persistQueueNow() }
+            persistQueue()
             resumePendingDownloads()
         }
     }
@@ -323,7 +322,7 @@ class DownloadManagerImpl(
     private fun runTask(task: DownloadTask) {
         if (SecureUrl.parse(task.request.url) == null) {
             tasks[task] = DownloadStatus.Failed("Only public HTTPS links can be downloaded")
-            runBlocking { persistQueueNow() }
+            persistQueue()
             return
         }
         if (task.request.kind == DownloadKind.IMAGE) {
