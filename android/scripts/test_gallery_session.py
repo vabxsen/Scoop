@@ -86,6 +86,54 @@ class GalleryHeadersTest(unittest.TestCase):
         self.assertFalse(bridge.public_https('http://example.com/image.jpg'))
 
 
+class GalleryPartialResultTest(unittest.TestCase):
+    PUBLIC = [(2, 1, 6, '', ('93.184.216.34', 443))]
+
+    @staticmethod
+    def source(messages, failure=None):
+        class Source:
+            category = 'test'
+            referer = False
+            session = bridge.requests.Session()
+
+            def initialize(self):
+                pass
+
+            def __iter__(self):
+                yield from messages
+                if failure:
+                    raise failure
+        return Source()
+
+    def test_failing_sub_page_keeps_images_from_other_pages(self):
+        root = 'https://example.com/gallery'
+        child = 'https://example.com/gallery/page2'
+        sources = {
+            root: self.source([(bridge.Message.Url, 'https://example.com/a.jpg', {'extension': 'jpg', 'width': '1920px'}),
+                               (bridge.Message.Queue, child, {})]),
+            child: self.source([], RuntimeError('HTTP 500')),
+        }
+        with patch.object(bridge.extractor, 'find', side_effect=lambda page: sources.get(page)), \
+                patch.object(bridge.socket, 'getaddrinfo', return_value=self.PUBLIC):
+            result = bridge.extract(root, 'http://127.0.0.1:12345')
+        self.assertEqual([image['url'] for image in result['images']], ['https://example.com/a.jpg'])
+        self.assertEqual(result['images'][0]['width'], 1920)
+
+    def test_failing_first_page_without_images_still_reports_its_error(self):
+        failure = RuntimeError('HTTP redirect to login page')
+        with patch.object(bridge.extractor, 'find', return_value=self.source([], failure)), \
+                patch.object(bridge.socket, 'getaddrinfo', return_value=self.PUBLIC):
+            with self.assertRaises(RuntimeError) as raised:
+                bridge.extract('https://example.com/private', 'http://127.0.0.1:12345')
+        self.assertEqual(bridge.error_code(raised.exception), 'authentication_required')
+
+    def test_dimensions_never_raise(self):
+        for value, expected in ((640, 640), (480.7, 480), ('1920px', 1920), (' 300 ', 300), (None, 0),
+                                ('wide', 0), ('nan', 0), ('inf', 0), (-5, 0)):
+            with self.subTest(value=value):
+                self.assertEqual(bridge.dimension(value), expected)
+
+
 class GalleryInputLimitTest(unittest.TestCase):
     def test_input_at_limit_is_accepted_and_larger_input_is_rejected(self):
         for size in (16383, 16384, 16385):

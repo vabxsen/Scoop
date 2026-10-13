@@ -87,6 +87,13 @@ def initialize_source(source, page, proxy):
             if cookie.name in COOKIE_NAMES:
                 cookie.secure = True
 
+def dimension(value):
+    # Sites report sizes as ints, floats or strings like "1920px"; unknown is 0, never an error.
+    try:
+        return max(0, int(float(str(value).strip().lower().removesuffix("px"))))
+    except (TypeError, ValueError, OverflowError):
+        return 0
+
 def error_code(error):
     # Classify only; never expose upstream exception text, which can contain URLs or cookies.
     if type(error).__name__ in ("AuthenticationError", "AuthRequired") or getattr(error, "status", 0) == 401:
@@ -118,42 +125,50 @@ def extract(url, proxy):
         if source is None:
             continue
         supported = True
-        initialize_source(source, page, proxy)
-        for message in source:
-            message_count += 1
-            if message_count > MAX_MESSAGES:
-                break
-            kind = message[0]
-            if kind == Message.Queue and depth < 2 and len(pending) < MAX_PENDING and public_https(message[1]):
-                pending.append((message[1], depth + 1))
-            if kind != Message.Url:
-                continue
-            image_url, metadata = message[1], message[2]
-            if not public_https(image_url) or image_url in seen:
-                continue
-            extension = str(metadata.get("extension", "")).lower()
-            if extension not in IMAGE_EXTENSIONS:
-                continue
-            prepared = source.session.prepare_request(requests.Request("GET", image_url, headers=metadata.get("_http_headers")))
-            headers = {k: v for k, v in prepared.headers.items()
-                       if k.lower() in ("user-agent", "referer", "origin", "cookie", "accept", "authorization")}
-            had_referrer = source.referer or any(key.lower() == "referer" for key in headers)
-            headers = {key: value for key, value in headers.items()
-                       if key.lower() not in ("referer", "origin") and "\r" not in value and "\n" not in value}
-            if had_referrer:
-                headers["Referer"] = safe_referrer(page, image_url)
-            if origin(page) != origin(image_url):
+        try:
+            initialize_source(source, page, proxy)
+            for message in source:
+                message_count += 1
+                if message_count > MAX_MESSAGES:
+                    break
+                kind = message[0]
+                if kind == Message.Queue and depth < 2 and len(pending) < MAX_PENDING and public_https(message[1]):
+                    pending.append((message[1], depth + 1))
+                if kind != Message.Url:
+                    continue
+                image_url, metadata = message[1], message[2]
+                if not public_https(image_url) or image_url in seen:
+                    continue
+                extension = str(metadata.get("extension", "")).lower()
+                if extension not in IMAGE_EXTENSIONS:
+                    continue
+                prepared = source.session.prepare_request(requests.Request("GET", image_url, headers=metadata.get("_http_headers")))
+                headers = {k: v for k, v in prepared.headers.items()
+                           if k.lower() in ("user-agent", "referer", "origin", "cookie", "accept", "authorization")}
+                had_referrer = source.referer or any(key.lower() == "referer" for key in headers)
                 headers = {key: value for key, value in headers.items()
-                           if key.lower() not in ("cookie", "authorization")}
-            filename = str(metadata.get("filename") or metadata.get("id") or "Image")
-            images.append({"url": image_url, "title": filename,
-                           "mimeType": "image/" + {"jpg": "jpeg", "svg": "svg+xml"}.get(extension, extension),
-                           "headers": headers,
-                           "width": int(metadata.get("width") or 0),
-                           "height": int(metadata.get("height") or 0)})
-            seen.add(image_url)
-            if len(images) >= LIMIT:
-                break
+                           if key.lower() not in ("referer", "origin") and "\r" not in value and "\n" not in value}
+                if had_referrer:
+                    headers["Referer"] = safe_referrer(page, image_url)
+                if origin(page) != origin(image_url):
+                    headers = {key: value for key, value in headers.items()
+                               if key.lower() not in ("cookie", "authorization")}
+                filename = str(metadata.get("filename") or metadata.get("id") or "Image")
+                images.append({"url": image_url, "title": filename,
+                               "mimeType": "image/" + {"jpg": "jpeg", "svg": "svg+xml"}.get(extension, extension),
+                               "headers": headers,
+                               "width": dimension(metadata.get("width")),
+                               "height": dimension(metadata.get("height"))})
+                seen.add(image_url)
+                if len(images) >= LIMIT:
+                    break
+        except Exception:
+            # One broken sub-page (or odd item) must not discard what other pages already
+            # found. Only a page that fails before any image is found reports its error,
+            # which keeps authentication_required reaching the app's sign-in prompt.
+            if images or depth > 0:
+                continue
+            raise
     return {"supported": supported, "images": images, "limited": len(images) >= LIMIT}
 
 if __name__ == "__main__":
