@@ -110,6 +110,11 @@ class GalleryImageExtractor(private val context: Context, private val readiness:
     @Synchronized
     private fun prepareRuntime(): File {
         val directory = File(context.noBackupFilesDir, "gallery-dl-1.32.11-v3")
+        // Each runtime revision unpacks to a new folder; drop superseded ones (several MB each),
+        // including those left by installs that upgraded before this cleanup existed.
+        context.noBackupFilesDir
+            .listFiles { file -> file.isDirectory && file.name.startsWith("gallery-dl-") && file.name != directory.name }
+            ?.forEach { it.deleteRecursively() }
         val marker = File(directory, ".ready")
         if (!marker.isFile) {
             directory.mkdirs()
