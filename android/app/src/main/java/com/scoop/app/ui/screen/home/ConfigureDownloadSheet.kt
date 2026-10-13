@@ -55,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -372,7 +373,7 @@ private fun PlaylistConfigureForm(viewModel: HomeViewModel, info: PlaylistInfo, 
     ) {
         Text(info.title ?: stringResource(R.string.playlist_untitled), style = MaterialTheme.typography.titleMedium)
         Text(
-            stringResource(R.string.playlist_entry_count, validEntries.size),
+            pluralStringResource(R.plurals.playlist_entry_count, validEntries.size, validEntries.size),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

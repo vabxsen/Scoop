@@ -40,9 +40,9 @@ fun SettingHubRow(
     title: String,
     subtitle: String,
     leadingIcon: ImageVector,
+    modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
-    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier =

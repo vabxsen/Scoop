@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Scoop</string>
 
     <string name="url_input_placeholder">Paste a link</string>
@@ -64,7 +64,10 @@
     <string name="custom_command_help">Extra yt-dlp arguments, applied after Scoop\'s own options. For advanced users.</string>
 
     <string name="playlist_untitled">Playlist</string>
-    <string name="playlist_entry_count">%d videos</string>
+    <plurals name="playlist_entry_count">
+        <item quantity="one">%d video</item>
+        <item quantity="other">%d videos</item>
+    </plurals>
     <string name="playlist_auto_only_note">Playlist downloads use your selected quality for every entry.</string>
     <string name="action_select_all">Select all</string>
     <string name="action_select_none">Select none</string>
@@ -174,7 +177,8 @@
     <string name="mode_media">Video &amp; audio</string>
     <string name="mode_images">Images</string>
     <string name="settings_image_location">Images</string>
-    <string name="image_selection_count">%1$d of %2$d selected</string>
+    <!-- "selected" reads correctly for any count, so this needs no plural forms. -->
+    <string name="image_selection_count" tools:ignore="PluralsCandidate">%1$d of %2$d selected</string>
     <string name="image_select_all">Select all</string>
     <string name="image_deselect_all">Deselect all</string>
     <string name="image_download_selected">Download selected (%1$d)</string>

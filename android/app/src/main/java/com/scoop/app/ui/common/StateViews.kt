@@ -20,10 +20,10 @@ import com.scoop.app.ui.theme.Spacing
 fun ErrorState(
     title: String,
     message: String,
+    modifier: Modifier = Modifier,
     detail: String? = null,
     retryLabel: String? = null,
     onRetry: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxWidth().padding(Spacing.md),
@@ -41,7 +41,7 @@ fun ErrorState(
 }
 
 @Composable
-fun LoadingState(message: String? = null, modifier: Modifier = Modifier) {
+fun LoadingState(modifier: Modifier = Modifier, message: String? = null) {
     Row(
         modifier = modifier.fillMaxWidth().padding(Spacing.md),
         horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
