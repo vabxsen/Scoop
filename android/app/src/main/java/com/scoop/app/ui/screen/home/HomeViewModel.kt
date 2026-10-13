@@ -23,6 +23,7 @@ import com.scoop.app.util.isPlaylistUrl
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.withTimeoutOrNull
 import com.scoop.app.core.model.ImageCollection
 import com.scoop.app.extractor.ImageSource
 import com.scoop.app.extractor.InstagramSession
@@ -43,6 +44,7 @@ sealed interface ConfigureUiState {
 }
 
 private const val TAG = "HomeViewModel"
+private const val DIRECT_IMAGE_PROBE_TIMEOUT_MS = 5_000L
 
 enum class FormatMode {
     HIGHEST,
@@ -185,8 +187,11 @@ class HomeViewModel(
                 return@launch
             }
             // A direct image needs no Python analysis. Failed probes leave media extraction alone.
+            // The probe runs before every video analysis, so a slow site must not stall it for
+            // the full HTTP timeout - a real image file answers well within this budget.
             try {
-                imageDiscovery.directImage(target)?.let { showImages(it); return@launch }
+                withTimeoutOrNull(DIRECT_IMAGE_PROBE_TIMEOUT_MS) { imageDiscovery.directImage(target) }
+                    ?.let { showImages(it); return@launch }
             } catch (e: CancellationException) { throw e } catch (_: Exception) { }
             if (isPlaylistUrl(target)) {
                 extractor
