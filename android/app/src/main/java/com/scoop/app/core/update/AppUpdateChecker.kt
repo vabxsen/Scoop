@@ -12,6 +12,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -87,11 +88,20 @@ class AppUpdateChecker(private val context: Context, private val client: OkHttpC
                             val buffer = ByteArray(DOWNLOAD_BUFFER_BYTES)
                             var totalRead = 0L
                             var bytesRead: Int
+                            var lastPercent = -1
                             while (input.read(buffer).also { bytesRead = it } != -1) {
+                                // Leaving Settings cancels the check; stop instead of finishing a
+                                // ~40 MB download whose result would be discarded.
+                                ensureActive()
                                 totalRead += bytesRead
                                 if (totalRead > MAX_APK_BYTES) throw IOException("Update is too large")
                                 output.write(buffer, 0, bytesRead)
-                                if (total > 0) onProgress(totalRead.toFloat() / total)
+                                // One UI update per percent, not one per 8 KB buffer.
+                                val percent = if (total > 0) (totalRead * 100 / total).toInt() else -1
+                                if (percent >= 0 && percent != lastPercent) {
+                                    lastPercent = percent
+                                    onProgress(percent / 100f)
+                                }
                             }
                         }
                     }

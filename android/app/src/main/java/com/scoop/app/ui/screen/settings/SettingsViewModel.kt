@@ -37,6 +37,7 @@ import com.scoop.app.util.PreferenceUtil
 import com.scoop.app.util.ThemePreferences
 import com.scoop.app.util.toDecimalStorageSize
 import com.scoop.app.util.toHumanReadableSize
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -343,7 +344,11 @@ class SettingsViewModel(
                     try {
                         val file = updateChecker.downloadApk(availability.downloadUrl) { progress -> updateState = UpdateCheckState.Downloading(progress) }
                         updateState = UpdateCheckState.ReadyToInstall(file.path)
-                    } catch (e: java.io.IOException) {
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        // Not just IOException: an unexpected failure (e.g. from package
+                        // verification) must surface as an error, not crash viewModelScope.
                         updateState = UpdateCheckState.Error(updateChecker.genericErrorMessage())
                     }
                 }
