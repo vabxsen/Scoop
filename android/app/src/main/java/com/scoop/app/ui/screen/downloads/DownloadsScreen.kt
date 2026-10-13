@@ -63,6 +63,7 @@ import com.scoop.app.ui.common.SettingsScreenTitle
 import com.scoop.app.ui.theme.Motion
 import com.scoop.app.ui.theme.Spacing
 import com.scoop.app.util.FileShareUtils
+import android.text.format.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -82,15 +83,24 @@ private fun startOfDay(timeMillis: Long): Long =
         }
         .timeInMillis
 
+private fun yearOf(timeMillis: Long): Int = Calendar.getInstance().apply { timeInMillis = timeMillis }.get(Calendar.YEAR)
+
 /** Buckets a timestamp into a scannable group header - "Today"/"Yesterday" for the last two days,
- * a weekday name for the rest of the current week, then a plain month/day for anything older. */
+ * a weekday name for the rest of the current week, then month/day (plus the year if it is not the
+ * current one) for anything older. */
 private fun dateGroupLabel(createdAt: Long): String {
     val diffDays = (startOfDay(System.currentTimeMillis()) - startOfDay(createdAt)) / DAY_MS
     return when {
         diffDays <= 0L -> "Today"
         diffDays == 1L -> "Yesterday"
         diffDays in 2..6 -> SimpleDateFormat("EEEE", Locale.getDefault()).format(Date(createdAt))
-        else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(createdAt))
+        else -> {
+            // Older-year entries carry the year: without it "Oct 13" from two years would share
+            // one group header (and one sticky-header key) and interleave in a single section.
+            val skeleton = if (yearOf(createdAt) == yearOf(System.currentTimeMillis())) "MMMd" else "yMMMd"
+            val locale = Locale.getDefault()
+            SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, skeleton), locale).format(Date(createdAt))
+        }
     }
 }
 
