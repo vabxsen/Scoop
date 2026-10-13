@@ -51,7 +51,10 @@ class SecureUrlTest {
 
     @Test fun formatSelectorsKeepAudioAndApplyTheConfiguredCap() {
         assertEquals("bestvideo*+bestaudio/best", FormatSelector.video())
-        assertEquals("bestvideo[height<=720]+bestaudio/best[height<=720]", FormatSelector.video(720))
+        assertEquals(
+            "bestvideo[height<=?720]+bestaudio/best[height<=?720]/bestvideo*+bestaudio/best",
+            FormatSelector.video(720),
+        )
         assertEquals("worstvideo+worstaudio/worst", FormatSelector.video(low = true))
         assertEquals("worstaudio/worst", FormatSelector.audio(low = true))
     }
