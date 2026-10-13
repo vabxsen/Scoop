@@ -68,6 +68,8 @@ private const val DEFAULT_MAX_CONCURRENCY = 3
 private const val RETRY_BACKOFF_BASE_MS = 8_000L
 private const val DELETE_UNDO_WINDOW_MS = 2_000L
 private val THUMBNAIL_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp")
+private const val REANALYSIS_REQUIRED_MESSAGE =
+    "This download used private link details that aren't kept after a restart. Share or paste the link again to download it."
 
 class DownloadManagerImpl(
     private val extractor: MediaExtractor,
@@ -144,7 +146,7 @@ class DownloadManagerImpl(
                 retryAttempts[task.id] = entry.retryAttempt
                 tasks[task] =
                     if (entry.requiresReanalysis) {
-                        DownloadStatus.Failed("This authenticated image must be analyzed again after the app restarted")
+                        DownloadStatus.Failed(REANALYSIS_REQUIRED_MESSAGE)
                     } else {
                         DownloadStatus.Queued
                     }
@@ -206,6 +208,12 @@ class DownloadManagerImpl(
     override fun retry(taskId: String) {
         val task = tasks.keys.find { it.id == taskId } ?: return
         val status = tasks[task]
+        // Restored entries whose private link details were never written to disk have a blank
+        // URL; running them would only fail with a misleading "public HTTPS" error.
+        if (task.request.url.isBlank()) {
+            tasks[task] = DownloadStatus.Failed(REANALYSIS_REQUIRED_MESSAGE)
+            return
+        }
         if (status is DownloadStatus.Failed || status is DownloadStatus.Cancelled) {
             // A manual retry is the user explicitly asking again, so it gets a fresh auto-retry
             // budget rather than inheriting whatever the automatic attempts already used up.
