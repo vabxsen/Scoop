@@ -19,4 +19,5 @@ object PrefKeys {
     const val SELECT_ALL_GALLERY_IMAGES = "select_all_gallery_images"
     const val SAVE_THUMBNAIL_FILE = "save_thumbnail_file"
     const val INCOGNITO = "incognito"
+    const val NOTIFICATION_PERMISSION_ASKED = "notification_permission_asked"
 }

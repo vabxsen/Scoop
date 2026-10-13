@@ -1,5 +1,10 @@
 package com.scoop.app.ui.screen.home
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -37,11 +42,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.scoop.app.R
 import com.scoop.app.ui.theme.Spacing
+import com.scoop.app.util.PrefKeys
+import com.scoop.app.util.PreferenceUtil
+import androidx.core.content.ContextCompat
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -58,6 +67,18 @@ fun HomeScreen(
         onPauseOrDispose { }
     }
     val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    // Android 13+ hides download progress and "Download complete" alerts until this is granted.
+    // Ask once, on the first real download, rather than only from Settings > Permissions.
+    fun askForNotificationsOnce() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (PreferenceUtil.getBoolean(PrefKeys.NOTIFICATION_PERMISSION_ASKED, false)) return
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        PreferenceUtil.putBoolean(PrefKeys.NOTIFICATION_PERMISSION_ASKED, true)
+        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
 
     LaunchedEffect(startUrl, shareSequence) {
         if (!startUrl.isNullOrBlank()) viewModel.onUrlChange(startUrl)
@@ -135,7 +156,10 @@ fun HomeScreen(
                 }
                 Spacer(modifier = Modifier.height(Spacing.md))
                 ExtendedFloatingActionButton(
-                    onClick = viewModel::startDownloadFlow,
+                    onClick = {
+                        if (viewModel.url.isNotBlank()) askForNotificationsOnce()
+                        viewModel.startDownloadFlow()
+                    },
                     modifier = Modifier.clip(FloatingActionButtonDefaults.extendedFabShape),
                     icon = { Icon(Icons.Filled.Download, contentDescription = null) },
                     text = { Text(stringResource(R.string.action_download)) },
