@@ -3,6 +3,8 @@ package com.scoop.app.ui.screen.downloads
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scoop.app.core.model.DownloadStatus
+import com.scoop.app.core.sound.UiSound
+import com.scoop.app.core.sound.UiSounds
 import com.scoop.app.downloader.DownloadManager
 import kotlinx.coroutines.launch
 
@@ -13,7 +15,7 @@ enum class DownloadFilter {
     FAILED,
 }
 
-class DownloadsViewModel(private val downloadManager: DownloadManager) : ViewModel() {
+class DownloadsViewModel(private val downloadManager: DownloadManager, private val uiSounds: UiSounds) : ViewModel() {
 
     val tasks get() = downloadManager.tasks
     val pendingDeleteIds get() = downloadManager.pendingDeleteIds
@@ -42,11 +44,18 @@ class DownloadsViewModel(private val downloadManager: DownloadManager) : ViewMod
     /** Swipe-to-delete: hides [taskId] immediately and schedules the real delete a couple of
      * seconds out (on the download manager's own process-lifetime scope, so it still fires even
      * if this screen is navigated away from before the undo window closes). */
-    fun requestDelete(taskId: String) = downloadManager.requestDelete(taskId)
+    fun requestDelete(taskId: String) {
+        downloadManager.requestDelete(taskId)
+        uiSounds.play(UiSound.DELETE)
+    }
 
-    fun undoDeletes() = downloadManager.undoAllDeletes()
+    fun undoDeletes() {
+        downloadManager.undoAllDeletes()
+        uiSounds.play(UiSound.UNDO)
+    }
 
     fun clearAll() {
+        uiSounds.play(UiSound.DELETE)
         viewModelScope.launch { downloadManager.clearAll() }
     }
 }

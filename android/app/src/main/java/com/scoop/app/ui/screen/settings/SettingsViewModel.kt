@@ -26,6 +26,8 @@ import com.scoop.app.core.model.DownloadKind
 import com.scoop.app.core.model.DownloadSpeedLimit
 import com.scoop.app.core.model.HistoryRetention
 import com.scoop.app.core.model.ThemeMode
+import com.scoop.app.core.sound.UiSound
+import com.scoop.app.core.sound.UiSounds
 import com.scoop.app.core.update.AppUpdateChecker
 import com.scoop.app.core.update.UpdateAvailability
 import com.scoop.app.core.update.UpdateCheckState
@@ -51,6 +53,7 @@ class SettingsViewModel(
     private val downloadHistoryDao: DownloadHistoryDao,
     private val updateChecker: AppUpdateChecker,
     private val downloadManager: DownloadManager,
+    private val uiSounds: UiSounds,
 ) : ViewModel() {
 
     val themeMode get() = themePreferences.themeMode
@@ -154,6 +157,9 @@ class SettingsViewModel(
         private set
 
     var incognito by mutableStateOf(PreferenceUtil.getBoolean(PrefKeys.INCOGNITO, false))
+        private set
+
+    var soundsEnabled by mutableStateOf(uiSounds.enabled)
         private set
 
     private data class StorageSnapshot(val deviceLabel: String, val videoBytes: Long, val videoCount: Int, val audioBytes: Long, val audioCount: Int, val imageBytes: Long, val imageCount: Int)
@@ -373,6 +379,13 @@ class SettingsViewModel(
     fun updateSaveThumbnailFile(enabled: Boolean) {
         saveThumbnailFile = enabled
         PreferenceUtil.putBoolean(PrefKeys.SAVE_THUMBNAIL_FILE, enabled)
+    }
+
+    fun updateSoundsEnabled(enabled: Boolean) {
+        soundsEnabled = enabled
+        PreferenceUtil.putBoolean(PrefKeys.UI_SOUNDS, enabled)
+        // Let the user hear what they just turned on.
+        if (enabled) uiSounds.play(UiSound.DOWNLOAD_COMPLETE)
     }
 
     fun updateIncognito(enabled: Boolean) {

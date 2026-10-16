@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.scoop.app.core.sound.AppVisibility
 import com.scoop.app.ui.navigation.ScoopNavHost
 import com.scoop.app.ui.theme.ScoopTheme
 import com.scoop.app.util.ThemePreferences
@@ -65,7 +66,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        AppVisibility.onActivityStarted()
         downloadManager.resumePendingDownloads()
+    }
+
+    override fun onStop() {
+        AppVisibility.onActivityStopped()
+        super.onStop()
     }
 
     private fun Intent.extractSharedUrl(): String? =

@@ -20,4 +20,5 @@ object PrefKeys {
     const val SAVE_THUMBNAIL_FILE = "save_thumbnail_file"
     const val INCOGNITO = "incognito"
     const val NOTIFICATION_PERMISSION_ASKED = "notification_permission_asked"
+    const val UI_SOUNDS = "ui_sounds"
 }

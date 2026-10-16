@@ -37,6 +37,8 @@ import com.scoop.app.core.model.DownloadTask
 import com.scoop.app.core.network.SecureUrl
 import com.scoop.app.core.network.PublicHttpsProxy
 import com.scoop.app.core.media.MediaEngineReadiness
+import com.scoop.app.core.sound.UiSound
+import com.scoop.app.core.sound.UiSounds
 import com.scoop.app.extractor.MediaExtractor
 import com.scoop.app.util.DownloadGate
 import com.scoop.app.util.FileShareUtils
@@ -78,6 +80,7 @@ class DownloadManagerImpl(
     private val mediaEngineReadiness: MediaEngineReadiness,
     private val imageDownloader: ImageDownloader,
     private val queueStore: DownloadQueueStore,
+    private val uiSounds: UiSounds,
 ) : DownloadManager {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -378,6 +381,7 @@ class DownloadManagerImpl(
                                     persistQueueNow(queueSnapshot().filterNot { it.task.id == task.id })
                                     tasks[task] = DownloadStatus.Completed(filePath)
                                     notifyDownloadComplete(task, filePath)
+                                    chimeIfQueueFinished()
                                 } else {
                                     // A yt-dlp run that "succeeds" without a resolvable output path
                                     // isn't a usable completed download - surface it as a failure
@@ -417,6 +421,7 @@ class DownloadManagerImpl(
                 persistQueueNow(queueSnapshot().filterNot { it.task.id == task.id })
                 tasks[task] = DownloadStatus.Completed(path)
                 notifyDownloadComplete(task, path)
+                chimeIfQueueFinished()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -454,6 +459,7 @@ class DownloadManagerImpl(
         } else {
             retryAttempts.remove(task.id)
             tasks[task] = DownloadStatus.Failed(message)
+            uiSounds.play(UiSound.DOWNLOAD_FAILED)
             persistQueueNow()
         }
     }
@@ -597,6 +603,15 @@ class DownloadManagerImpl(
                 DownloadPaths.clearTempWorkspace(appContext, task.id)
             }
         }
+
+    /** One chime per batch: a playlist or a 50-image gallery finishing plays it once, when the
+     * last item lands, rather than once per file. */
+    private fun chimeIfQueueFinished() {
+        val anyActive = tasks.values.any {
+            it is DownloadStatus.Queued || it is DownloadStatus.Analyzing || it is DownloadStatus.Downloading || it is DownloadStatus.Processing
+        }
+        if (!anyActive) uiSounds.play(UiSound.DOWNLOAD_COMPLETE)
+    }
 
     /** One-shot "Download complete" notification per finished task, separate from the ongoing
      * foreground-service notification - tapping it opens the downloaded file. */

@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.PlaylistAddCheck
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,6 +56,15 @@ fun SettingsMiscScreen(onBack: () -> Unit, viewModel: SettingsViewModel = koinVi
                     leadingIcon = Icons.Outlined.Image,
                     onClick = { viewModel.updateSaveThumbnailFile(!viewModel.saveThumbnailFile) },
                     trailingContent = { Switch(checked = viewModel.saveThumbnailFile, onCheckedChange = null) },
+                )
+            }
+            item {
+                SettingHubRow(
+                    title = stringResource(R.string.settings_sounds),
+                    subtitle = stringResource(R.string.settings_sounds_subtitle),
+                    leadingIcon = Icons.AutoMirrored.Outlined.VolumeUp,
+                    onClick = { viewModel.updateSoundsEnabled(!viewModel.soundsEnabled) },
+                    trailingContent = { Switch(checked = viewModel.soundsEnabled, onCheckedChange = null) },
                 )
             }
             item {

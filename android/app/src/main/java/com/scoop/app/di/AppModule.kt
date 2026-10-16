@@ -5,6 +5,7 @@ import coil.ImageLoader
 import coil.decode.SvgDecoder
 import com.scoop.app.core.database.AppDatabase
 import com.scoop.app.core.media.MediaEngineReadiness
+import com.scoop.app.core.sound.UiSounds
 import com.scoop.app.core.network.PublicHttpsNetworkInterceptor
 import com.scoop.app.core.network.PublicNetworkDns
 import com.scoop.app.core.update.AppUpdateChecker
@@ -42,6 +43,7 @@ val appModule = module {
     }
     single { AppUpdateChecker(context = androidContext(), client = get()) }
     single { MediaEngineReadiness(context = androidContext()) }
+    single { UiSounds(androidContext()) }
 
     single { GalleryImageExtractor(androidContext(), get()) }
     single { ImageDiscovery(get(), get()) }
@@ -65,14 +67,15 @@ val appModule = module {
             mediaEngineReadiness = get(),
             imageDownloader = get(),
             queueStore = get(),
+            uiSounds = get(),
         )
     }
 
     single { ThemePreferences() }
 
     viewModel { HomeViewModel(extractor = get(), downloadManager = get(), imageDiscovery = get<ImageDiscovery>()) }
-    viewModel { DownloadsViewModel(downloadManager = get()) }
-    viewModel { DownloadDetailsViewModel(downloadManager = get(), downloadHistoryDao = get()) }
+    viewModel { DownloadsViewModel(downloadManager = get(), uiSounds = get()) }
+    viewModel { DownloadDetailsViewModel(downloadManager = get(), downloadHistoryDao = get(), uiSounds = get()) }
     viewModel {
         SettingsViewModel(
             appContext = androidContext(),
@@ -80,6 +83,7 @@ val appModule = module {
             downloadHistoryDao = get(),
             updateChecker = get(),
             downloadManager = get(),
+            uiSounds = get(),
         )
     }
 }
