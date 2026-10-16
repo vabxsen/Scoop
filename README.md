@@ -108,6 +108,9 @@ needed to fetch the media itself.
 - Five built-in **accent palettes**, for devices without dynamic color or if you just prefer one.
 - **Light / Dark / System** theme, applied consistently across the whole app — including the
   status bar.
+- Little **sounds** for the moments that matter: a chime when downloads finish (once per batch, not
+  per file), a gentle tone if one fails, and a swish for delete and undo. They stay quiet when your
+  phone is on silent or vibrate, and can be turned off in **Settings › General › Sounds**.
 
 ### Privacy
 - No Scoop account, no backend, no analytics, no ads.
