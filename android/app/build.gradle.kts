@@ -150,6 +150,7 @@ dependencies {
     implementation(libs.bundles.youtubedlAndroid)
 
     testImplementation(libs.junit4)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.ext)
     androidTestImplementation("androidx.test:runner:1.5.0")
 }

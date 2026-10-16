@@ -10,13 +10,8 @@ import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import kotlin.math.roundToInt
 import java.util.UUID
-import java.io.IOException
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
@@ -36,6 +31,8 @@ class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness
                         addOption("--no-playlist")
                         addOption("--no-warnings")
                         addOption("-R", "1")
+                        // -R only limits download retries, not metadata/extractor retries.
+                        addOption("--extractor-retries", "1")
                         addOption("--socket-timeout", "10")
                     }
                 val output = executeBounded(request, ANALYZE_TIMEOUT_MS)
@@ -63,18 +60,14 @@ class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness
             }.onFailure { if (it is CancellationException) throw it }
     }
 
-    private suspend fun executeBounded(request: YoutubeDLRequest, timeoutMs: Long): String = coroutineScope {
+    private suspend fun executeBounded(request: YoutubeDLRequest, timeoutMs: Long): String {
         val processId = UUID.randomUUID().toString()
-        PublicHttpsProxy().use { proxy ->
+        return PublicHttpsProxy().use { proxy ->
             request.addOption("--proxy", proxy.url)
-            val execution = async(Dispatchers.IO) { YoutubeDL.getInstance().execute(request, processId, null).out }
-            try {
-                withTimeout(timeoutMs) { execution.await() }
-            } catch (error: TimeoutCancellationException) {
-                throw IOException("Video analysis timed out. Check your connection and try again.", error)
-            } finally {
+            executeWithAnalysisTimeout(timeoutMs, destroyProcess = {
                 YoutubeDL.destroyProcessById(processId)
-                execution.cancel()
+            }) {
+                YoutubeDL.getInstance().execute(request, processId, null).out
             }
         }
     }
@@ -83,7 +76,6 @@ class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness
 
 private const val MAX_PLAYLIST_ENTRIES = 200
 private const val MAX_METADATA_CHARS = 2 * 1024 * 1024
-private const val ANALYZE_TIMEOUT_MS = 60_000L
 private const val PLAYLIST_TIMEOUT_MS = 90_000L
 
 private fun YtDlpVideoJson.toMediaInfo(sourceUrl: String): MediaInfo {
