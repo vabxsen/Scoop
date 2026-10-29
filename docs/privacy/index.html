@@ -31,7 +31,7 @@
         <p class="eyebrow">Scoop · Android</p>
         <h1 id="policy-title">Privacy Policy</h1>
         <p class="policy-intro">Scoop is designed to save media on your device without a Scoop account, backend, advertising or analytics.</p>
-        <p class="policy-meta">Last updated <time datetime="2026-09-28">28 September 2026</time> · Published by Vaibhav Sen</p>
+        <p class="policy-meta">Last updated <time datetime="2026-10-29">29 October 2026</time> · Published by Vaibhav Sen</p>
       </section>
 
       <div class="policy-layout">
@@ -62,8 +62,8 @@
 
           <section id="instagram">
             <h2>Optional Instagram sign-in</h2>
-            <p>For image posts that require authentication, Scoop can open Instagram's HTTPS sign-in page in an app-local WebView. Your password is entered on Instagram's page; Scoop does not read password fields or add a JavaScript bridge. Instagram handles its own sign-in, verification and website data.</p>
-            <p>Session cookies stay in Android WebView's private cookie store on your device and are excluded from cloud backup and device transfer. Selected cookies are passed in memory to the local gallery extractor only for Instagram post links, then sent to Instagram to authenticate those requests. They are not saved in command-line arguments, preferences, download history or Scoop logs.</p>
+            <p>For Instagram posts and reels that require authentication, Scoop can open Instagram's HTTPS sign-in page in an app-local WebView. Your password is entered on Instagram's page; Scoop does not read password fields or add a JavaScript bridge. Instagram handles its own sign-in, verification and website data.</p>
+            <p>Session cookies stay in Android WebView's private cookie store on your device and are excluded from cloud backup and device transfer. Selected cookies are used only for Instagram post and reel links: they are passed in memory to the local gallery extractor for images, and for videos they are written to a temporary file in Scoop's private, no-backup storage that the bundled yt-dlp reads, which is deleted as soon as that analysis or download ends. They are sent only to Instagram, over HTTPS, to authenticate those requests. They are not saved in command-line arguments, preferences, download history or Scoop logs.</p>
             <p>Use <strong>Disconnect</strong> on Scoop's Instagram sign-in screen to clear its WebView cookies and site storage. Signing in does not grant access to private, deleted, restricted or rate-limited posts.</p>
           </section>
 

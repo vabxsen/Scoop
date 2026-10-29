@@ -71,7 +71,7 @@ needed to fetch the media itself.
 ### Image downloader
 - **Direct image links**, including extensionless URLs, with original bytes and format preserved without resizing or recompression.
 - **Public image galleries and webpages** — discover photos from supported gallery sites, with an HTML image picker as a fallback.
-- **Instagram photos** — download accessible post images, with optional Instagram sign-in when a post requires an authenticated session.
+- **Instagram photos** — download accessible post images, with optional Instagram sign-in when a post requires an authenticated session. The same sign-in is used for Instagram reels and videos in **Video & audio** mode.
 - **Preview and select** — paste or share a link, choose **Images**, then download individual pictures, a selection, or all results through the existing queue.
 - **Image settings** — open **Settings > Images**, below Downloads, to choose whether gallery images start selected and access the save-folder settings.
 - **Save and manage** — images save to **Pictures/Scoop** on Android 10+, or your chosen custom folder. Open, share or delete completed images from history; existing incognito and retry controls apply.
