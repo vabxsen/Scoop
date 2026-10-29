@@ -1,5 +1,6 @@
 package com.scoop.app.extractor
 
+import android.content.Context
 import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.core.model.MediaInfo
 import com.scoop.app.core.model.PlaylistEntryInfo
@@ -16,7 +17,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
 /** Extracts media metadata by shelling out to the bundled yt-dlp runtime and parsing its JSON. */
-class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness) : MediaExtractor {
+class YtDlpMediaExtractor(
+    private val context: Context,
+    private val mediaEngineReadiness: MediaEngineReadiness,
+) : MediaExtractor {
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -35,10 +39,20 @@ class YtDlpMediaExtractor(private val mediaEngineReadiness: MediaEngineReadiness
                         addOption("--extractor-retries", "1")
                         addOption("--socket-timeout", "10")
                     }
-                val output = executeBounded(request, ANALYZE_TIMEOUT_MS)
+                val output = InstagramCookieFile.use(context, url) { cookieFile ->
+                    // Instagram increasingly withholds reels from signed-out requests; reuse the
+                    // optional in-app Instagram sign-in for its own links only.
+                    cookieFile?.let { request.addOption("--cookies", it.absolutePath) }
+                    executeBounded(request, ANALYZE_TIMEOUT_MS)
+                }
                 require(output.length <= MAX_METADATA_CHARS) { "Metadata response was too large" }
                 json.decodeFromString<YtDlpVideoJson>(output).toMediaInfo(url)
             }.onFailure { if (it is CancellationException) throw it }
+                .recoverCatching { error ->
+                    // Offer the sign-in (or a fresh one, if the saved session expired) instead of
+                    // yt-dlp's advice to pass browser cookies, which Scoop users cannot act on.
+                    throw if (isInstagramSignInFailure(url, error)) InstagramSignInRequiredException(error) else error
+                }
         }
 
     override suspend fun getPlaylist(url: String): Result<PlaylistInfo> =

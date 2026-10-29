@@ -39,6 +39,7 @@ import com.scoop.app.core.network.PublicHttpsProxy
 import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.core.sound.UiSound
 import com.scoop.app.core.sound.UiSounds
+import com.scoop.app.extractor.InstagramCookieFile
 import com.scoop.app.extractor.MediaExtractor
 import com.scoop.app.util.DownloadGate
 import com.scoop.app.util.FileShareUtils
@@ -540,10 +541,11 @@ class DownloadManagerImpl(
                         task.request.customArgs?.let { addCommands(tokenizeShellArgs(it)) }
                     }
 
-                val response = PublicHttpsProxy().use { proxy ->
+                val response = InstagramCookieFile.use(appContext, task.request.url) { cookieFile -> PublicHttpsProxy().use { proxy ->
                     // Appended after custom arguments so an advanced option cannot replace the
-                    // enforcing transport.
+                    // enforcing transport (or the session for Instagram's own links).
                     request.addOption("--proxy", proxy.url)
+                    cookieFile?.let { request.addOption("--cookies", it.absolutePath) }
                     YoutubeDL.getInstance().execute(request, task.id) { progress, eta, _ ->
                         val current = tasks[task] as? DownloadStatus.Downloading ?: DownloadStatus.Downloading()
                         // yt-dlp reports progress far more often than the UI needs - writing every
@@ -557,7 +559,7 @@ class DownloadManagerImpl(
                             tasks[task] = current.copy(progress = roundedProgress, etaSeconds = roundedEta)
                         }
                     }
-                }
+                } }
 
                 // `--print after_move:filepath` writes the final resolved path as its own stdout
                 // line, independent of the progress-line regex the callback above matches against

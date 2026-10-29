@@ -60,6 +60,27 @@ object InstagramSession {
     }
 }
 
-class InstagramSignInRequiredException : IOException(
-    "Instagram requires a signed-in session for this post. Sign in, complete any verification Instagram asks for, then retry."
+/**
+ * Renders the session in the Netscape cookie-file format yt-dlp reads via `--cookies`, scoped to
+ * `.instagram.com` and Secure so it can only ever be sent to Instagram over HTTPS. Values that
+ * could break the tab-separated format are dropped rather than escaped.
+ */
+internal fun instagramNetscapeCookies(cookies: Map<String, String>): String? {
+    val lines = cookies
+        .filter { (name, value) -> name.isNotEmpty() && value.isNotEmpty() && (name + value).none { it.isWhitespace() || it.isISOControl() } }
+        .map { (name, value) -> ".instagram.com\tTRUE\t/\tTRUE\t0\t$name\t$value" }
+    if (lines.isEmpty()) return null
+    return (listOf("# Netscape HTTP Cookie File") + lines).joinToString("\n", postfix = "\n")
+}
+
+/** yt-dlp's wording when Instagram withholds media from a signed-out (or expired) session. */
+private val INSTAGRAM_AUTH_FAILURE = Regex("(?i)empty media response|login required|log in to|--cookies|cookies-from-browser")
+
+/** True when a yt-dlp failure on an Instagram post means a (fresh) sign-in should fix it. */
+internal fun isInstagramSignInFailure(url: String, error: Throwable): Boolean =
+    InstagramSession.isPost(url) && INSTAGRAM_AUTH_FAILURE.containsMatchIn(error.message.orEmpty())
+
+class InstagramSignInRequiredException(cause: Throwable? = null) : IOException(
+    "Instagram requires a signed-in session for this post. Sign in, complete any verification Instagram asks for, then retry.",
+    cause,
 )

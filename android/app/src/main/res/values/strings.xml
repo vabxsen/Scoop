@@ -196,7 +196,7 @@
     <string name="instagram_sign_in">Sign in to Instagram</string>
     <string name="instagram_sign_in_needed">Instagram sign-in needed</string>
     <string name="instagram_session_saved">Session saved on this device</string>
-    <string name="instagram_session_explanation">Sign in on Instagram’s own page. Scoop keeps the session on this device for Instagram image downloads. Your password is entered only on Instagram.</string>
+    <string name="instagram_session_explanation">Sign in on Instagram’s own page. Scoop keeps the session on this device and uses it only for Instagram links, for both images and videos. Your password is entered only on Instagram. Instagram may occasionally limit accounts used with download tools.</string>
     <string name="instagram_disconnect">Disconnect</string>
     <string name="instagram_use_session">Use this session</string>
     <string name="instagram_finish_sign_in">Finish signing in and any verification on Instagram, then tap Use this session.</string>

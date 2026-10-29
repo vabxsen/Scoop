@@ -49,7 +49,7 @@ val appModule = module {
     single { ImageDiscovery(get(), get()) }
     single { ImageDownloader(androidContext(), get()) }
 
-    single<MediaExtractor> { YtDlpMediaExtractor(mediaEngineReadiness = get()) }
+    single<MediaExtractor> { YtDlpMediaExtractor(context = androidContext(), mediaEngineReadiness = get()) }
 
     single {
         Room.databaseBuilder(androidContext(), AppDatabase::class.java, AppDatabase.DATABASE_NAME)

@@ -58,18 +58,19 @@ class HomeViewModel(
     private val imageDiscovery: ImageSource,
 ) : ViewModel() {
     private var analysisJob: Job? = null
-    private var pendingInstagramSignIn = false
+    /** The mode (Images or Video & audio) to retry in after the Instagram sign-in, if pending. */
+    private var pendingInstagramRetryImagesOnly: Boolean? = null
 
     fun prepareInstagramSignIn() {
+        pendingInstagramRetryImagesOnly = imagesOnly
         dismissConfigureSheet()
-        pendingInstagramSignIn = true
     }
 
     fun onInstagramSignInReturn() {
-        if (!pendingInstagramSignIn) return
-        pendingInstagramSignIn = false
+        val retryImagesOnly = pendingInstagramRetryImagesOnly ?: return
+        pendingInstagramRetryImagesOnly = null
         if (InstagramSession.hasSession()) {
-            imagesOnly = true
+            imagesOnly = retryImagesOnly
             startDownloadFlow()
         }
     }
@@ -234,6 +235,10 @@ class HomeViewModel(
                         if (it is CancellationException) throw it
                         // Respect the selected mode: webpage thumbnails are not a video fallback.
                         Log.e(TAG, "analyze failed for ${SecureUrl.redactedForLog(target)} (${it::class.java.simpleName})")
+                        if (it is InstagramSignInRequiredException) {
+                            configureState = ConfigureUiState.Error(it.message.orEmpty(), instagramSignIn = true)
+                            return@onFailure
+                        }
                         val detail = it.message?.lineSequence()?.lastOrNull { line -> line.isNotBlank() }?.take(600)
                         configureState = ConfigureUiState.Error(
                             "Could not load video or audio. " + (detail ?: "Please try again.") +

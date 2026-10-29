@@ -7,6 +7,7 @@ import android.os.Build
 import com.scoop.app.core.media.MediaEngineReadiness
 import com.scoop.app.core.update.AppUpdateChecker
 import com.scoop.app.di.appModule
+import com.scoop.app.extractor.InstagramCookieFile
 import com.scoop.app.downloader.DownloadService
 import com.tencent.mmkv.MMKV
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +41,7 @@ class ScoopApplication : Application(), KoinComponent {
 
         mediaEngineReadiness.startInitializing(applicationScope)
         updateChecker.clearStaleDownload()
+        InstagramCookieFile.sweep(this)
     }
 
     private fun createNotificationChannel() {
