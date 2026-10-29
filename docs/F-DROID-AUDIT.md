@@ -4,7 +4,7 @@ Audit date: 2026-09-11
 
 Application ID: `com.scoop.app`
 
-Audited version: `1.3.5` (`versionCode` 37)
+Audited version: `1.3.6` (`versionCode` 38)
 
 ## Result
 
